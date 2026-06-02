@@ -666,30 +666,36 @@ function buildFA(c, d, save) {
       'Beschrijf het probleemgedrag',
       d.r || '', v => save({ r: v })));
 
-  /* ── Blokpijl (pentagon-shape) ── */
+  /* ── Pijl (slank, zelfde kleur als puntjes) ── */
   function blokPijl(gridArea) {
     const el = document.createElement('div');
     el.style.cssText = `
       grid-area: ${gridArea};
-      background: #B0BAC4;
-      clip-path: polygon(0% 28%, 66% 28%, 66% 6%, 100% 50%, 66% 94%, 66% 72%, 0% 72%);
-      width: 48px;
+      background: #9B7B7B;
+      clip-path: polygon(0% 35%, 68% 35%, 68% 18%, 100% 50%, 68% 82%, 68% 65%, 0% 65%);
+      width: 36px;
       align-self: center;
-      height: 52px;
+      height: 34px;
       flex-shrink: 0;
     `;
     return el;
   }
 
-  const bpArr1 = blokPijl('1 / 4 / 2 / 5');  /* rij 1 → Sr-pos-repr */
-  const bpArr2 = blokPijl('2 / 4 / 3 / 5');  /* rij 2 → FNC */
+  const bpArr1 = blokPijl('1 / 4 / 2 / 5');
+  const bpArr2 = blokPijl('2 / 4 / 3 / 5');
 
   /* ── Sr-pos-repr ovaal (rij 1, kolom 5) ── */
   const nodeSrPos = makeSrNode('oval', 'Sr-pos-repr:', d.srPosTxt, d.srPosType, SR_POS_TYPES, save, 'srPos');
   nodeSrPos.style.gridArea = '1 / 5 / 2 / 6';
 
-  /* ── FNC rechthoek (rij 2, kolom 5) ── */
-  const nodeSrNeg = makeSrNode('rect', 'FNC:', d.srNegTxt, d.srNegType, SR_NEG_TYPES, save, 'srNeg');
+  /* ── FNC rechthoek met meerdere items (rij 2, kolom 5) ── */
+  // Migreer oud formaat → nieuw
+  if (!d.srNegItems) {
+    d.srNegItems = (d.srNegTxt || d.srNegType)
+      ? [{ type: d.srNegType || '', txt: d.srNegTxt || '' }]
+      : [{ type: '', txt: '' }];
+  }
+  const nodeSrNeg = makeFncNode(d.srNegItems, save);
   nodeSrNeg.style.gridArea = '2 / 5 / 3 / 6';
 
   diag.append(nodeSd, dotsEl, nodeR, bpArr1, nodeSrPos, bpArr2, nodeSrNeg);
@@ -795,6 +801,124 @@ function makeSrNode(shape, labelTxt, bodyTxt, selectedType, types, save, prefix)
   hint.textContent = '✏️ tikken';
 
   el.append(lbl, textSpan, row, hint);
+  return el;
+}
+
+
+/* ── FNC node: meerdere items, elk met type-prefix + omschrijving ── */
+function makeFncNode(items, save) {
+  const el = document.createElement('div');
+  el.className = 'fa-node';
+  if (items.some(i => i.txt || i.type)) el.classList.add('filled');
+
+  const lbl = document.createElement('div');
+  lbl.className = 'fa-node-label';
+  lbl.textContent = 'FNC:';
+  el.appendChild(lbl);
+
+  const list = document.createElement('div');
+  list.style.cssText = 'display:flex;flex-direction:column;gap:6px;width:100%';
+  el.appendChild(list);
+
+  function saveItems() {
+    if (items.some(i => i.txt || i.type)) el.classList.add('filled');
+    save({ srNegItems: items.map(i => ({ type: i.type, txt: i.txt })) });
+  }
+
+  function renderItems() {
+    list.innerHTML = '';
+    items.forEach((item, idx) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:5px;width:100%';
+
+      /* Type dropdown */
+      const sel = document.createElement('select');
+      sel.style.cssText = `
+        font-family:'Courier New',monospace; font-size:12px; font-weight:700;
+        padding:2px 4px; border-radius:5px; border:1.5px solid #FCA5A5;
+        background:#fff; color:#1E3A5F; cursor:pointer; flex-shrink:0;
+        -webkit-appearance:auto; appearance:auto;
+      `;
+      const emptyOpt = document.createElement('option');
+      emptyOpt.value = ''; emptyOpt.textContent = '—';
+      sel.appendChild(emptyOpt);
+      SR_NEG_TYPES.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.val; opt.textContent = t.label;
+        if (t.val === item.type) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener('change', e => {
+        e.stopPropagation();
+        item.type = e.target.value;
+        saveItems();
+        renderItems();
+      });
+      sel.addEventListener('click', e => e.stopPropagation());
+
+      /* Tekst weergave */
+      const txtSpan = document.createElement('div');
+      txtSpan.style.cssText = 'flex:1;cursor:pointer;min-height:18px;font-size:13px;word-break:break-word';
+
+      const t = SR_NEG_TYPES.find(x => x.val === item.type);
+      if (item.txt) {
+        txtSpan.innerHTML = `<span class="fa-node-text">${esc(item.txt)}</span>`;
+        if (t) txtSpan.innerHTML += ` <span style="font-family:'Courier New',monospace;font-weight:700;color:${t.color}">(${t.label})</span>`;
+      } else {
+        txtSpan.innerHTML = `<span class="fa-node-placeholder">omschrijving…</span>`;
+      }
+
+      txtSpan.addEventListener('click', e => {
+        e.stopPropagation();
+        openExpand('FNC — omschrijving', 'Beschrijf de feitelijke negatieve consequentie', item.txt || '', v => {
+          item.txt = v;
+          saveItems();
+          renderItems();
+        });
+      });
+
+      /* Verwijder knop */
+      const del = document.createElement('button');
+      del.textContent = '×';
+      del.title = 'Verwijder';
+      del.style.cssText = `
+        background:none;border:none;color:#DC2626;font-size:16px;cursor:pointer;
+        padding:0 2px;line-height:1;flex-shrink:0;
+      `;
+      del.addEventListener('click', e => {
+        e.stopPropagation();
+        if (items.length > 1) {
+          items.splice(idx, 1);
+        } else {
+          items[0] = { type: '', txt: '' };
+        }
+        saveItems();
+        renderItems();
+      });
+
+      row.append(sel, txtSpan, del);
+      list.appendChild(row);
+    });
+
+    /* Voeg toe knop */
+    const addBtn = document.createElement('button');
+    addBtn.textContent = '+ voeg toe';
+    addBtn.className = 'fa-edit-hint';
+    addBtn.style.cssText = `
+      background:none;border:1px dashed #9B7B7B;border-radius:4px;
+      color:#9B7B7B;font-size:11px;cursor:pointer;padding:2px 6px;
+      margin-top:2px;align-self:flex-start;
+    `;
+    addBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      items.push({ type: '', txt: '' });
+      saveItems();
+      renderItems();
+    });
+    list.appendChild(addBtn);
+  }
+
+  renderItems();
   return el;
 }
 
