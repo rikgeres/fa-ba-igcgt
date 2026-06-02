@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="FA & BA">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1D4ED8">
+  <title>FA &amp; BA — IGCGT</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --fa:      #1D4ED8;
+      --fa-bg:   #EFF6FF;
+      --bas:     #6D28D9;
+      --bas-bg:  #F5F3FF;
+      --bar:     #065F46;
+      --bar-bg:  #ECFDF5;
+      --bg:      #F1F5F9;
+      --surface: #FFFFFF;
+      --border:  #CBD5E1;
+      --txt:     #0F172A;
+      --muted:   #64748B;
+      --danger:  #DC2626;
+      --node-bg: #BFDBFE;
+      --node-border: #93C5FD;
+      --node-txt: #1E3A5F;
+      --r: 10px; --r-sm: 7px;
+      --sh: 0 1px 3px rgba(0,0,0,.10), 0 1px 2px rgba(0,0,0,.06);
+      --sh-md: 0 4px 12px rgba(0,0,0,.10);
+    }
+    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--txt); line-height: 1.5; -webkit-text-size-adjust: 100%; }
+
+    /* ── App shell ── */
+    #app { max-width: 760px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
+    .app-header {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 12px 14px; display: flex; align-items: center; gap: 8px;
+      box-shadow: var(--sh);
+    }
+    .app-header h1 { font-size: 17px; font-weight: 700; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .back-btn { background: none; border: none; font-size: 28px; line-height: 1; color: var(--fa); cursor: pointer; padding: 2px 6px 2px 0; }
+    .app-main { flex: 1; padding: 16px; }
+    .page { animation: fade .18s ease; }
+    @keyframes fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+    /* ── Knoppen ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px 16px; border-radius: var(--r-sm); font-size: 15px; font-weight: 600;
+      cursor: pointer; border: none; transition: filter .12s;
+    }
+    .btn:active { filter: brightness(.9); }
+    .btn-fa    { background: var(--fa);  color: #fff; }
+    .btn-bas   { background: var(--bas); color: #fff; }
+    .btn-bar   { background: var(--bar); color: #fff; }
+    .btn-ghost { background: transparent; border: 1.5px solid var(--border); color: var(--txt); }
+    .btn-danger{ background: var(--danger); color: #fff; }
+    .btn-sm    { padding: 7px 12px; font-size: 13px; }
+    .btn-full  { width: 100%; }
+    .fab {
+      position: fixed; bottom: 24px; right: 20px;
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--fa); color: #fff; border: none; font-size: 30px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 14px rgba(29,78,216,.45); transition: transform .12s; z-index: 50;
+    }
+    .fab:active { transform: scale(.94); }
+
+    /* ── Cards & lijstitems ── */
+    .card { background: var(--surface); border-radius: var(--r); box-shadow: var(--sh); overflow: hidden; }
+    .card-pad { padding: 14px; }
+    .list-item {
+      display: flex; align-items: center; padding: 13px 14px;
+      border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s;
+    }
+    .list-item:last-child { border-bottom: none; }
+    .list-item:active { background: var(--bg); }
+    .badge { width: 44px; height: 44px; border-radius: var(--r-sm); display: flex; align-items: center;
+      justify-content: center; font-size: 11px; font-weight: 800; color: #fff; flex-shrink: 0; letter-spacing: .5px; }
+    .badge-fa  { background: var(--fa); }
+    .badge-bas { background: var(--bas); }
+    .badge-bar { background: var(--bar); }
+    .item-info { flex: 1; margin-left: 12px; min-width: 0; }
+    .item-title { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-meta  { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Formulier basis ── */
+    .form-sec { margin-bottom: 18px; }
+    .sec-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 8px; padding-left: 2px; }
+    .sec-label.c-fa  { color: var(--fa); }
+    .sec-label.c-bas { color: var(--bas); }
+    .sec-label.c-bar { color: var(--bar); }
+    .fgrp { margin-bottom: 11px; }
+    label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .hint { font-size: 12px; color: var(--muted); font-weight: 400; }
+    input[type=text], input[type=date], textarea, select {
+      width: 100%; padding: 9px 11px; border: 1.5px solid var(--border); border-radius: var(--r-sm);
+      font-size: 15px; font-family: inherit; color: var(--txt); background: var(--surface);
+      transition: border-color .14s; -webkit-appearance: none; appearance: none;
+    }
+    input:focus, textarea:focus { outline: none; border-color: var(--fa); }
+    textarea { resize: vertical; min-height: 72px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .form-footer { position: sticky; bottom: 0; background: linear-gradient(transparent, var(--bg) 30%); padding: 14px 0 18px; margin-top: 4px; }
+
+    /* ── Type-keuzekaarten ── */
+    .type-card {
+      background: var(--surface); border-radius: var(--r); padding: 16px 14px;
+      cursor: pointer; border: 2px solid transparent; box-shadow: var(--sh);
+      display: flex; align-items: center; gap: 14px; margin-bottom: 11px;
+      transition: box-shadow .12s, transform .12s;
+    }
+    .type-card:active { transform: scale(.985); }
+    .type-icon { width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #fff; letter-spacing: .5px; }
+    .type-info h3 { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+    .type-info p  { font-size: 13px; color: var(--muted); line-height: 1.4; }
+
+    /* ── Uitklapmodal ── */
+    .expand-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.5);
+      z-index: 400; display: flex; align-items: flex-end;
+      animation: fadeIn .15s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } }
+    .expand-sheet {
+      background: var(--surface); width: 100%; border-radius: 20px 20px 0 0;
+      padding: 20px 16px 36px; max-height: 85dvh; display: flex; flex-direction: column;
+      animation: slideUp .2s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } }
+    .expand-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
+    .expand-lbl { font-size: 13px; font-weight: 700; color: var(--fa); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 10px; }
+    .expand-ta {
+      flex: 1; font-size: 16px; font-family: inherit; color: var(--txt);
+      border: 1.5px solid var(--border); border-radius: var(--r-sm);
+      padding: 11px 13px; resize: none; min-height: 120px; line-height: 1.6;
+    }
+    .expand-ta:focus { outline: none; border-color: var(--fa); }
+    .expand-btns { display: flex; gap: 8px; margin-top: 12px; }
+    .expand-meta { font-size: 12px; color: var(--muted); margin-bottom: 10px; font-style: italic; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(12px);
+      background: #1E293B; color: #fff; padding: 9px 20px; border-radius: 100px;
+      font-size: 14px; font-weight: 500; opacity: 0; transition: opacity .18s, transform .18s;
+      z-index: 500; pointer-events: none; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Lege staat ── */
+    .empty { text-align: center; padding: 52px 24px; }
+    .empty-ico { font-size: 54px; opacity: .35; margin-bottom: 14px; }
+    .empty h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .empty p  { font-size: 15px; color: var(--muted); margin-bottom: 24px; }
+
+    /* ── Actiebalk ── */
+    .action-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+
+    /* ════════════════════════════════════════
+       FA VISUEEL DIAGRAM
+    ════════════════════════════════════════ */
+
+    /* Header kaart */
+    .fa-header-card {
+      background: var(--surface); border-radius: var(--r); padding: 13px 14px;
+      box-shadow: var(--sh); margin-bottom: 16px;
+    }
+    .fa-header-card input[type=text] { margin-bottom: 8px; }
+
+    /* Canvas wrapper */
+    .fa-canvas {
+      background: #E8EEF5;
+      border-radius: var(--r);
+      padding: 20px 14px 24px;
+      box-shadow: var(--sh-md);
+      position: relative;
+    }
+    .fa-canvas-title {
+      font-size: 11px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .09em; color: var(--fa); margin-bottom: 16px; text-align: center;
+    }
+
+    /* ── Diagram layout ── */
+    .fa-diagram {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* Top rij: Sd ──●●──▶ R ──▶ Sr-pos */
+    .fa-top-row {
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* Pijl tussen knopen */
+    .fa-arrow {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      flex-shrink: 0; padding: 0 4px;
+    }
+    .fa-arrow svg { display: block; }
+
+    /* Knopen: rechthoeken */
+    .fa-node {
+      flex: 1;
+      min-height: 90px;
+      background: var(--node-bg);
+      border: 2px solid var(--node-border);
+      border-radius: 12px;
+      padding: 10px 11px;
+      cursor: pointer;
+      transition: filter .14s, transform .12s, box-shadow .14s;
+      position: relative;
+      user-select: none;
+    }
+    .fa-node:active { transform: scale(.97); filter: brightness(.95); }
+    .fa-node:hover  { box-shadow: 0 0 0 3px rgba(29,78,216,.25); }
+    .fa-node.filled { background: #BFDBFE; border-color: #3B82F6; }
+
+    /* Ovaal voor Sr-pos */
+    .fa-node-oval {
+      flex: 1;
+      min-height: 100px;
+      background: var(--node-bg);
+      border: 2.5px solid #1E3A5F;
+      border-radius: 50%;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: filter .14s, transform .12s, box-shadow .14s;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center;
+      user-select: none;
+    }
+    .fa-node-oval:active { transform: scale(.97); filter: brightness(.95); }
+    .fa-node-oval:hover  { box-shadow: 0 0 0 3px rgba(29,78,216,.25); }
+    .fa-node-oval.filled { background: #BFDBFE; border-color: #1D4ED8; }
+
+    .fa-node-label {
+      font-size: 13px; font-weight: 800; color: var(--node-txt);
+      text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px;
+    }
+    .fa-node-body {
+      font-size: 13px; color: var(--node-txt); line-height: 1.45; word-break: break-word;
+    }
+    .fa-node-placeholder {
+      font-size: 12px; color: #6B8EB3; font-style: italic;
+    }
+    .fa-edit-hint {
+      position: absolute; bottom: 5px; right: 7px;
+      font-size: 10px; color: #6B8EB3; opacity: 0;
+      transition: opacity .15s;
+    }
+    .fa-node:hover .fa-edit-hint { opacity: 1; }
+
+    /* SR type badges binnen knoop */
+    .fa-sr-chips {
+      display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px;
+      justify-content: center;
+    }
+    .fa-sr-chip {
+      font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700;
+      padding: 3px 8px; border-radius: 5px; border: 1.5px solid currentColor;
+      cursor: pointer; background: transparent; color: #4B7BA6;
+      transition: all .13s; line-height: 1.2;
+    }
+    .fa-sr-chip.selected { background: var(--fa); color: #fff; border-color: var(--fa); }
+    .fa-sr-chip:active { transform: scale(.93); }
+
+    /* Pijl verticaal gedeelte (van R naar beneden naar Sr-neg) */
+    .fa-bottom-section {
+      display: flex;
+      margin-top: 0;
+    }
+    .fa-bottom-spacer {
+      /* breedte van Sd + pijl — zodat Sr-neg uitlijnt onder R */
+      flex-shrink: 0;
+    }
+    .fa-down-col {
+      display: flex; flex-direction: column; align-items: center;
+      flex: 1;
+    }
+    .fa-down-arrow {
+      padding: 4px 0;
+    }
+
+    /* Sr-neg rechthoek onderaan */
+    .fa-srneg-row {
+      display: flex;
+      align-items: flex-start;
+      width: 100%;
+    }
+
+    /* Annotatiebalk onderaan canvas */
+    .fa-legend {
+      margin-top: 14px; border-top: 1px dashed #9DB5CF; padding-top: 10px;
+      display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    }
+    .fa-legend-item {
+      font-size: 11px; color: #4B7BA6; display: flex; align-items: center; gap: 4px;
+    }
+
+    /* ── Stap-kaart (BA-S) ── */
+    .step-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r); padding: 13px; margin-bottom: 4px; position: relative; }
+    .step-num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--bas); color: #fff; font-size: 12px; font-weight: 700; margin-bottom: 10px; }
+    .step-del { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; line-height: 1; }
+    .seq-arr { text-align: center; font-size: 20px; color: var(--bas); padding: 2px 0 6px; }
+
+    /* ── Schema weergave (BA) ── */
+    .schema-wrap { background: var(--surface); border-radius: var(--r); box-shadow: var(--sh-md); overflow: hidden; }
+    .schema-head { padding: 14px 16px; color: #fff; }
+    .schema-head h2 { font-size: 15px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+    .schema-head .sh-meta { font-size: 13px; opacity: .88; margin-top: 3px; }
+    .sh-fa  { background: var(--fa); }
+    .sh-bas { background: var(--bas); }
+    .sh-bar { background: var(--bar); }
+    .schema-block { border-bottom: 1px solid var(--border); padding: 13px 15px; }
+    .schema-block:last-child { border-bottom: none; }
+    .sb-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .09em; margin-bottom: 9px; }
+    .sb-fa  { color: var(--fa); }  .sb-bas { color: var(--bas); }  .sb-bar { color: var(--bar); }
+    .sf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .sf > .lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); display: block; margin-bottom: 3px; }
+    .sf > .val { font-size: 14px; white-space: pre-wrap; word-break: break-word; line-height: 1.5; }
+    .sf > .val:empty::before { content: '—'; color: var(--muted); }
+    .schema-arr { text-align: center; font-size: 20px; padding: 4px 0 2px; }
+    .schema-arr.c-bar { color: var(--bar); } .schema-arr.c-bas { color: var(--bas); }
+    .schema-foot { padding: 7px 15px; font-size: 11px; text-align: right; }
+    .sf-fa  { background: var(--fa-bg);  color: #93C5FD; }
+    .sf-bas { background: var(--bas-bg); color: #A78BFA; }
+    .sf-bar { background: var(--bar-bg); color: #6EE7B7; }
+    .kern-block { border-left: 4px solid var(--bar); }
+    .circ-block { background: #F0FDF4; border: 1.5px dashed #16A34A; border-radius: var(--r-sm); padding: 10px 13px; display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #14532D; }
+
+    /* ════════════════════════════════════════
+       FA PRINT STIJL
+    ════════════════════════════════════════ */
+    .fa-print-wrap { display: none; }
+
+    @media print {
+      @page { size: A4 landscape; margin: 0; }
+
+      /* Verberg alles */
+      body * { visibility: hidden !important; }
+
+      /* Toon uitsluitend het diagram */
+      .fa-canvas, .fa-canvas * { visibility: visible !important; }
+      .fa-canvas {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 1.4cm !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: #E8EEF5 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      /* Verberg dropdowns en hints binnen canvas */
+      .fa-canvas select,
+      .fa-canvas .fa-edit-hint { visibility: hidden !important; display: none !important; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header class="app-header" id="hdr">
+    <span id="hdr-back"></span>
+    <h1 id="hdr-title">FA &amp; BA</h1>
+    <span id="hdr-act"></span>
+  </header>
+  <main class="app-main" id="main"></main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════
+   OPSLAG
+══════════════════════════════════════════ */
+const KEY   = 'igcgt_v3';
+const load  = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; } };
+const dump  = d  => localStorage.setItem(KEY, JSON.stringify(d));
+const byId  = id => load().find(a => a.id === id);
+const upsert = item => {
+  const all = load();
+  const i = all.findIndex(a => a.id === item.id);
+  if (i >= 0) all[i] = item; else all.unshift(item);
+  dump(all);
+};
+const remove = id => dump(load().filter(a => a.id !== id));
+const uid    = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const today  = () => new Date().toISOString().slice(0,10);
+
+/* ══════════════════════════════════════════
+   ROUTER
+══════════════════════════════════════════ */
+const go = path => { location.hash = path; };
+window.addEventListener('hashchange', render);
+
+function route() {
+  const h = location.hash.slice(1) || '/';
+  const p = h.split('/').filter(Boolean);
+  return { seg: p[0] || 'home', p1: p[1] };
+}
+
+/* ══════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════ */
+const toast = (msg, ms=2000) => {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), ms);
+};
+
+/* ══════════════════════════════════════════
+   HTML ESCAPING
+══════════════════════════════════════════ */
+const esc   = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const escBr = s => esc(s).replace(/\n/g,'<br>');
+
+/* ══════════════════════════════════════════
+   RENDER
+══════════════════════════════════════════ */
+function render() {
+  const { seg, p1 } = route();
+  const main = document.getElementById('main');
+  document.getElementById('hdr-back').innerHTML = '';
+  document.getElementById('hdr-act').innerHTML  = '';
+  main.innerHTML = ''; main.className = 'app-main page';
+  document.querySelectorAll('.fab').forEach(f => f.remove());
+
+  const setTitle = t => document.getElementById('hdr-title').textContent = t;
+  const backBtn  = path => {
+    const b = document.createElement('button');
+    b.className = 'back-btn no-print'; b.textContent = '‹';
+    b.onclick = () => go(path);
+    document.getElementById('hdr-back').appendChild(b);
+  };
+
+  switch (seg) {
+    case 'home':  setTitle('FA & BA'); pgHome(main); break;
+    case 'nieuw': setTitle('Nieuwe analyse'); backBtn('/'); pgNieuw(main); break;
+    case 'fa':    setTitle(p1==='new'?'Nieuwe FA':'FA'); backBtn('/'); pgFA(main, p1); break;
+    case 'ba-s':  setTitle(p1==='new'?'Nieuwe BA Sequentieel':'BA-S'); backBtn('/'); pgBAS(main, p1); break;
+    case 'ba-r':  setTitle(p1==='new'?'Nieuwe BA Referentieel':'BA-R'); backBtn('/'); pgBAR(main, p1); break;
+    default:      main.innerHTML = '<p style="padding:20px">Pagina niet gevonden.</p>';
+  }
+}
+
+/* ══════════════════════════════════════════
+   HOME
+══════════════════════════════════════════ */
+function pgHome(c) {
+  const all = load();
+  if (!all.length) {
+    c.innerHTML = `<div class="empty">
+      <div class="empty-ico">📋</div>
+      <h3>Nog geen analyses</h3>
+      <p>Tik op <strong>+</strong> om je eerste analyse aan te maken.</p>
+    </div>`;
+  } else {
+    const card = document.createElement('div'); card.className = 'card';
+    all.forEach(item => {
+      const el = document.createElement('div'); el.className = 'list-item';
+      el.onclick = () => go(`/${item.type.toLowerCase()}/${item.id}`);
+      const bc = { FA:'badge-fa','BA-S':'badge-bas','BA-R':'badge-bar' }[item.type] || 'badge-fa';
+      const lbl = item.type;
+      const meta = [item.client, item.date].filter(Boolean).join(' · ');
+      el.innerHTML = `
+        <div class="badge ${bc}">${lbl}</div>
+        <div class="item-info">
+          <div class="item-title">${esc(item.title||'(Geen titel)')}</div>
+          <div class="item-meta">${esc(meta)}</div>
+        </div>
+        <span style="color:var(--muted);font-size:20px">›</span>`;
+      card.appendChild(el);
+    });
+    c.appendChild(card);
+  }
+  addFab(() => go('/nieuw'));
+}
+
+/* ══════════════════════════════════════════
+   NIEUW — TYPE KIEZEN
+══════════════════════════════════════════ */
+function pgNieuw(c) {
+  const p = document.createElement('p');
+  p.style.cssText = 'color:var(--muted);font-size:14px;margin-bottom:14px';
+  p.textContent = 'Kies het type analyse:';
+  c.appendChild(p);
+  [
+    { type:'FA',   color:'var(--fa)',  path:'/fa/new',
+      naam:'Functieanalyse (IGCGT)',
+      omschr:'Operant model: Sd → R → Sr-pos-repr / FNC — incl. FNC (functionele negatieve cognitie)' },
+    { type:'BA-S', color:'var(--bas)', path:'/ba-s/new',
+      naam:'Betekenisanalyse — Sequentieel',
+      omschr:'Stap-voor-stap keten: situatie → gedachte → emotie → gedrag' },
+    { type:'BA-R', color:'var(--bar)', path:'/ba-r/new',
+      naam:'Betekenisanalyse — Referentieel',
+      omschr:'Kernschema: vroegere ervaringen, grondovertuigingen, activering heden' },
+  ].forEach(t => {
+    const d = document.createElement('div'); d.className = 'type-card';
+    d.onclick = () => go(t.path);
+    d.innerHTML = `
+      <div class="type-icon" style="background:${t.color}">${t.type}</div>
+      <div class="type-info"><h3>${t.naam}</h3><p>${t.omschr}</p></div>
+      <span style="color:var(--muted);font-size:20px">›</span>`;
+    c.appendChild(d);
+  });
+}
+
+/* ══════════════════════════════════════════
+   UITKLAPMODAL
+══════════════════════════════════════════ */
+function openExpand(labelTxt, helpTxt, currentVal, onSave) {
+  const ov = document.createElement('div');
+  ov.className = 'expand-overlay';
+  ov.innerHTML = `<div class="expand-sheet">
+    <div class="expand-handle"></div>
+    <div class="expand-lbl">${esc(labelTxt)}</div>
+    ${helpTxt ? `<div class="expand-meta">${esc(helpTxt)}</div>` : ''}
+    <textarea class="expand-ta" placeholder="Typ hier…">${esc(currentVal)}</textarea>
+    <div class="expand-btns">
+      <button type="button" class="btn btn-ghost btn-sm" id="exp-cancel" style="flex:1">Annuleer</button>
+      <button type="button" class="btn btn-fa btn-sm" id="exp-save" style="flex:2">✓ Opslaan</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  const ta = ov.querySelector('.expand-ta');
+  setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 80);
+  const close = () => ov.remove();
+  ov.querySelector('#exp-cancel').onclick = close;
+  ov.addEventListener('click', e => { if (e.target === ov) close(); });
+  ov.querySelector('#exp-save').onclick = () => { onSave(ta.value.trim()); close(); };
+}
+
+/* ══════════════════════════════════════════
+   FA — VISUEEL DIAGRAM (bewerken + bekijken in één)
+══════════════════════════════════════════ */
+
+const SR_POS_TYPES = [
+  { val:'+s+', label:'+S+', color:'#16A34A', title:'Positieve versterker: positief stimulus toegevoegd' },
+  { val:'-s-', label:'−S−', color:'#1D4ED8', title:'Negatieve versterker: negatief stimulus weggenomen' },
+  { val:'~s-', label:'~S−', color:'#7C3AED', title:'Ambivalente versterker: ambivalent stimulus weggenomen' },
+];
+const SR_NEG_TYPES = [
+  { val:'-s+', label:'−S+', color:'#DC2626', title:'Positieve straf: negatief stimulus toegevoegd' },
+  { val:'+s-', label:'+S−', color:'#EA580C', title:'Negatieve straf: positief stimulus weggenomen' },
+  { val:'~s+', label:'~S+', color:'#0891B2', title:'Ambivalente straf: ambivalent stimulus toegevoegd' },
+];
+const ALL_SR = [...SR_POS_TYPES, ...SR_NEG_TYPES];
+
+function srColor(val) {
+  const f = ALL_SR.find(x => x.val === val);
+  return f ? f.color : '#64748B';
+}
+function srLabel(val) {
+  const f = ALL_SR.find(x => x.val === val);
+  return f ? f.label : val;
+}
+function srClass(val) {
+  if (!val) return '';
+  if (val.startsWith('+')) return 'pos';
+  if (val.startsWith('-')) return 'neg';
+  return 'amb';
+}
+
+function pgFA(c, id) {
+  const isNew = id === 'new';
+  let d = isNew ? {
+    id: uid(), type: 'FA', title:'', client:'', date: today(),
+    sd:'', r:'', fnc:'',
+    srPosTxt:'', srPosType:'',
+    srNegTxt:'', srNegType:'',
+    notities:''
+  } : byId(id);
+
+  if (!d) { c.innerHTML = '<p style="padding:20px">Niet gevonden.</p>'; return; }
+
+  function save(extra) {
+    d = { ...d, ...extra };
+    upsert(d);
+    toast('Automatisch opgeslagen ✓');
+    redraw();
+  }
+
+  function redraw() {
+    c.innerHTML = '';
+    buildFA(c, d, save);
+  }
+
+  redraw();
+}
+
+function buildFA(c, d, save) {
+  /* ── Actiebalk ── */
+  const bar = document.createElement('div');
+  bar.className = 'action-bar no-print';
+
+  const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Exporteer / Print', () => window.print());
+  const btnMail  = mkBtn('btn-ghost btn-sm', '✉️ Mailen als PDF', () => {
+    toast('Sla op als PDF → voeg toe als bijlage in je mail', 3500);
+    setTimeout(() => window.print(), 400);
+  });
+  const btnDup   = mkBtn('btn-ghost btn-sm', '⧉ Dupliceer', () => {
+    const copy = { ...JSON.parse(JSON.stringify(d)), id: uid(), title:(d.title||'')+ ' (kopie)', date:today() };
+    upsert(copy); toast('Gedupliceerd ✓'); go(`/fa/${copy.id}`);
+  });
+  const btnDel = mkBtn('btn-ghost btn-sm', '🗑', () => {
+    if (confirm('Verwijder deze FA?')) { remove(d.id); go('/'); }
+  });
+  btnDel.style.color = 'var(--danger)';
+  bar.append(btnPrint, btnMail, btnDup, btnDel);
+  c.appendChild(bar);
+
+  /* ══════════════════════════
+     INTERACTIEF DIAGRAM
+  ══════════════════════════ */
+  const canvas = document.createElement('div');
+  canvas.className = 'fa-canvas fa-interactive';
+
+
+  /*
+   * Grid: 5 kolommen
+   * [Sd] [dots] [R (span 2 rijen)] [blokpijl rij1 / blokpijl rij2] [Sr-pos-repr / FNC]
+   */
+  const diag = document.createElement('div');
+  diag.style.cssText = `
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    grid-template-rows: auto auto;
+    gap: 10px;
+    align-items: stretch;
+  `;
+
+  /* ── Sd (rij 1, kolom 1) ── */
+  const nodeSd = makeNode('rect', 'Sd',
+    'Context waarbinnen het probleemgedrag plaatsvindt', d.sd || '');
+  nodeSd.style.gridArea = '1 / 1 / 2 / 2';
+  nodeSd.addEventListener('click', () =>
+    openExpand('Sd — Discriminatieve Stimulus',
+      'Context waarbinnen een bepaald probleemgedrag plaatsvindt',
+      d.sd || '', v => save({ sd: v })));
+
+  /* ── Dots (rij 1, kolom 2) gecentreerd ── */
+  const dotsEl = document.createElement('div');
+  dotsEl.style.cssText = 'grid-area:1/2/2/3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:0 5px';
+  dotsEl.innerHTML = `
+    <div style="width:11px;height:11px;border-radius:50%;background:#9B7B7B"></div>
+    <div style="width:11px;height:11px;border-radius:50%;background:#9B7B7B"></div>`;
+
+  /* ── R (rij 1, kolom 3) — zelfde grootte als Sd ── */
+  const nodeR = makeNode('rect', 'R',
+    'Problematisch gedrag', d.r || '');
+  nodeR.style.gridArea = '1 / 3 / 2 / 4';
+  nodeR.addEventListener('click', () =>
+    openExpand('R — Respons',
+      'Beschrijf het probleemgedrag',
+      d.r || '', v => save({ r: v })));
+
+  /* ── Blokpijl (pentagon-shape) ── */
+  function blokPijl(gridArea) {
+    const el = document.createElement('div');
+    el.style.cssText = `
+      grid-area: ${gridArea};
+      background: #B0BAC4;
+      clip-path: polygon(0% 28%, 66% 28%, 66% 6%, 100% 50%, 66% 94%, 66% 72%, 0% 72%);
+      width: 48px;
+      align-self: center;
+      height: 52px;
+      flex-shrink: 0;
+    `;
+    return el;
+  }
+
+  const bpArr1 = blokPijl('1 / 4 / 2 / 5');  /* rij 1 → Sr-pos-repr */
+  const bpArr2 = blokPijl('2 / 4 / 3 / 5');  /* rij 2 → FNC */
+
+  /* ── Sr-pos-repr ovaal (rij 1, kolom 5) ── */
+  const nodeSrPos = makeSrNode('oval', 'Sr-pos-repr:', d.srPosTxt, d.srPosType, SR_POS_TYPES, save, 'srPos');
+  nodeSrPos.style.gridArea = '1 / 5 / 2 / 6';
+
+  /* ── FNC rechthoek (rij 2, kolom 5) ── */
+  const nodeSrNeg = makeSrNode('rect', 'FNC:', d.srNegTxt, d.srNegType, SR_NEG_TYPES, save, 'srNeg');
+  nodeSrNeg.style.gridArea = '2 / 5 / 3 / 6';
+
+  diag.append(nodeSd, dotsEl, nodeR, bpArr1, nodeSrPos, bpArr2, nodeSrNeg);
+  canvas.appendChild(diag);
+
+
+  c.appendChild(canvas);
+}
+
+/* ── Knoop-builder ── */
+function makeNode(shape, labelTxt, placeholderTxt, bodyTxt, wide) {
+  const el = document.createElement('div');
+  el.className = shape === 'oval' ? 'fa-node-oval' : 'fa-node';
+  if (bodyTxt) el.classList.add('filled');
+  el.innerHTML = `
+    <div class="fa-node-label">${esc(labelTxt)}</div>
+    <div class="fa-node-body">${bodyTxt
+      ? `<span class="fa-node-text">${esc(bodyTxt)}</span>`
+      : `<span class="fa-node-placeholder">${esc(placeholderTxt)}</span>`}
+    </div>
+    <span class="fa-edit-hint">✏️ tikken</span>`;
+  return el;
+}
+
+/* ── SR-knoop met inline dropdown ── */
+function makeSrNode(shape, labelTxt, bodyTxt, selectedType, types, save, prefix) {
+  const el = document.createElement('div');
+  el.className = shape === 'oval' ? 'fa-node-oval' : 'fa-node';
+  if (bodyTxt || selectedType) el.classList.add('filled');
+
+  const lbl = document.createElement('div');
+  lbl.className = 'fa-node-label';
+  lbl.textContent = labelTxt;
+
+  /* Tekstweergave: "omschrijving (type)" */
+  const textSpan = document.createElement('div');
+  textSpan.className = 'fa-node-body';
+  textSpan.style.cssText = 'cursor:pointer;margin-bottom:8px;min-height:20px';
+
+  function updateText() {
+    const t = types.find(x => x.val === selectedType);
+    const typePart = t ? ` <span style="font-family:'Courier New',monospace;font-weight:700;color:${t.color}">(${t.label})</span>` : '';
+    if (bodyTxt) {
+      textSpan.innerHTML = `<span class="fa-node-text">${esc(bodyTxt)}</span>${typePart}`;
+    } else {
+      textSpan.innerHTML = `<span class="fa-node-placeholder">Tik om in te vullen…</span>${typePart}`;
+    }
+  }
+  updateText();
+
+  /* Klik op tekst → uitklapmodal */
+  textSpan.addEventListener('click', e => {
+    e.stopPropagation();
+    openExpand(labelTxt.replace(':', '') + ' — omschrijving',
+      prefix === 'srPos'
+        ? 'Beschrijf de positieve consequentie / versterker'
+        : 'Beschrijf de feitelijke negatieve consequenties',
+      bodyTxt || '',
+      v => {
+        bodyTxt = v;
+        updateText();
+        if (bodyTxt || selectedType) el.classList.add('filled');
+        const upd = {}; upd[prefix + 'Txt'] = v; save(upd);
+      });
+  });
+
+  /* Dropdown voor SR-type */
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:2px';
+
+  const sel = document.createElement('select');
+  sel.style.cssText = `
+    font-family:'Courier New',monospace; font-size:13px; font-weight:700;
+    padding:3px 6px; border-radius:5px; border:1.5px solid #93C5FD;
+    background:#fff; color:#1E3A5F; cursor:pointer;
+    -webkit-appearance:auto; appearance:auto;
+  `;
+
+  const emptyOpt = document.createElement('option');
+  emptyOpt.value = ''; emptyOpt.textContent = '— kies type —';
+  sel.appendChild(emptyOpt);
+
+  types.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.val; opt.textContent = t.label;
+    if (t.val === selectedType) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  sel.addEventListener('change', e => {
+    e.stopPropagation();
+    selectedType = e.target.value;
+    updateText();
+    if (bodyTxt || selectedType) el.classList.add('filled');
+    const upd = {}; upd[prefix + 'Type'] = selectedType; save(upd);
+  });
+  sel.addEventListener('click', e => e.stopPropagation());
+
+  row.appendChild(sel);
+
+  const hint = document.createElement('span');
+  hint.className = 'fa-edit-hint';
+  hint.textContent = '✏️ tikken';
+
+  el.append(lbl, textSpan, row, hint);
+  return el;
+}
+
+
+/* ── Mailen via mailto ── */
+function mailFA(d) {
+  const meta = [d.client && `Cliënt: ${d.client}`, d.date && `Datum: ${d.date}`].filter(Boolean).join('\n');
+  const srPosLbl = d.srPosType ? `[${srLabel(d.srPosType)}]` : '';
+  const srNegLbl = d.srNegType ? `[${srLabel(d.srNegType)}]` : '';
+  const body = [
+    `FUNCTIEANALYSE — IGCGT`,
+    d.title ? `Klacht: ${d.title}` : '',
+    meta,
+    '',
+    `Sd (Discriminatieve stimulus):`,
+    d.sd || '(niet ingevuld)',
+    '',
+    `R (Respons / probleemgedrag):`,
+    d.r || '(niet ingevuld)',
+    '',
+    `Sr-pos-repr (Positieve consequentie) ${srPosLbl}:`,
+    d.srPosTxt || '(niet ingevuld)',
+    '',
+    `FNC — feitelijke negatieve consequenties ${srNegLbl}:`,
+    d.srNegTxt || '(niet ingevuld)',
+    d.fnc ? `\nFNC (Functionele Negatieve Cognitie):\n${d.fnc}` : '',
+    d.notities ? `\nNotities:\n${d.notities}` : '',
+    '',
+    '---',
+    'Geïntegreerde Cognitieve Gedragstherapie — Te Broeke, Korrelboom & Van Dijk (2024)',
+  ].filter(s => s !== undefined).join('\n');
+
+  const subject = encodeURIComponent(`FA: ${d.title || d.client || 'Functieanalyse'}`);
+  window.location.href = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
+}
+
+/* ══════════════════════════════════════════
+   BA SEQUENTIEEL — FORMULIER
+══════════════════════════════════════════ */
+function pgBAS(c, id) {
+  const isNew = id === 'new';
+  let d = isNew ? {
+    id: uid(), type: 'BA-S', title:'', client:'', date: today(),
+    stappen: [newStap()], notities:''
+  } : byId(id);
+  if (!d) { c.innerHTML = '<p style="padding:20px">Niet gevonden.</p>'; return; }
+  if (!d.stappen?.length) d.stappen = [newStap()];
+
+  function newStap() { return { sit:'', ged:'', emot:'', int:'', fys:'', gdr:'', cons:'' }; }
+
+  function lees() {
+    const frm = c.querySelector('#frm'); if (!frm) return;
+    const fd = new FormData(frm);
+    d.stappen.forEach((s,i) => {
+      s.sit  = fd.get(`s${i}_sit`)  || '';
+      s.ged  = fd.get(`s${i}_ged`)  || '';
+      s.emot = fd.get(`s${i}_emot`) || '';
+      s.int  = fd.get(`s${i}_int`)  || '';
+      s.fys  = fd.get(`s${i}_fys`)  || '';
+      s.gdr  = fd.get(`s${i}_gdr`)  || '';
+      s.cons = fd.get(`s${i}_cons`) || '';
+    });
+  }
+
+  function bouwStappen() {
+    const box = c.querySelector('#stappen'); box.innerHTML = '';
+    d.stappen.forEach((s,i) => {
+      if (i > 0) { const arr = document.createElement('div'); arr.className = 'seq-arr'; arr.textContent = '↓'; box.appendChild(arr); }
+      const div = document.createElement('div');
+      div.innerHTML = `<div class="step-card">
+        ${d.stappen.length > 1 ? `<button type="button" class="step-del" data-i="${i}">×</button>` : ''}
+        <div class="step-num">${i+1}</div>
+        ${i===0?`<div class="fgrp"><label>Situatie / Trigger</label><textarea name="s0_sit" placeholder="Beschrijf de situatie…">${esc(s.sit)}</textarea></div>`:`<input type="hidden" name="s${i}_sit" value="">`}
+        <div class="fgrp"><label>Automatische gedachte</label><textarea name="s${i}_ged" placeholder="Wat schiet er door het hoofd…">${esc(s.ged)}</textarea></div>
+        <div class="row2">
+          <div class="fgrp"><label>Emotie</label><input type="text" name="s${i}_emot" value="${esc(s.emot)}" placeholder="Angst, schaamte…"></div>
+          <div class="fgrp"><label>Intensiteit (0–100)</label><input type="text" name="s${i}_int" value="${esc(s.int)}" placeholder="75"></div>
+        </div>
+        <div class="fgrp"><label>Fysiologisch</label><input type="text" name="s${i}_fys" value="${esc(s.fys)}" placeholder="Hartkloppingen…"></div>
+        <div class="fgrp"><label>Gedrag</label><textarea name="s${i}_gdr" style="min-height:60px" placeholder="Wat doet de cliënt…">${esc(s.gdr)}</textarea></div>
+        <div class="fgrp"><label>Consequentie / Nieuw A</label><textarea name="s${i}_cons" style="min-height:60px" placeholder="Gevolg…">${esc(s.cons)}</textarea></div>
+      </div>`;
+      box.appendChild(div);
+    });
+    box.querySelectorAll('.step-del').forEach(btn => btn.addEventListener('click', () => {
+      lees(); d.stappen.splice(+btn.dataset.i,1); bouwStappen();
+    }));
+  }
+
+  c.innerHTML = `<form id="frm" autocomplete="off">
+    <div class="form-sec">
+      <div class="sec-label">Algemeen</div>
+      <div class="card card-pad">
+        <div class="fgrp"><label>Titel</label><input type="text" name="title" value="${esc(d.title)}" placeholder="bijv. Paniekaanval in de supermarkt"></div>
+        <div class="row2">
+          <div class="fgrp"><label>Cliënt</label><input type="text" name="client" value="${esc(d.client)}" placeholder="Initialen"></div>
+          <div class="fgrp"><label>Datum</label><input type="date" name="date" value="${esc(d.date)}"></div>
+        </div>
+      </div>
+    </div>
+    <div class="form-sec">
+      <div class="sec-label c-bas">Sequentiële stappen</div>
+      <div id="stappen"></div>
+      <button type="button" id="addStap" class="btn btn-ghost btn-full" style="margin-top:6px">+ Stap toevoegen</button>
+    </div>
+    <div class="form-sec">
+      <div class="sec-label">Notities</div>
+      <div class="card card-pad"><textarea name="notities" placeholder="Aanvullende opmerkingen…">${esc(d.notities)}</textarea></div>
+    </div>
+    <div class="form-footer no-print">
+      <div style="display:flex;gap:8px">
+        <button type="button" class="btn btn-ghost btn-sm no-print" onclick="window.print()">🖨 Print</button>
+        <button type="submit" class="btn btn-bas" style="flex:1">Opslaan</button>
+      </div>
+    </div>
+  </form>`;
+
+  bouwStappen();
+  c.querySelector('#addStap').addEventListener('click', () => { lees(); d.stappen.push(newStap()); bouwStappen(); });
+  c.querySelector('#frm').addEventListener('submit', e => {
+    e.preventDefault(); lees();
+    const f = Object.fromEntries(new FormData(e.target));
+    d.title = f.title||''; d.client = f.client||''; d.date = f.date||''; d.notities = f.notities||'';
+    upsert(d); toast('Opgeslagen ✓'); go('/');
+  });
+}
+
+/* ══════════════════════════════════════════
+   BA REFERENTIEEL — FORMULIER
+══════════════════════════════════════════ */
+function pgBAR(c, id) {
+  const isNew = id === 'new';
+  const d = isNew ? {
+    id: uid(), type: 'BA-R', title:'', client:'', date: today(),
+    vroegErv:'', kern:'', condAan:'',
+    actSit:'', autGed:'', ductus:'',
+    emot:'', int:'', fys:'', gedrag:'', bevestig:'', notities:''
+  } : byId(id);
+  if (!d) { c.innerHTML = '<p style="padding:20px">Niet gevonden.</p>'; return; }
+
+  c.innerHTML = `<form id="frm" autocomplete="off">
+    <div class="form-sec">
+      <div class="sec-label">Algemeen</div>
+      <div class="card card-pad">
+        <div class="fgrp"><label>Titel</label><input type="text" name="title" value="${esc(d.title)}" placeholder="bijv. Schema: ongeliefd zijn"></div>
+        <div class="row2">
+          <div class="fgrp"><label>Cliënt</label><input type="text" name="client" value="${esc(d.client)}" placeholder="Initialen"></div>
+          <div class="fgrp"><label>Datum</label><input type="date" name="date" value="${esc(d.date)}"></div>
+        </div>
+      </div>
+    </div>
+    <div class="form-sec">
+      <div class="sec-label c-bar">Ontstaansgeschiedenis</div>
+      <div class="card card-pad">
+        <div class="fgrp"><label>Vroegere ervaringen <span class="hint">(leergeschiedenis)</span></label>
+          <textarea name="vroegErv" placeholder="Relevante vroegere ervaringen…">${esc(d.vroegErv)}</textarea></div>
+      </div>
+    </div>
+    <div class="form-sec">
+      <div class="sec-label c-bar">Kernschema</div>
+      <div class="card card-pad">
+        <div class="fgrp"><label>Kernschema / Grondovertuiging</label>
+          <textarea name="kern" placeholder="'Ik ben niet goed genoeg'…">${esc(d.kern)}</textarea></div>
+        <div class="fgrp"><label>Conditionele aanname <span class="hint">(Als… dan…)</span></label>
+          <textarea name="condAan" placeholder="'Als ik fouten maak, dan…'">${esc(d.condAan)}</textarea></div>
+      </div>
+    </div>
+    <div class="form-sec">
+      <div class="sec-label c-bar">Activering in het heden</div>
+      <div class="card card-pad">
+        <div class="fgrp"><label>Activerende situatie</label>
+          <textarea name="actSit" placeholder="De situatie die het schema triggert…">${esc(d.actSit)}</textarea></div>
+        <div class="fgrp"><label>Automatische gedachte / Hot cognition</label>
+          <textarea name="autGed" placeholder="Eerste gedachte of beeld…">${esc(d.autGed)}</textarea></div>
+        <div class="fgrp"><label>Ductus <span class="hint">(redenering, denkstijl)</span></label>
+          <textarea name="ductus" placeholder="De redenering of denkstijl…">${esc(d.ductus)}</textarea></div>
+      </div>
+    </div>
+    <div class="form-sec">
+      <div class="sec-label c-bar">Reactie</div>
+      <div class="card card-pad">
+        <div class="row2">
+          <div class="fgrp"><label>Emotie</label><input type="text" name="emot" value="${esc(d.emot)}" placeholder="Angst, schaamte…"></div>
+          <div class="fgrp"><label>Intensiteit (0–100)</label><input type="text" name="int" value="${esc(d.int)}" placeholder="80"></div>
+        </div>
+        <div class="fgrp"><label>Fysiologisch</label><input type="text" name="fys" value="${esc(d.fys)}" placeholder="Lichamelijke reacties…"></div>
+        <div class="fgrp"><label>Gedrag / Coping</label>
+          <textarea name="gedrag" placeholder="Hoe reageert de cliënt…">${esc(d.gedrag)}</textarea></div>
+      </div>
+    </div>
+    <div class="form-sec">
+      <div class="sec-label c-bar">Circulaire instandhouding</div>
+      <div class="card card-pad">
+        <div class="fgrp"><label>Schemabevestiging</label>
+          <textarea name="bevestig" placeholder="Het gedrag bevestigt het schema doordat…">${esc(d.bevestig)}</textarea></div>
+      </div>
+    </div>
+    <div class="form-sec">
+      <div class="sec-label">Notities</div>
+      <div class="card card-pad"><textarea name="notities" placeholder="Aanvullende opmerkingen…">${esc(d.notities)}</textarea></div>
+    </div>
+    <div class="form-footer no-print">
+      <div style="display:flex;gap:8px">
+        <button type="button" class="btn btn-ghost btn-sm no-print" onclick="window.print()">🖨 Print</button>
+        <button type="submit" class="btn btn-bar" style="flex:1">Opslaan</button>
+      </div>
+    </div>
+  </form>`;
+
+  c.querySelector('#frm').addEventListener('submit', e => {
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(e.target));
+    upsert({ ...d, ...f });
+    toast('Opgeslagen ✓'); go('/');
+  });
+}
+
+/* ══════════════════════════════════════════
+   HULPFUNCTIES
+══════════════════════════════════════════ */
+function addFab(fn) {
+  const b = document.createElement('button');
+  b.className = 'fab no-print'; b.textContent = '+'; b.title = 'Nieuwe analyse';
+  b.onclick = fn; document.body.appendChild(b);
+  const off = () => { b.remove(); window.removeEventListener('hashchange', off); };
+  window.addEventListener('hashchange', off);
+}
+
+function mkBtn(cls, html, fn) {
+  const b = document.createElement('button');
+  b.className = `btn btn-sm ${cls}`; b.innerHTML = html; b.onclick = fn; return b;
+}
+
+/* ══════════════════════════════════════════
+   START
+══════════════════════════════════════════ */
+render();
+</script>
+</body>
+</html>
