@@ -700,9 +700,13 @@ function buildFA(c, d, save) {
 
   diag.append(nodeSd, dotsEl, nodeR, bpArr1, nodeSrPos, bpArr2, nodeSrNeg);
   canvas.appendChild(diag);
-
-
   c.appendChild(canvas);
+
+  /* Zorg dat FNC minstens even hoog is als R */
+  requestAnimationFrame(() => {
+    const h = nodeR.offsetHeight;
+    if (h > 0) nodeSrNeg.style.minHeight = h + 'px';
+  });
 }
 
 /* ── Knoop-builder ── */
