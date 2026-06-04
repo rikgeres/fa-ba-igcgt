@@ -828,19 +828,23 @@ function makeFncNode(items, save) {
   function renderItems() {
     list.innerHTML = '';
     items.forEach((item, idx) => {
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:5px;width:100%';
+      /* Item-wrapper: dropdown + × boven, tekst eronder */
+      const itemWrap = document.createElement('div');
+      itemWrap.style.cssText = 'border-bottom:1px solid rgba(0,0,0,.08);padding-bottom:5px;width:100%';
+
+      const topRow = document.createElement('div');
+      topRow.style.cssText = 'display:flex;align-items:center;gap:4px;margin-bottom:3px';
 
       /* Type dropdown */
       const sel = document.createElement('select');
       sel.style.cssText = `
-        font-family:'Courier New',monospace; font-size:12px; font-weight:700;
-        padding:2px 4px; border-radius:5px; border:1.5px solid #FCA5A5;
+        font-family:'Courier New',monospace; font-size:11px; font-weight:700;
+        padding:1px 3px; border-radius:5px; border:1.5px solid #FCA5A5;
         background:#fff; color:#1E3A5F; cursor:pointer; flex-shrink:0;
         -webkit-appearance:auto; appearance:auto;
       `;
       const emptyOpt = document.createElement('option');
-      emptyOpt.value = ''; emptyOpt.textContent = '—';
+      emptyOpt.value = ''; emptyOpt.textContent = '— kies —';
       sel.appendChild(emptyOpt);
       SR_NEG_TYPES.forEach(t => {
         const opt = document.createElement('option');
@@ -856,34 +860,13 @@ function makeFncNode(items, save) {
       });
       sel.addEventListener('click', e => e.stopPropagation());
 
-      /* Tekst weergave */
-      const txtSpan = document.createElement('div');
-      txtSpan.style.cssText = 'flex:1;cursor:pointer;min-height:18px;font-size:13px;word-break:break-word';
-
-      const t = SR_NEG_TYPES.find(x => x.val === item.type);
-      if (item.txt) {
-        txtSpan.innerHTML = `<span class="fa-node-text">${esc(item.txt)}</span>`;
-        if (t) txtSpan.innerHTML += ` <span style="font-family:'Courier New',monospace;font-weight:700;color:${t.color}">(${t.label})</span>`;
-      } else {
-        txtSpan.innerHTML = `<span class="fa-node-placeholder">omschrijving…</span>`;
-      }
-
-      txtSpan.addEventListener('click', e => {
-        e.stopPropagation();
-        openExpand('FNC — omschrijving', 'Beschrijf de feitelijke negatieve consequentie', item.txt || '', v => {
-          item.txt = v;
-          saveItems();
-          renderItems();
-        });
-      });
-
       /* Verwijder knop */
       const del = document.createElement('button');
       del.textContent = '×';
       del.title = 'Verwijder';
       del.style.cssText = `
-        background:none;border:none;color:#DC2626;font-size:16px;cursor:pointer;
-        padding:0 2px;line-height:1;flex-shrink:0;
+        background:none;border:none;color:#DC2626;font-size:15px;cursor:pointer;
+        padding:0 2px;line-height:1;flex-shrink:0;margin-left:auto;
       `;
       del.addEventListener('click', e => {
         e.stopPropagation();
@@ -895,9 +878,33 @@ function makeFncNode(items, save) {
         saveItems();
         renderItems();
       });
+      del.addEventListener('click', e => e.stopPropagation());
 
-      row.append(sel, txtSpan, del);
-      list.appendChild(row);
+      topRow.append(sel, del);
+
+      /* Tekst weergave — volle breedte */
+      const txtSpan = document.createElement('div');
+      txtSpan.style.cssText = 'cursor:pointer;font-size:13px;word-break:break-word;width:100%';
+
+      const t = SR_NEG_TYPES.find(x => x.val === item.type);
+      if (item.txt) {
+        txtSpan.innerHTML = `<span class="fa-node-text">${esc(item.txt)}</span>`;
+        if (t) txtSpan.innerHTML += ` <span style="font-family:'Courier New',monospace;font-weight:700;color:${t.color}">(${t.label})</span>`;
+      } else {
+        txtSpan.innerHTML = `<span class="fa-node-placeholder">tikken om in te vullen…</span>`;
+      }
+
+      txtSpan.addEventListener('click', e => {
+        e.stopPropagation();
+        openExpand('FNC — omschrijving', 'Beschrijf de feitelijke negatieve consequentie', item.txt || '', v => {
+          item.txt = v;
+          saveItems();
+          renderItems();
+        });
+      });
+
+      itemWrap.append(topRow, txtSpan);
+      list.appendChild(itemWrap);
     });
 
     /* Voeg toe knop */
