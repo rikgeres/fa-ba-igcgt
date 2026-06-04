@@ -724,7 +724,7 @@ function makeNode(shape, labelTxt, placeholderTxt, bodyTxt, wide) {
   return el;
 }
 
-/* ── SR-knoop met inline dropdown ── */
+/* ── SR-knoop (Sr-pos-repr): badge na keuze, dropdown verdwijnt ── */
 function makeSrNode(shape, labelTxt, bodyTxt, selectedType, types, save, prefix) {
   const el = document.createElement('div');
   el.className = shape === 'oval' ? 'fa-node-oval' : 'fa-node';
@@ -733,78 +733,101 @@ function makeSrNode(shape, labelTxt, bodyTxt, selectedType, types, save, prefix)
   const lbl = document.createElement('div');
   lbl.className = 'fa-node-label';
   lbl.textContent = labelTxt;
+  el.appendChild(lbl);
 
-  /* Tekstweergave: "omschrijving (type)" */
-  const textSpan = document.createElement('div');
-  textSpan.className = 'fa-node-body';
-  textSpan.style.cssText = 'cursor:pointer;margin-bottom:8px;min-height:20px';
-
-  function updateText() {
-    const t = types.find(x => x.val === selectedType);
-    const typePart = t ? ` <span style="font-family:'Courier New',monospace;font-weight:700;color:${t.color}">(${t.label})</span>` : '';
-    if (bodyTxt) {
-      textSpan.innerHTML = `<span class="fa-node-text">${esc(bodyTxt)}</span>${typePart}`;
-    } else {
-      textSpan.innerHTML = `<span class="fa-node-placeholder">Tik om in te vullen…</span>${typePart}`;
-    }
-  }
-  updateText();
-
-  /* Klik op tekst → uitklapmodal */
-  textSpan.addEventListener('click', e => {
-    e.stopPropagation();
-    openExpand(labelTxt.replace(':', '') + ' — omschrijving',
-      prefix === 'srPos'
-        ? 'Beschrijf de positieve consequentie / versterker'
-        : 'Beschrijf de feitelijke negatieve consequenties',
-      bodyTxt || '',
-      v => {
-        bodyTxt = v;
-        updateText();
-        if (bodyTxt || selectedType) el.classList.add('filled');
-        const upd = {}; upd[prefix + 'Txt'] = v; save(upd);
-      });
-  });
-
-  /* Dropdown voor SR-type */
-  const row = document.createElement('div');
-  row.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:2px';
-
-  const sel = document.createElement('select');
-  sel.style.cssText = `
-    font-family:'Courier New',monospace; font-size:13px; font-weight:700;
-    padding:3px 6px; border-radius:5px; border:1.5px solid #93C5FD;
-    background:#fff; color:#1E3A5F; cursor:pointer;
-    -webkit-appearance:auto; appearance:auto;
-  `;
-
-  const emptyOpt = document.createElement('option');
-  emptyOpt.value = ''; emptyOpt.textContent = '— kies type —';
-  sel.appendChild(emptyOpt);
-
-  types.forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t.val; opt.textContent = t.label;
-    if (t.val === selectedType) opt.selected = true;
-    sel.appendChild(opt);
-  });
-
-  sel.addEventListener('change', e => {
-    e.stopPropagation();
-    selectedType = e.target.value;
-    updateText();
-    if (bodyTxt || selectedType) el.classList.add('filled');
-    const upd = {}; upd[prefix + 'Type'] = selectedType; save(upd);
-  });
-  sel.addEventListener('click', e => e.stopPropagation());
-
-  row.appendChild(sel);
+  /* Container die dropdown OF badge+tekst toont */
+  const body = document.createElement('div');
+  body.style.cssText = 'width:100%';
+  el.appendChild(body);
 
   const hint = document.createElement('span');
   hint.className = 'fa-edit-hint';
   hint.textContent = '✏️ tikken';
+  el.appendChild(hint);
 
-  el.append(lbl, textSpan, row, hint);
+  function render() {
+    body.innerHTML = '';
+    const t = types.find(x => x.val === selectedType);
+
+    if (!selectedType) {
+      /* ── Nog geen type gekozen: toon dropdown ── */
+      const sel = document.createElement('select');
+      sel.style.cssText = `
+        font-family:'Courier New',monospace; font-size:13px; font-weight:700;
+        padding:3px 6px; border-radius:5px; border:1.5px solid #93C5FD;
+        background:#fff; color:#1E3A5F; cursor:pointer; width:100%; margin-bottom:6px;
+        -webkit-appearance:auto; appearance:auto;
+      `;
+      const emptyOpt = document.createElement('option');
+      emptyOpt.value = ''; emptyOpt.textContent = '— kies type —';
+      sel.appendChild(emptyOpt);
+      types.forEach(tp => {
+        const opt = document.createElement('option');
+        opt.value = tp.val; opt.textContent = tp.label;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener('change', e => {
+        e.stopPropagation();
+        selectedType = e.target.value;
+        if (bodyTxt || selectedType) el.classList.add('filled');
+        const upd = {}; upd[prefix + 'Type'] = selectedType; save(upd);
+        render();
+      });
+      sel.addEventListener('click', e => e.stopPropagation());
+
+      const txtEl = document.createElement('div');
+      txtEl.style.cssText = 'cursor:pointer;min-height:20px';
+      txtEl.innerHTML = bodyTxt
+        ? `<span class="fa-node-text">${esc(bodyTxt)}</span>`
+        : `<span class="fa-node-placeholder">Tik om in te vullen…</span>`;
+      txtEl.addEventListener('click', e => { e.stopPropagation(); openTxt(); });
+
+      body.append(sel, txtEl);
+
+    } else {
+      /* ── Type gekozen: badge vóór de tekst ── */
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:flex-start;gap:6px;cursor:pointer;min-height:20px';
+
+      const badge = document.createElement('span');
+      badge.title = 'Klik om type te wijzigen';
+      badge.style.cssText = `
+        font-family:'Courier New',monospace; font-weight:700; font-size:13px;
+        color:${t.color}; flex-shrink:0; cursor:pointer; padding-top:1px;
+      `;
+      badge.textContent = t.label;
+      badge.addEventListener('click', e => {
+        e.stopPropagation();
+        selectedType = '';
+        const upd = {}; upd[prefix + 'Type'] = ''; save(upd);
+        render();
+      });
+
+      const txtEl = document.createElement('div');
+      txtEl.style.cssText = 'flex:1;min-width:0;cursor:pointer;word-break:break-word';
+      txtEl.innerHTML = bodyTxt
+        ? `<span class="fa-node-text">${esc(bodyTxt)}</span>`
+        : `<span class="fa-node-placeholder">Tik om in te vullen…</span>`;
+      txtEl.addEventListener('click', e => { e.stopPropagation(); openTxt(); });
+
+      row.append(badge, txtEl);
+      body.appendChild(row);
+    }
+  }
+
+  function openTxt() {
+    openExpand(labelTxt.replace(':', '') + ' — omschrijving',
+      'Beschrijf de positieve consequentie / versterker',
+      bodyTxt || '',
+      v => {
+        bodyTxt = v;
+        if (bodyTxt || selectedType) el.classList.add('filled');
+        const upd = {}; upd[prefix + 'Txt'] = v; save(upd);
+        render();
+      });
+  }
+
+  render();
   return el;
 }
 
@@ -832,84 +855,98 @@ function makeFncNode(items, save) {
   function renderItems() {
     list.innerHTML = '';
     items.forEach((item, idx) => {
-      /* Item-wrapper: dropdown + × boven, tekst eronder */
       const itemWrap = document.createElement('div');
-      itemWrap.style.cssText = 'border-bottom:1px solid rgba(0,0,0,.08);padding-bottom:5px;width:100%';
+      itemWrap.style.cssText = 'border-bottom:1px solid rgba(0,0,0,.08);padding-bottom:6px;width:100%';
 
-      const topRow = document.createElement('div');
-      topRow.style.cssText = 'display:flex;align-items:center;gap:4px;margin-bottom:3px';
+      const t = SR_NEG_TYPES.find(x => x.val === item.type);
 
-      /* Type dropdown */
-      const sel = document.createElement('select');
-      sel.style.cssText = `
-        font-family:'Courier New',monospace; font-size:11px; font-weight:700;
-        padding:1px 3px; border-radius:5px; border:1.5px solid #FCA5A5;
-        background:#fff; color:#1E3A5F; cursor:pointer; flex-shrink:0;
-        -webkit-appearance:auto; appearance:auto;
-      `;
-      const emptyOpt = document.createElement('option');
-      emptyOpt.value = ''; emptyOpt.textContent = '— kies —';
-      sel.appendChild(emptyOpt);
-      SR_NEG_TYPES.forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t.val; opt.textContent = t.label;
-        if (t.val === item.type) opt.selected = true;
-        sel.appendChild(opt);
-      });
-      sel.addEventListener('change', e => {
-        e.stopPropagation();
-        item.type = e.target.value;
-        saveItems();
-        renderItems();
-      });
-      sel.addEventListener('click', e => e.stopPropagation());
-
-      /* Verwijder knop */
+      /* Verwijder knop (altijd zichtbaar rechts) */
       const del = document.createElement('button');
       del.textContent = '×';
       del.title = 'Verwijder';
       del.style.cssText = `
         background:none;border:none;color:#DC2626;font-size:15px;cursor:pointer;
-        padding:0 2px;line-height:1;flex-shrink:0;margin-left:auto;
+        padding:0 2px;line-height:1;float:right;
       `;
       del.addEventListener('click', e => {
         e.stopPropagation();
-        if (items.length > 1) {
-          items.splice(idx, 1);
-        } else {
-          items[0] = { type: '', txt: '' };
-        }
-        saveItems();
-        renderItems();
+        if (items.length > 1) { items.splice(idx, 1); }
+        else { items[0] = { type: '', txt: '' }; }
+        saveItems(); renderItems();
       });
-      del.addEventListener('click', e => e.stopPropagation());
+      itemWrap.appendChild(del);
 
-      topRow.append(sel, del);
+      if (!item.type) {
+        /* ── Nog geen type: toon dropdown + placeholder ── */
+        const sel = document.createElement('select');
+        sel.style.cssText = `
+          font-family:'Courier New',monospace; font-size:11px; font-weight:700;
+          padding:2px 4px; border-radius:5px; border:1.5px solid #FCA5A5;
+          background:#fff; color:#1E3A5F; cursor:pointer; margin-bottom:4px;
+          -webkit-appearance:auto; appearance:auto;
+        `;
+        const emptyOpt = document.createElement('option');
+        emptyOpt.value = ''; emptyOpt.textContent = '— kies type —';
+        sel.appendChild(emptyOpt);
+        SR_NEG_TYPES.forEach(tp => {
+          const opt = document.createElement('option');
+          opt.value = tp.val; opt.textContent = tp.label;
+          sel.appendChild(opt);
+        });
+        sel.addEventListener('change', e => {
+          e.stopPropagation();
+          item.type = e.target.value;
+          saveItems(); renderItems();
+        });
+        sel.addEventListener('click', e => e.stopPropagation());
 
-      /* Tekst weergave — volle breedte */
-      const txtSpan = document.createElement('div');
-      txtSpan.style.cssText = 'cursor:pointer;font-size:13px;word-break:break-word;width:100%';
+        const txtEl = document.createElement('div');
+        txtEl.style.cssText = 'cursor:pointer;font-size:13px;word-break:break-word;clear:both';
+        txtEl.innerHTML = item.txt
+          ? `<span class="fa-node-text">${esc(item.txt)}</span>`
+          : `<span class="fa-node-placeholder">tikken om in te vullen…</span>`;
+        txtEl.addEventListener('click', e => { e.stopPropagation(); openItemTxt(item); });
 
-      const t = SR_NEG_TYPES.find(x => x.val === item.type);
-      if (item.txt) {
-        txtSpan.innerHTML = `<span class="fa-node-text">${esc(item.txt)}</span>`;
-        if (t) txtSpan.innerHTML += ` <span style="font-family:'Courier New',monospace;font-weight:700;color:${t.color}">(${t.label})</span>`;
+        itemWrap.append(sel, txtEl);
+
       } else {
-        txtSpan.innerHTML = `<span class="fa-node-placeholder">tikken om in te vullen…</span>`;
+        /* ── Type gekozen: badge vóór de tekst ── */
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:flex-start;gap:5px;clear:both';
+
+        const badge = document.createElement('span');
+        badge.title = 'Klik om type te wijzigen';
+        badge.style.cssText = `
+          font-family:'Courier New',monospace; font-weight:700; font-size:13px;
+          color:${t.color}; flex-shrink:0; cursor:pointer; padding-top:1px;
+        `;
+        badge.textContent = t.label;
+        badge.addEventListener('click', e => {
+          e.stopPropagation();
+          item.type = '';
+          saveItems(); renderItems();
+        });
+
+        const txtEl = document.createElement('div');
+        txtEl.style.cssText = 'flex:1;min-width:0;cursor:pointer;font-size:13px;word-break:break-word';
+        txtEl.innerHTML = item.txt
+          ? `<span class="fa-node-text">${esc(item.txt)}</span>`
+          : `<span class="fa-node-placeholder">tikken om in te vullen…</span>`;
+        txtEl.addEventListener('click', e => { e.stopPropagation(); openItemTxt(item); });
+
+        row.append(badge, txtEl);
+        itemWrap.appendChild(row);
       }
 
-      txtSpan.addEventListener('click', e => {
-        e.stopPropagation();
-        openExpand('FNC — omschrijving', 'Beschrijf de feitelijke negatieve consequentie', item.txt || '', v => {
-          item.txt = v;
-          saveItems();
-          renderItems();
-        });
-      });
-
-      itemWrap.append(topRow, txtSpan);
       list.appendChild(itemWrap);
     });
+
+    function openItemTxt(item) {
+      openExpand('FNC — omschrijving', 'Beschrijf de feitelijke negatieve consequentie', item.txt || '', v => {
+        item.txt = v;
+        saveItems(); renderItems();
+      });
+    }
 
     /* Voeg toe knop */
     const addBtn = document.createElement('button');
