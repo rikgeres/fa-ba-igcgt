@@ -808,7 +808,6 @@ function makeSrNode(shape, labelTxt, bodyTxt, selectedType, types, save, prefix)
       types.forEach(tp => {
         const opt = document.createElement('option');
         opt.value = tp.val; opt.textContent = tp.label;
-        if (tp.val === current) opt.selected = true;
         sel.appendChild(opt);
       });
       sel.addEventListener('click', e => e.stopPropagation());
@@ -912,7 +911,6 @@ function makeFncNode(items, save) {
     SR_NEG_TYPES.forEach(tp => {
       const opt = document.createElement('option');
       opt.value = tp.val; opt.textContent = tp.label;
-      if (tp.val === currentVal) opt.selected = true;
       sel.appendChild(opt);
     });
     sel.addEventListener('change', e => { e.stopPropagation(); onChange(e.target.value); });
