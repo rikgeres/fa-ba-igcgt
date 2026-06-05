@@ -210,11 +210,11 @@
     /* Knopen: rechthoeken */
     .fa-node {
       flex: 1;
-      min-height: 55px;
+      min-height: 44px;
       background: var(--node-bg);
       border: 1.5px solid var(--node-border);
-      border-radius: 8px;
-      padding: 6px 8px;
+      border-radius: 6px;
+      padding: 5px 6px;
       cursor: pointer;
       transition: filter .14s, transform .12s, box-shadow .14s;
       position: relative;
@@ -227,11 +227,11 @@
     /* Ovaal voor Sr-pos */
     .fa-node-oval {
       flex: 1;
-      min-height: 65px;
+      min-height: 52px;
       background: var(--node-bg);
       border: 2px solid #1E3A5F;
       border-radius: 50%;
-      padding: 8px 10px;
+      padding: 6px 8px;
       cursor: pointer;
       transition: filter .14s, transform .12s, box-shadow .14s;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -243,14 +243,14 @@
     .fa-node-oval.filled { background: #BFDBFE; border-color: #1D4ED8; }
 
     .fa-node-label {
-      font-size: 10px; font-weight: 800; color: var(--node-txt);
-      text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px;
+      font-size: 8px; font-weight: 800; color: var(--node-txt);
+      text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px;
     }
     .fa-node-body {
-      font-size: 11px; color: var(--node-txt); line-height: 1.35; word-break: break-word;
+      font-size: 9px; color: var(--node-txt); line-height: 1.3; word-break: break-word;
     }
     .fa-node-placeholder {
-      font-size: 10px; color: #6B8EB3; font-style: italic;
+      font-size: 8px; color: #6B8EB3; font-style: italic;
     }
     .fa-edit-hint {
       position: absolute; bottom: 5px; right: 7px;
@@ -712,8 +712,8 @@ function makeTa(val, placeholder, onChange) {
   ta.style.cssText = `
     flex:1; min-width:0; width:100%; box-sizing:border-box;
     resize:none; border:none; outline:none; background:transparent;
-    font:inherit; font-size:11px; color:inherit; padding:0; margin:0;
-    min-height:24px; cursor:text; line-height:1.35; overflow:hidden;
+    font:inherit; font-size:9px; color:inherit; padding:0; margin:0;
+    min-height:19px; cursor:text; line-height:1.3; overflow:hidden;
   `;
   /* Automatisch hoogte aanpassen */
   function autosize() {
@@ -741,8 +741,8 @@ function makeInlineNode(labelTxt, placeholderTxt, initialVal, onSave) {
   ta.placeholder = placeholderTxt;
   ta.style.cssText = `
     width:100%; box-sizing:border-box; resize:none; border:none; outline:none;
-    background:transparent; font:inherit; font-size:11px; color:inherit;
-    padding:0; margin:0; min-height:36px; cursor:text; line-height:1.35;
+    background:transparent; font:inherit; font-size:9px; color:inherit;
+    padding:0; margin:0; min-height:29px; cursor:text; line-height:1.3;
   `;
   ta.addEventListener('input', () => {
     el.classList.toggle('filled', ta.value.length > 0);
