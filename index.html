@@ -177,7 +177,7 @@
     .fa-canvas {
       background: #E8EEF5;
       border-radius: var(--r);
-      padding: 20px 14px 24px;
+      padding: 10px 10px 12px;
       box-shadow: var(--sh-md);
       position: relative;
     }
@@ -210,11 +210,11 @@
     /* Knopen: rechthoeken */
     .fa-node {
       flex: 1;
-      min-height: 90px;
+      min-height: 55px;
       background: var(--node-bg);
-      border: 2px solid var(--node-border);
-      border-radius: 12px;
-      padding: 10px 11px;
+      border: 1.5px solid var(--node-border);
+      border-radius: 8px;
+      padding: 6px 8px;
       cursor: pointer;
       transition: filter .14s, transform .12s, box-shadow .14s;
       position: relative;
@@ -227,11 +227,11 @@
     /* Ovaal voor Sr-pos */
     .fa-node-oval {
       flex: 1;
-      min-height: 100px;
+      min-height: 65px;
       background: var(--node-bg);
-      border: 2.5px solid #1E3A5F;
+      border: 2px solid #1E3A5F;
       border-radius: 50%;
-      padding: 14px 16px;
+      padding: 8px 10px;
       cursor: pointer;
       transition: filter .14s, transform .12s, box-shadow .14s;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -243,14 +243,14 @@
     .fa-node-oval.filled { background: #BFDBFE; border-color: #1D4ED8; }
 
     .fa-node-label {
-      font-size: 13px; font-weight: 800; color: var(--node-txt);
-      text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px;
+      font-size: 10px; font-weight: 800; color: var(--node-txt);
+      text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px;
     }
     .fa-node-body {
-      font-size: 13px; color: var(--node-txt); line-height: 1.45; word-break: break-word;
+      font-size: 11px; color: var(--node-txt); line-height: 1.35; word-break: break-word;
     }
     .fa-node-placeholder {
-      font-size: 12px; color: #6B8EB3; font-style: italic;
+      font-size: 10px; color: #6B8EB3; font-style: italic;
     }
     .fa-edit-hint {
       position: absolute; bottom: 5px; right: 7px;
@@ -641,7 +641,7 @@ function buildFA(c, d, save) {
     display: grid;
     grid-template-columns: 1fr auto 1fr auto 1fr;
     grid-template-rows: auto auto;
-    gap: 10px;
+    gap: 6px;
     align-items: stretch;
   `;
 
@@ -653,8 +653,8 @@ function buildFA(c, d, save) {
   const dotsEl = document.createElement('div');
   dotsEl.style.cssText = 'grid-area:1/2/2/3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:0 5px';
   dotsEl.innerHTML = `
-    <div style="width:8px;height:8px;border-radius:50%;background:#9B7B7B"></div>
-    <div style="width:8px;height:8px;border-radius:50%;background:#9B7B7B"></div>`;
+    <div style="width:6px;height:6px;border-radius:50%;background:#9B7B7B"></div>
+    <div style="width:6px;height:6px;border-radius:50%;background:#9B7B7B"></div>`;
 
   /* ── R (rij 1, kolom 3) — zelfde grootte als Sd ── */
   const nodeR = makeInlineNode('R', 'Problematisch gedrag', d.r || '', v => save({ r: v }));
@@ -667,9 +667,9 @@ function buildFA(c, d, save) {
       grid-area: ${gridArea};
       background: #9B7B7B;
       clip-path: polygon(0% 35%, 68% 35%, 68% 18%, 100% 50%, 68% 82%, 68% 65%, 0% 65%);
-      width: 36px;
+      width: 26px;
       align-self: center;
-      height: 17px;
+      height: 12px;
       flex-shrink: 0;
     `;
     return el;
@@ -711,8 +711,8 @@ function makeTa(val, placeholder, onChange) {
   ta.style.cssText = `
     flex:1; min-width:0; width:100%; box-sizing:border-box;
     resize:none; border:none; outline:none; background:transparent;
-    font:inherit; font-size:13px; color:inherit; padding:0; margin:0;
-    min-height:40px; cursor:text; line-height:1.45; overflow:hidden;
+    font:inherit; font-size:11px; color:inherit; padding:0; margin:0;
+    min-height:24px; cursor:text; line-height:1.35; overflow:hidden;
   `;
   /* Automatisch hoogte aanpassen */
   function autosize() {
@@ -740,8 +740,8 @@ function makeInlineNode(labelTxt, placeholderTxt, initialVal, onSave) {
   ta.placeholder = placeholderTxt;
   ta.style.cssText = `
     width:100%; box-sizing:border-box; resize:none; border:none; outline:none;
-    background:transparent; font:inherit; font-size:13px; color:inherit;
-    padding:0; margin:0; min-height:60px; cursor:text; line-height:1.45;
+    background:transparent; font:inherit; font-size:11px; color:inherit;
+    padding:0; margin:0; min-height:36px; cursor:text; line-height:1.35;
   `;
   ta.addEventListener('input', () => {
     el.classList.toggle('filled', ta.value.length > 0);
