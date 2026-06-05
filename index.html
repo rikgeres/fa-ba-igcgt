@@ -9,6 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#1D4ED8">
   <title>FA &amp; BA — IGCGT</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -348,29 +349,28 @@
     .fa-print-wrap { display: none; }
 
     @media print {
-      @page { size: A4 landscape; margin: 0; }
+      @page { size: A4 portrait; margin: 1.2cm; }
 
-      /* Verberg alles */
+      /* Verberg alles behalve het diagram */
       body * { visibility: hidden !important; }
-
-      /* Toon uitsluitend het diagram */
       .fa-canvas, .fa-canvas * { visibility: visible !important; }
       .fa-canvas {
-        position: fixed !important;
-        inset: 0 !important;
+        position: static !important;
         width: 100% !important;
-        height: 100% !important;
+        max-width: 100% !important;
         margin: 0 !important;
-        padding: 1.4cm !important;
+        padding: 0 !important;
         border-radius: 0 !important;
         box-shadow: none !important;
         background: #E8EEF5 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
-
-      /* Verberg dropdowns en hints binnen canvas */
+      /* Verberg dropdowns, hints en knoppen binnen canvas */
       .fa-canvas select,
+      .fa-canvas textarea,
+      .fa-canvas .fa-edit-hint,
+      .fa-canvas .fnc-del,
       .fa-canvas .fa-edit-hint { visibility: hidden !important; display: none !important; }
     }
   </style>
@@ -611,20 +611,34 @@ function buildFA(c, d, save) {
   const bar = document.createElement('div');
   bar.className = 'action-bar no-print';
 
-  const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Exporteer / Print', () => window.print());
-  const btnMail  = mkBtn('btn-ghost btn-sm', '✉️ Mailen als PDF', () => {
-    toast('Sla op als PDF → voeg toe als bijlage in je mail', 3500);
-    setTimeout(() => window.print(), 400);
+  const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Print', () => window.print());
+
+  const btnMail = mkBtn('btn-ghost btn-sm', '✉️ Mail', () => mailFA(d));
+
+  const btnClip = mkBtn('btn-ghost btn-sm', '📋 Kopieer', () => {
+    const canvas = c.querySelector('.fa-canvas');
+    if (!canvas) return;
+    toast('Bezig met kopiëren…', 1500);
+    html2canvas(canvas, { backgroundColor: '#E8EEF5', scale: 2, useCORS: true }).then(cvs => {
+      cvs.toBlob(blob => {
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+          .then(() => toast('Gekopieerd naar klembord ✓'))
+          .catch(() => {
+            // Fallback: open in nieuw venster
+            const url = cvs.toDataURL();
+            const w = window.open();
+            w.document.write(`<img src="${url}" style="max-width:100%">`);
+            toast('Afbeelding geopend — sla op en plak handmatig', 4000);
+          });
+      });
+    });
   });
-  const btnDup   = mkBtn('btn-ghost btn-sm', '⧉ Dupliceer', () => {
-    const copy = { ...JSON.parse(JSON.stringify(d)), id: uid(), title:(d.title||'')+ ' (kopie)', date:today() };
-    upsert(copy); toast('Gedupliceerd ✓'); go(`/fa/${copy.id}`);
-  });
+
   const btnDel = mkBtn('btn-ghost btn-sm', '🗑', () => {
     if (confirm('Verwijder deze FA?')) { remove(d.id); go('/'); }
   });
   btnDel.style.color = 'var(--danger)';
-  bar.append(btnPrint, btnMail, btnDup, btnDel);
+  bar.append(btnPrint, btnMail, btnClip, btnDel);
   c.appendChild(bar);
 
   /* ══════════════════════════
@@ -1017,33 +1031,32 @@ function makeFncNode(items, save) {
 
 /* ── Mailen via mailto ── */
 function mailFA(d) {
-  const meta = [d.client && `Cliënt: ${d.client}`, d.date && `Datum: ${d.date}`].filter(Boolean).join('\n');
-  const srPosLbl = d.srPosType ? `[${srLabel(d.srPosType)}]` : '';
-  const srNegLbl = d.srNegType ? `[${srLabel(d.srNegType)}]` : '';
+  const srPosLbl = d.srPosType ? ` [${srLabel(d.srPosType)}]` : '';
+  const fncLines = (d.srNegItems || []).filter(i => i.txt || i.type)
+    .map(i => `  ${i.type ? '[' + srLabel(i.type) + '] ' : ''}${i.txt || ''}`)
+    .join('\n') || '  (niet ingevuld)';
+
   const body = [
-    `FUNCTIEANALYSE — IGCGT`,
-    d.title ? `Klacht: ${d.title}` : '',
-    meta,
+    'FUNCTIEANALYSE — IGCGT',
     '',
-    `Sd (Discriminatieve stimulus):`,
+    'Sd (Discriminatieve stimulus):',
     d.sd || '(niet ingevuld)',
     '',
-    `R (Respons / probleemgedrag):`,
+    'R (Respons / probleemgedrag):',
     d.r || '(niet ingevuld)',
     '',
-    `Sr-pos-repr (Positieve consequentie) ${srPosLbl}:`,
+    `Sr-pos-repr (Positieve consequentie)${srPosLbl}:`,
     d.srPosTxt || '(niet ingevuld)',
     '',
-    `FNC — feitelijke negatieve consequenties ${srNegLbl}:`,
-    d.srNegTxt || '(niet ingevuld)',
-    d.fnc ? `\nFNC (Functionele Negatieve Cognitie):\n${d.fnc}` : '',
+    'FNC (Feitelijke negatieve consequenties):',
+    fncLines,
     d.notities ? `\nNotities:\n${d.notities}` : '',
     '',
     '---',
     'Geïntegreerde Cognitieve Gedragstherapie — Te Broeke, Korrelboom & Van Dijk (2024)',
-  ].filter(s => s !== undefined).join('\n');
+  ].join('\n');
 
-  const subject = encodeURIComponent(`FA: ${d.title || d.client || 'Functieanalyse'}`);
+  const subject = encodeURIComponent('Functieanalyse IGCGT');
   window.location.href = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
 }
 
