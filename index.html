@@ -1493,7 +1493,7 @@ function buildBACanvas(container, d, save, redraw) {
   const CR_W = 195, CR_H = 85;
   const OS_W = 120;
   const EX_W = 152, EX_H = 82;
-  const ZW_W = 130, ZW_H = 110;
+  const ZW_W = 130, ZW_H = 120;
 
   const csX = d.showOs ? OS_W + 22 : 10;
   const ovX = csX + CS_W + 75;
@@ -1648,21 +1648,22 @@ function buildBACanvas(container, d, save, redraw) {
     const ax = zwStartX + i*(ZW_W+20);
     const el = document.createElement('div');
     el.style.cssText=`position:absolute;left:${ax}px;top:${TOP_Y}px;width:${ZW_W}px;display:flex;flex-direction:column;align-items:center;text-align:center;`;
+    // Titel boven de kast
+    const ta=makeTa(arch.label||'','titel',v=>{d.zweefArchieven[i].label=v;save();});
+    ta.style.cssText+='text-align:center;color:#555;font-size:11px;font-weight:600;margin-bottom:4px;';
     const ico=mkCabinetSvg(70, 92, '#888');
-    const ta=makeTa(arch.label||'','titel',v=>{d.zweefArchieven[i].label=v;save();}); ta.style.cssText+='text-align:center;color:#555;font-size:10px;';
     const del=document.createElement('button'); del.textContent='×'; del.className='no-print';
     del.style.cssText='position:absolute;top:0;right:4px;border:none;background:transparent;cursor:pointer;font-size:12px;color:#aaa;';
     del.addEventListener('click',()=>{d.zweefArchieven.splice(i,1);save();redraw();});
-    el.append(ico,ta,del); canvas.appendChild(el);
+    el.append(ta,ico,del); canvas.appendChild(el);
     const archCX = ax+ZW_W/2;
-    // Pijl wijst naar een gespreid punt op de bovenrand van het ovaal
-    // Bij 1 archief: midden. Bij meerdere: spreid over 60% van de ovaalsbreedte.
+    // Pijl start onder de kast (titel ~22px + kast 92px = 114px)
+    const arrowStartY = TOP_Y + 22 + 92;
     const spread = nZw === 1 ? 0 : (OV_W * 0.6);
     const targetOvX = nZw === 1 ? ovCX : ovX + (OV_W - spread)/2 + i * spread/(nZw-1);
-    // Bereken het exacte punt op de ellips-rand bij die x
     const dx = (targetOvX - ovCX) / (OV_W/2);
     const targetOvY = ovY + OV_H/2 - (OV_H/2) * Math.sqrt(Math.max(0, 1 - dx*dx));
-    svgLine(archCX, TOP_Y+92, targetOvX, targetOvY);
+    svgLine(archCX, arrowStartY, targetOvX, targetOvY);
   });
 
   /* Extra ovaaltjes boven archief-ovaal */
