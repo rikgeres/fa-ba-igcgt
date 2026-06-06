@@ -1704,7 +1704,17 @@ function buildBACanvas(container, d, save, redraw) {
     const ta=makeTa(d.centralArchiefLabel||'','',v=>{d.centralArchiefLabel=v;save();}); ta.style.cssText+=`text-align:left;color:${DBLUE};font-size:10px;`;
     titleRow.append(titlePfx, ta);
     el.append(descLbl, titleRow); canvas.appendChild(el);
-    liveFill(el, ta, LBLU, BLU, descLbl);
+    // liveFill met callback voor zowel descLbl als titlePfx
+    (function() {
+      function upd() {
+        const filled = ta.value.trim().length > 0;
+        el.style.background  = filled ? LBLU : N_BG;
+        el.style.borderColor = filled ? BLU  : N_BD;
+        descLbl.style.color  = filled ? BLU  : N_BD;
+        titlePfx.style.color = filled ? BLU  : N_BD;
+      }
+      upd(); ta.addEventListener('input', upd);
+    })();
     if (d.showRepr && nEx===0) {
       canvas.appendChild(mkRepr(reprX, reprY));
       svgLine(ovX+OV_W, ovY+OV_H/2, reprX-2, ovY+OV_H/2);
