@@ -537,6 +537,57 @@ const today  = () => new Date().toISOString().slice(0,10);
 /* Groepering: pending groupId bij aanmaken via + knop */
 let _pendingGroup = null;
 
+/* ─────────────────────────────────────────
+   Kleurthema's
+───────────────────────────────────────── */
+const THEMES = {
+  blauw: { label:'Blauw',  swatch:'#2A76A2',
+    ba:{ blu:'#2A76A2', lblu:'#DDEAF7', grn:'#4A6E8A', lgrn:'#E8F0E4' },
+    fa:{ dot:'#7A99B0', bg:'#E8EEF5' },
+    ht:{ p:'#2A76A2', pl:'#CDDEEA', s:'#83B1C0' } },
+  groen: { label:'Groen',  swatch:'#2A7A4A',
+    ba:{ blu:'#2A7A4A', lblu:'#D4EEE0', grn:'#3A6A4A', lgrn:'#E0F2E8' },
+    fa:{ dot:'#5A8A6A', bg:'#E8F5EE' },
+    ht:{ p:'#2A7A4A', pl:'#C8E8D8', s:'#6AAB80' } },
+  paars: { label:'Paars',  swatch:'#6B3FA0',
+    ba:{ blu:'#6B3FA0', lblu:'#EDE0F8', grn:'#5A3A88', lgrn:'#F0E8FA' },
+    fa:{ dot:'#8A70B8', bg:'#F0EAF8' },
+    ht:{ p:'#6B3FA0', pl:'#DDD0F0', s:'#9A70C8' } },
+  warm:  { label:'Warm',   swatch:'#B85C38',
+    ba:{ blu:'#B85C38', lblu:'#FAE5DC', grn:'#9A4A30', lgrn:'#FAF0EC' },
+    fa:{ dot:'#C07050', bg:'#F8EDE8' },
+    ht:{ p:'#B85C38', pl:'#F0D8CC', s:'#D4906A' } },
+  amber: { label:'Amber',  swatch:'#A07830',
+    ba:{ blu:'#A07830', lblu:'#FAF0D0', grn:'#887030', lgrn:'#FAF8E8' },
+    fa:{ dot:'#B89048', bg:'#F8F4E0' },
+    ht:{ p:'#A07830', pl:'#EEE0B8', s:'#C8A850' } },
+  grijs: { label:'Grijs',  swatch:'#5A6070',
+    ba:{ blu:'#5A6070', lblu:'#E4E8EC', grn:'#4A5060', lgrn:'#ECEEF0' },
+    fa:{ dot:'#7A808A', bg:'#EEEEEE' },
+    ht:{ p:'#5A6070', pl:'#D0D4D8', s:'#8A9098' } },
+};
+const THEME_IDS = Object.keys(THEMES);
+
+function mkThemePicker(d, onPick) {
+  const row = document.createElement('div');
+  row.className = 'no-print';
+  row.style.cssText = 'display:flex;align-items:center;gap:5px;padding:6px 14px;border-bottom:1px solid #eee;background:#fafafa;flex-wrap:wrap;';
+  const lbl = document.createElement('span');
+  lbl.textContent = 'Kleur:';
+  lbl.style.cssText = 'font-size:11px;color:#999;flex-shrink:0;';
+  row.appendChild(lbl);
+  THEME_IDS.forEach(id => {
+    const t = THEMES[id];
+    const btn = document.createElement('button');
+    const active = (d.theme || 'blauw') === id;
+    btn.title = t.label;
+    btn.style.cssText = `width:18px;height:18px;border-radius:50%;background:${t.swatch};border:${active ? '2.5px solid #333' : '2px solid transparent'};cursor:pointer;flex-shrink:0;outline:2px solid ${active ? t.swatch : 'transparent'};outline-offset:1px;`;
+    btn.addEventListener('click', () => { onPick(id); });
+    row.appendChild(btn);
+  });
+  return row;
+}
+
 /* ══════════════════════════════════════════
    ROUTER
 ══════════════════════════════════════════ */
@@ -725,6 +776,7 @@ function pgFA(c, id) {
   let d = isNew ? {
     id: newId, type: 'FA', title:'', client:'', date: today(),
     groupId: _pendingGroup || newId,
+    theme: 'blauw',
     sd:'', r:'', fnc:'',
     srPosTxt:'', srPosType:'',
     srNegTxt:'', srNegType:'',
@@ -762,7 +814,7 @@ function buildFA(c, d, save) {
     const canvas = c.querySelector('.fa-canvas');
     if (!canvas) return;
     toast('Bezig met kopiëren…', 1500);
-    html2canvas(canvas, { backgroundColor: '#E8EEF5', scale: 2, useCORS: true }).then(cvs => {
+    html2canvas(canvas, { backgroundColor: THEMES[d.theme||'blauw'].fa.bg, scale: 2, useCORS: true }).then(cvs => {
       cvs.toBlob(blob => {
         navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
           .then(() => toast('Gekopieerd naar klembord ✓'))
@@ -787,11 +839,16 @@ function buildFA(c, d, save) {
   /* ── Titelregel ── */
   c.appendChild(mkTitleRow(d, save, 'Functieanalyse'));
 
+  /* ── Themakiezer ── */
+  c.appendChild(mkThemePicker(d, id => { save({ theme: id }); redraw(); }));
+
   /* ══════════════════════════
      INTERACTIEF DIAGRAM
   ══════════════════════════ */
+  const faTheme = THEMES[d.theme || 'blauw'].fa;
   const canvas = document.createElement('div');
   canvas.className = 'fa-canvas fa-interactive';
+  canvas.style.background = faTheme.bg;
 
 
   /*
@@ -815,8 +872,8 @@ function buildFA(c, d, save) {
   const dotsEl = document.createElement('div');
   dotsEl.style.cssText = 'grid-area:1/2/2/3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:0 5px';
   dotsEl.innerHTML = `
-    <div style="width:6px;height:6px;border-radius:50%;background:#9B7B7B"></div>
-    <div style="width:6px;height:6px;border-radius:50%;background:#9B7B7B"></div>`;
+    <div style="width:6px;height:6px;border-radius:50%;background:${faTheme.dot}"></div>
+    <div style="width:6px;height:6px;border-radius:50%;background:${faTheme.dot}"></div>`;
 
   /* ── R (rij 1, kolom 3) — zelfde grootte als Sd ── */
   const nodeR = makeInlineNode('R', 'Problematisch gedrag', d.r || '', v => save({ r: v }));
@@ -827,7 +884,7 @@ function buildFA(c, d, save) {
     const el = document.createElement('div');
     el.style.cssText = `
       grid-area: ${gridArea};
-      background: #9B7B7B;
+      background: ${faTheme.dot};
       clip-path: polygon(0% 35%, 68% 35%, 68% 18%, 100% 50%, 68% 82%, 68% 65%, 0% 65%);
       width: 26px;
       align-self: center;
@@ -1160,8 +1217,8 @@ function makeFncNode(items, save) {
     addBtn.textContent = '+ voeg toe';
     addBtn.className = 'fa-edit-hint';
     addBtn.style.cssText = `
-      background:none;border:1px dashed #9B7B7B;border-radius:4px;
-      color:#9B7B7B;font-size:11px;cursor:pointer;padding:2px 6px;
+      background:none;border:1px dashed ${faTheme.dot};border-radius:4px;
+      color:${faTheme.dot};font-size:11px;cursor:pointer;padding:2px 6px;
       margin-top:2px;align-self:flex-start;
     `;
     addBtn.addEventListener('click', e => {
@@ -1231,6 +1288,7 @@ function pgBA(c, id) {
   const defaultD = {
     id: _newId, type: 'BA', title: '', client: '', date: today(),
     groupId: _pendingGroup || _newId,
+    theme: 'blauw',
     showOs: false, os: '',
     cs: '',
     assocType: 'referentieel',
@@ -1302,6 +1360,10 @@ function pgBA(c, id) {
   /* ── Titelregel ── */
   c.appendChild(mkTitleRow(d, save, 'Betekenisanalyse'));
 
+  /* ── Themakiezer ── */
+  const themeRow = document.createElement('div');
+  c.appendChild(themeRow);
+
   /* ── Schema-instellingenbalk ── */
   const cfgBar = document.createElement('div');
   cfgBar.className = 'no-print';
@@ -1316,6 +1378,8 @@ function pgBA(c, id) {
   c.appendChild(groupBar);
 
   function redraw() {
+    themeRow.innerHTML = '';
+    themeRow.appendChild(mkThemePicker(d, id => { save({ theme: id }); redraw(); }));
     buildBACfgBar(cfgBar, d, save, redraw);
     wrap.innerHTML = '';
     buildBACanvas(wrap, d, save, redraw);
@@ -1389,8 +1453,9 @@ function buildBACfgBar(bar, d, save, redraw) {
 
 /* ── Canvas renderfunctie v2 ── */
 function buildBACanvas(container, d, save, redraw) {
-  const BLU = '#2A76A2', LBLU = '#DDEAF7', DBLUE = '#1A3A5C';
-  const GRN = '#4A6E8A', LGRN = '#E8F0E4', TXT = '#1D3557';
+  const th = THEMES[d.theme || 'blauw'].ba;
+  const BLU = th.blu, LBLU = th.lblu, DBLUE = '#1A3A5C';
+  const GRN = th.grn, LGRN = th.lgrn, TXT = '#1D3557';
   const REPR_W = 128;
 
   const isArc = d.centralType === 'archief';
@@ -1716,10 +1781,12 @@ function pgHT(c, id) {
   });
   let d = isNew ? {
     id: uid(), type:'HT', title:'', client:'', date: today(),
+    theme: 'blauw',
     data: emptyData()
   } : byId(id);
   if (!d) { c.innerHTML = '<p style="padding:20px">Niet gevonden.</p>'; return; }
   if (!d.data) d.data = emptyData();
+  if (!d.theme) d.theme = 'blauw';
 
   let saveTimer = null;
   function save() {
@@ -1728,7 +1795,11 @@ function pgHT(c, id) {
     saveTimer = setTimeout(() => toast('Automatisch opgeslagen ✓'), 1200);
   }
 
-  buildHT(c, d, save);
+  function redrawHT() {
+    c.innerHTML = '';
+    buildHT(c, d, save, redrawHT);
+  }
+  redrawHT();
 }
 
 const HT_INFO = {
@@ -1784,8 +1855,9 @@ function openHtInfo(key) {
   document.body.appendChild(modal);
 }
 
-function buildHT(c, d, save) {
+function buildHT(c, d, save, redrawHT) {
   const W = 1400, H = 960, SH = 70; // SH = shift voor kritischeGebeurtenissen ruimte
+  const ht = THEMES[d.theme || 'blauw'].ht; // { p, pl, s }
 
   // Zet HT-mode op app shell (verwijder max-width beperking)
   const appEl = document.getElementById('app');
@@ -1842,6 +1914,10 @@ function buildHT(c, d, save) {
   bar.append(btnPrint, btnPreview, btnClip, btnDel);
   c.appendChild(bar);
 
+  /* ── Titelregel + themakiezer ── */
+  c.appendChild(mkTitleRow(d, save, 'Holistische Theorie'));
+  if (redrawHT) c.appendChild(mkThemePicker(d, id => { d.theme = id; save(); redrawHT(); }));
+
   /* ── Scroll wrapper + canvas ── */
   // wrap = het witte kader rondom het schema
   const wrap = document.createElement('div');
@@ -1895,20 +1971,20 @@ function buildHT(c, d, save) {
   window.addEventListener('resize', fitCanvas);
   window.addEventListener('hashchange', () => window.removeEventListener('resize', fitCanvas), { once: true });
 
-  /* ── Kleuren per variant ── */
+  /* ── Kleuren per variant (thema-afhankelijk) ── */
   const VAR = {
-    pinkLight: { hBg:'#CDDEEA', hTxt:'#2A76A2', border:'#2A76A2' },
-    pinkDark:  { hBg:'#2A76A2', hTxt:'#ffffff', border:'#2A76A2' },
-    teal:      { hBg:'#83B1C0', hTxt:'#ffffff', border:'#83B1C0' },
+    pinkLight: { hBg: ht.pl,  hTxt: ht.p,    border: ht.p  },
+    pinkDark:  { hBg: ht.p,   hTxt: '#ffffff', border: ht.p  },
+    teal:      { hBg: ht.s,   hTxt: '#ffffff', border: ht.s  },
   };
 
   /* ── Groepskaarten (achtergrond, z=0) ── */
   function makeGroupCard(x, y, w, h, title, infoKey) {
     const el = document.createElement('div');
-    el.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;border:1.5px solid #2A76A2;display:flex;flex-direction:column;overflow:hidden;z-index:0;`;
+    el.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;border:1.5px solid ${ht.p};display:flex;flex-direction:column;overflow:hidden;z-index:0;`;
     const hdr = document.createElement('div');
     hdr.className = 'ht-card-hdr';
-    hdr.style.cssText = 'position:relative;height:32px;min-height:32px;background:#2A76A2;color:#fff;display:flex;align-items:center;padding:0 10px 0 10px;font-size:12px;font-weight:700;flex:0 0 auto;';
+    hdr.style.cssText = `position:relative;height:32px;min-height:32px;background:${ht.p};color:#fff;display:flex;align-items:center;padding:0 10px 0 10px;font-size:12px;font-weight:700;flex:0 0 auto;`;
     const span = document.createElement('span');
     span.style.flex = '1';
     span.textContent = title;
@@ -1919,7 +1995,7 @@ function buildHT(c, d, save) {
     iBtn.addEventListener('click', e => { e.stopPropagation(); openHtInfo(infoKey); });
     hdr.append(span, iBtn);
     const body = document.createElement('div');
-    body.style.cssText = 'flex:1;background:rgba(42,118,162,0.07);';
+    body.style.cssText = `flex:1;background:${ht.p}12;`;
     el.append(hdr, body);
     return el;
   }
@@ -1935,23 +2011,23 @@ function buildHT(c, d, save) {
   svg.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:2;';
   svg.innerHTML = `
     <defs>
-      <marker id="ht-arr-pink"  viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2A76A2"/></marker>
-      <marker id="ht-arr-black" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#444"/></marker>
-      <marker id="ht-arr-teal"  viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#83B1C0"/></marker>
+      <marker id="ht-arr-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${ht.p}"/></marker>
+      <marker id="ht-arr-k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#444"/></marker>
+      <marker id="ht-arr-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${ht.s}"/></marker>
     </defs>
     <!-- Aanleg → Persoonlijkheid -->
-    <path d="M280 ${177+SH}L288 ${177+SH}L288 ${752+SH}L280 ${752+SH}M288 ${460+SH}L320 ${460+SH}" stroke="#2A76A2" stroke-width="2" fill="none" marker-end="url(#ht-arr-pink)"/>
+    <path d="M280 ${177+SH}L288 ${177+SH}L288 ${752+SH}L280 ${752+SH}M288 ${460+SH}L320 ${460+SH}" stroke="${ht.p}" stroke-width="2" fill="none" marker-end="url(#ht-arr-p)"/>
     <!-- Persoonlijkheid → Klachten -->
-    <path d="M720 ${177+SH}L728 ${177+SH}L728 ${752+SH}L720 ${752+SH}M728 ${460+SH}L800 ${460+SH}" stroke="#2A76A2" stroke-width="2" fill="none" marker-end="url(#ht-arr-pink)"/>
+    <path d="M720 ${177+SH}L728 ${177+SH}L728 ${752+SH}L720 ${752+SH}M728 ${460+SH}L800 ${460+SH}" stroke="${ht.p}" stroke-width="2" fill="none" marker-end="url(#ht-arr-p)"/>
     <!-- Stressoren + Beschermende factoren → Klachten -->
-    <path d="M1160 ${190+SH}L1140 ${190+SH}L1140 ${505+SH}L1160 ${505+SH}M1140 ${347+SH}L1120 ${347+SH}" stroke="#444" stroke-width="2" fill="none" marker-end="url(#ht-arr-black)"/>
+    <path d="M1160 ${190+SH}L1140 ${190+SH}L1140 ${505+SH}L1160 ${505+SH}M1140 ${347+SH}L1120 ${347+SH}" stroke="#444" stroke-width="2" fill="none" marker-end="url(#ht-arr-k)"/>
     <!-- Klachten ↕ Gevolgen -->
-    <line x1="940" y1="${655+SH}" x2="940" y2="${685+SH}" stroke="#2A76A2" stroke-width="2.5" marker-end="url(#ht-arr-pink)"/>
-    <line x1="980" y1="${685+SH}" x2="980" y2="${655+SH}" stroke="#2A76A2" stroke-width="2.5" marker-end="url(#ht-arr-pink)"/>
+    <line x1="940" y1="${655+SH}" x2="940" y2="${685+SH}" stroke="${ht.p}" stroke-width="2.5" marker-end="url(#ht-arr-p)"/>
+    <line x1="980" y1="${685+SH}" x2="980" y2="${655+SH}" stroke="${ht.p}" stroke-width="2.5" marker-end="url(#ht-arr-p)"/>
     <!-- Gevolgen → Coping feedbackloop -->
-    <path d="M1100 ${830+SH}L1100 ${852+SH}L520 ${852+SH}L520 ${830+SH}" stroke="#83B1C0" stroke-width="2" fill="none" marker-end="url(#ht-arr-teal)"/>
+    <path d="M1100 ${830+SH}L1100 ${852+SH}L520 ${852+SH}L520 ${830+SH}" stroke="${ht.s}" stroke-width="2" fill="none" marker-end="url(#ht-arr-s)"/>
     <!-- Kritische gebeurtenissen → schema -->
-    <line x1="760" y1="102" x2="760" y2="${380+SH}" stroke="#83B1C0" stroke-width="2" marker-end="url(#ht-arr-teal)"/>
+    <line x1="760" y1="102" x2="760" y2="${380+SH}" stroke="${ht.s}" stroke-width="2" marker-end="url(#ht-arr-s)"/>
   `;
   canvas.appendChild(svg);
 
