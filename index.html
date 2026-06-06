@@ -851,11 +851,12 @@ function buildFA(c, d, save, _noGroup) {
     });
   });
 
+  const btnPreview = mkBtn('btn-ghost btn-sm', '👁 Preview', () => buildPreviewOverlay(d));
   const btnDel = mkTrashBtn('btn btn-sm btn-ghost', 'Verwijder FA', () => {
     if (confirm('Verwijder deze FA?')) { remove(d.id); go('/'); }
   });
   btnDel.style.color = 'var(--danger)';
-  bar.append(btnPrint, btnClip, btnDel);
+  bar.append(btnPrint, btnClip, btnPreview, btnDel);
   c.appendChild(bar);
 
   /* ── Titelregel ── */
@@ -1374,11 +1375,12 @@ function pgBA(c, id) {
       });
     });
   });
+  const btnPreview = mkBtn('btn-ghost btn-sm', '👁 Preview', () => buildPreviewOverlay(d));
   const btnDel = mkTrashBtn('btn btn-sm btn-ghost', 'Verwijder BA', () => {
     if (confirm('Verwijder deze BA?')) { remove(d.id); go('/'); }
   });
   btnDel.style.color = 'var(--danger)';
-  bar.append(btnPrint, btnClip, btnDel);
+  bar.append(btnPrint, btnClip, btnPreview, btnDel);
   c.appendChild(bar);
 
   /* ── Titelregel ── */
@@ -1630,29 +1632,36 @@ function buildBACanvas(container, d, save, redraw) {
       const row=document.createElement('div'); row.style.marginBottom = irrelevant && !overruled ? '2px' : '4px';
       const ll=document.createElement('div'); ll.textContent=lb; ll.style.cssText=`font-size:9px;font-style:italic;color:${irrelevant && !overruled ? '#ccc' : '#888'};`;
       if (irrelevant && !overruled) {
-        // Geblokkeerd veld: klik toont melding + override-knop
-        const blocked = document.createElement('div');
-        blocked.style.cssText='font-size:9px;color:#ccc;cursor:pointer;padding:2px 0;';
-        blocked.textContent='— niet relevant —';
-        let msgShown = false;
-        blocked.addEventListener('click', () => {
-          if (msgShown) return;
-          msgShown = true;
-          blocked.textContent = 'Niet relevant bij sequentieel.';
-          blocked.style.color = '#e07040';
-          const ovr = document.createElement('span');
-          ovr.textContent = ' Toch invullen?';
-          ovr.style.cssText = 'text-decoration:underline;cursor:pointer;color:#e07040;font-size:9px;';
-          ovr.addEventListener('click', (e) => {
-            e.stopPropagation();
-            // vervang blocked door echte textarea
-            const ta=makeTa(d[k]||'','',v=>{d[k]=v;save();}); ta.style.cssText+='font-size:10px;color:#333;';
-            row.replaceChild(ta, blocked);
-            ta.focus();
+        if (window._previewMode) {
+          // In preview: toon n.v.t.
+          const nvt = document.createElement('div');
+          nvt.textContent = 'n.v.t.';
+          nvt.style.cssText = 'font-size:9px;color:#bbb;padding:2px 0;';
+          row.append(ll, nvt);
+        } else {
+          // Geblokkeerd veld: klik toont melding + override-knop
+          const blocked = document.createElement('div');
+          blocked.style.cssText='font-size:9px;color:#ccc;cursor:pointer;padding:2px 0;';
+          blocked.textContent='— niet relevant —';
+          let msgShown = false;
+          blocked.addEventListener('click', () => {
+            if (msgShown) return;
+            msgShown = true;
+            blocked.textContent = 'Niet relevant bij sequentieel.';
+            blocked.style.color = '#e07040';
+            const ovr = document.createElement('span');
+            ovr.textContent = ' Toch invullen?';
+            ovr.style.cssText = 'text-decoration:underline;cursor:pointer;color:#e07040;font-size:9px;';
+            ovr.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const ta=makeTa(d[k]||'','',v=>{d[k]=v;save();}); ta.style.cssText+='font-size:10px;color:#333;';
+              row.replaceChild(ta, blocked);
+              ta.focus();
+            });
+            blocked.appendChild(ovr);
           });
-          blocked.appendChild(ovr);
-        });
-        row.append(ll, blocked);
+          row.append(ll, blocked);
+        }
       } else {
         // Normaal invulveld (stimulusaspect of overruled)
         const ta=makeTa(d[k]||'','',v=>{d[k]=v;save();}); ta.style.cssText+='font-size:10px;color:#333;';
@@ -1958,6 +1967,75 @@ function mkTitleRow(d, save, typeLabel) {
 
   row.appendChild(inp);
   return row;
+}
+
+/* ─────────────────────────────────────────
+   Preview-overlay
+───────────────────────────────────────── */
+function buildPreviewOverlay(d) {
+  window._previewMode = true;
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:9000;overflow:auto;padding:48px 40px 60px;box-sizing:border-box;';
+
+  // Sluitknop
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '✕ Sluiten';
+  closeBtn.style.cssText = 'position:fixed;top:14px;right:24px;z-index:9001;background:#f0f0f0;border:1px solid #ccc;border-radius:6px;padding:6px 16px;font-size:13px;cursor:pointer;';
+  closeBtn.addEventListener('click', () => { window._previewMode = false; document.body.removeChild(overlay); });
+  overlay.appendChild(closeBtn);
+
+  // Verzamel en sorteer analyses in de groep
+  const allData = load();
+  let siblings = allData.filter(a => a.groupId === d.groupId);
+  if (d.groupOrder && d.groupOrder.length) {
+    siblings.sort((a,b) => {
+      const ai = d.groupOrder.indexOf(a.id), bi = d.groupOrder.indexOf(b.id);
+      return (ai<0?999:ai) - (bi<0?999:bi);
+    });
+  }
+
+  siblings.forEach(sib => {
+    const block = document.createElement('div');
+    block.style.cssText = 'margin-bottom:48px;';
+
+    // Titel boven het schema (als die er is)
+    if (sib.title || sib.client) {
+      const titleDiv = document.createElement('div');
+      titleDiv.style.cssText = 'font-size:15px;font-weight:700;color:#1D3557;margin-bottom:8px;';
+      titleDiv.textContent = [sib.title, sib.client].filter(Boolean).join(' — ');
+      block.appendChild(titleDiv);
+    }
+
+    // Render de canvas in een tijdelijke container
+    const tmp = document.createElement('div');
+    if (sib.type === 'FA') {
+      buildFA(tmp, sib, ()=>{}, true); // _noGroup=true voorkomt recursie
+      const canvas = tmp.querySelector('.fa-canvas');
+      if (canvas) block.appendChild(canvas);
+    } else if (sib.type === 'BA') {
+      buildBACanvas(tmp, sib, ()=>{}, ()=>{});
+      const canvas = tmp.querySelector('.ba-canvas');
+      if (canvas) { canvas.style.position='relative'; block.appendChild(canvas); }
+    }
+
+    overlay.appendChild(block);
+  });
+
+  // Maak alle textareas read-only en visueel clean
+  overlay.querySelectorAll('textarea').forEach(ta => {
+    ta.readOnly = true;
+    ta.style.cursor = 'default';
+    ta.style.userSelect = 'text';
+  });
+  // Verberg no-print elementen (knoppen, cfg-balk, etc.) — sluitknop uitgezonderd
+  overlay.querySelectorAll('.no-print, .action-bar').forEach(el => el.style.display = 'none');
+  overlay.querySelectorAll('button').forEach(el => {
+    if (el !== closeBtn) el.style.display = 'none';
+  });
+
+  window._previewMode = false;
+  document.body.appendChild(overlay);
 }
 
 /* ─────────────────────────────────────────
