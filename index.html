@@ -1367,7 +1367,7 @@ function buildBACfgBar(bar, d, save, redraw) {
 function buildBACanvas(container, d, save, redraw) {
   const BLU = '#2A76A2', LBLU = '#DDEAF7', DBLUE = '#1A3A5C';
   const GRN = '#4A6E8A', LGRN = '#E8F0E4', TXT = '#1D3557';
-  const REPR_W = 190;
+  const REPR_W = 128;
 
   const isArc = d.centralType === 'archief';
   const isKT  = d.centralType === 'kernthema';
@@ -1427,17 +1427,24 @@ function buildBACanvas(container, d, save, redraw) {
       {x1,y1,x2,y2,stroke:GRN,'stroke-width':'1.5','marker-end':'url(#ba-arr)'}));
   }
   function svgArc(x1,y1,x2,y2) {
+    // Boogje zweeft vrij tussen de elementen (raakt niet de randen)
+    const margin = 18;
+    const ax1 = x1 + margin, ax2 = x2 - margin;
+    const midY = Math.min(y1,y2) - 32;
     const p = document.createElementNS('http://www.w3.org/2000/svg','path');
-    p.setAttribute('d',`M${x1},${y1} Q${(x1+x2)/2},${Math.min(y1,y2)-40} ${x2},${y2}`);
-    setA(p,{stroke:GRN,'stroke-width':'1.5',fill:'none','marker-end':'url(#ba-arr)'});
+    p.setAttribute('d',`M${ax1},${y1} Q${(ax1+ax2)/2},${midY} ${ax2},${y2}`);
+    setA(p,{stroke:GRN,'stroke-width':'1.8',fill:'none'});
     svg.appendChild(p);
   }
   function svgDbl(x1,y1,x2,y2) {
-    const h=Math.abs(x2-x1)>Math.abs(y2-y1),[ox,oy]=h?[0,4]:[4,0];
-    [-1,1].forEach(s=>svg.appendChild(setA(document.createElementNS('http://www.w3.org/2000/svg','line'),
-      {x1:x1+ox*s,y1:y1+oy*s,x2:x2+ox*s,y2:y2+oy*s,stroke:GRN,'stroke-width':'1.5'})));
-    svg.appendChild(setA(document.createElementNS('http://www.w3.org/2000/svg','line'),
-      {x1:x2,y1:y2,x2,y2,stroke:GRN,'stroke-width':'1.5','marker-end':'url(#ba-arr)'}));
+    // Identiteitsrelatie: = teken zwevend tussen CS en ovaal
+    const midX = (x1+x2)/2, midY = (y1+y2)/2;
+    const halfW = 14, gap = 5;
+    [-1,1].forEach(s=>{
+      svg.appendChild(setA(document.createElementNS('http://www.w3.org/2000/svg','line'),
+        {x1:midX-halfW,y1:midY+s*gap,x2:midX+halfW,y2:midY+s*gap,
+         stroke:GRN,'stroke-width':'2','stroke-linecap':'round'}));
+    });
   }
 
   function mkBox(x,y,w,h,lblTxt,key,ph,clr) {
