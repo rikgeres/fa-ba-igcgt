@@ -1649,7 +1649,7 @@ function buildBACanvas(container, d, save, redraw) {
     const el = document.createElement('div');
     el.style.cssText=`position:absolute;left:${ax}px;top:${TOP_Y}px;width:${ZW_W}px;display:flex;flex-direction:column;align-items:center;text-align:center;`;
     const ico=mkCabinetSvg(44, 58, '#888');
-    const ta=makeTa(arch.label||'','archief-label',v=>{d.zweefArchieven[i].label=v;save();}); ta.style.cssText+='text-align:center;color:#555;font-size:10px;';
+    const ta=makeTa(arch.label||'','titel',v=>{d.zweefArchieven[i].label=v;save();}); ta.style.cssText+='text-align:center;color:#555;font-size:10px;';
     const del=document.createElement('button'); del.textContent='×'; del.className='no-print';
     del.style.cssText='position:absolute;top:0;right:4px;border:none;background:transparent;cursor:pointer;font-size:12px;color:#aaa;';
     del.addEventListener('click',()=>{d.zweefArchieven.splice(i,1);save();redraw();});
@@ -1690,12 +1690,21 @@ function buildBACanvas(container, d, save, redraw) {
   /* Centrale ovaal */
   if (isArc) {
     const el=document.createElement('div');
-    el.style.cssText=`position:absolute;left:${ovX}px;top:${ovY}px;width:${OV_W}px;height:${OV_H}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:${Math.round(OV_H*.2)}px ${Math.round(OV_W*.1)}px;box-sizing:border-box;overflow:hidden;`;
-    const lbl2=document.createElement('div'); lbl2.textContent='US/UR-repr'; lbl2.style.cssText=`font-size:8px;font-weight:800;color:${N_BD};margin-bottom:2px;flex-shrink:0;`;
-    const ta=makeTa(d.centralArchiefLabel||'','archief-label',v=>{d.centralArchiefLabel=v;save();}); ta.style.cssText+=`text-align:center;color:${DBLUE};`;
-    const ico=mkCabinetSvg(40, 54, '#999');
-    el.append(lbl2,ta,ico); canvas.appendChild(el);
-    liveFill(el, ta, LBLU, BLU, lbl2);
+    el.style.cssText=`position:absolute;left:${ovX}px;top:${ovY}px;width:${OV_W}px;height:${OV_H}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:${Math.round(OV_H*.18)}px ${Math.round(OV_W*.1)}px;box-sizing:border-box;overflow:hidden;`;
+    // Vaste beschrijvende tekst (blijft altijd zichtbaar)
+    const descLbl=document.createElement('div');
+    descLbl.textContent='archief met samenhangende US/UR-representaties';
+    descLbl.style.cssText=`font-size:8px;font-weight:700;color:${N_BD};margin-bottom:4px;flex-shrink:0;line-height:1.3;`;
+    // Titel-rij: "titel:" + invoerveld
+    const titleRow=document.createElement('div');
+    titleRow.style.cssText='display:flex;align-items:center;gap:3px;flex-shrink:0;width:100%;justify-content:center;';
+    const titlePfx=document.createElement('span');
+    titlePfx.textContent='titel:';
+    titlePfx.style.cssText=`font-size:9px;font-weight:700;color:${N_BD};white-space:nowrap;flex-shrink:0;`;
+    const ta=makeTa(d.centralArchiefLabel||'','',v=>{d.centralArchiefLabel=v;save();}); ta.style.cssText+=`text-align:left;color:${DBLUE};font-size:10px;`;
+    titleRow.append(titlePfx, ta);
+    el.append(descLbl, titleRow); canvas.appendChild(el);
+    liveFill(el, ta, LBLU, BLU, descLbl);
     if (d.showRepr && nEx===0) {
       canvas.appendChild(mkRepr(reprX, reprY));
       svgLine(ovX+OV_W, ovY+OV_H/2, reprX-2, ovY+OV_H/2);
