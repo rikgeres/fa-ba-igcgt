@@ -692,10 +692,24 @@ function pgHome(c) {
   // Recente analyses
   const all = load();
   if (all.length) {
+    const secHdr = document.createElement('div');
+    secHdr.style.cssText = 'display:flex;align-items:center;margin-bottom:8px;';
     const secLbl = document.createElement('div');
-    secLbl.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding:0 2px';
+    secLbl.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);flex:1;padding:0 2px';
     secLbl.textContent = 'Recente analyses';
-    c.appendChild(secLbl);
+    const delAllBtn = document.createElement('button');
+    delAllBtn.textContent = 'Verwijder alle';
+    delAllBtn.style.cssText = 'font-size:11px;color:var(--danger);background:none;border:none;cursor:pointer;padding:2px 4px;opacity:.7;';
+    delAllBtn.addEventListener('mouseenter', () => delAllBtn.style.opacity = '1');
+    delAllBtn.addEventListener('mouseleave', () => delAllBtn.style.opacity = '.7');
+    delAllBtn.addEventListener('click', () => {
+      if (confirm('Weet je zeker dat je alle analyses wilt verwijderen?')) {
+        load().forEach(a => remove(a.id));
+        const m = document.getElementById('main'); m.innerHTML=''; pgHome(m);
+      }
+    });
+    secHdr.append(secLbl, delAllBtn);
+    c.appendChild(secHdr);
     const card = document.createElement('div');
     card.className = 'card';
     all.slice().reverse().forEach(item => {
