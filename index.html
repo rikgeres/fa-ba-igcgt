@@ -2495,7 +2495,7 @@ function mkCabinetSvg(w, h, color) {
   div.style.cssText = `flex-shrink:0;width:${w}px;height:${h}px;overflow:hidden;`;
   const img = document.createElement('img');
   img.src = CABINET_IMG_SRC;
-  img.style.cssText = `width:${Math.round(w*1.4)}px;height:${Math.round(h*1.4)}px;object-fit:contain;display:block;margin:-${Math.round(h*0.1)}px auto 0;`;
+  img.style.cssText = `width:${Math.round(w*1.4)}px;height:${Math.round(h*1.4)}px;object-fit:contain;display:block;margin:-${Math.round(h*0.1)}px auto 0;position:relative;left:-8px;`;
   div.appendChild(img);
   return div;
 }
