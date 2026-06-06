@@ -1777,10 +1777,36 @@ function buildBACanvas(container, d, save, redraw) {
         ta.style.cssText += `text-align:center;color:${TXT};`;
         el.append(lblRow, ta);
         liveFill(el, ta, LBLU, BLU, lbl);
+      } else if (sub === 'metacognitief') {
+        const lblRow = document.createElement('div');
+        lblRow.style.cssText = 'display:flex;align-items:center;gap:4px;justify-content:center;flex-shrink:0;margin-bottom:2px;';
+        const lbl = document.createElement('div');
+        lbl.textContent = 'US/UR-repr van metacognitieve kennis';
+        lbl.style.cssText = `font-size:8px;font-weight:800;color:${N_BD};`;
+        const resetMC = document.createElement('span');
+        resetMC.textContent = '↩';
+        resetMC.title = 'keuze ongedaan maken';
+        resetMC.style.cssText = `font-size:10px;color:${N_BD};cursor:pointer;opacity:.6;`;
+        resetMC.addEventListener('click', () => { d.centralSubtype=''; d.centralText=''; save(); redraw(); });
+        lblRow.append(lbl, resetMC);
+        const ta = makeTa(d.centralText || '', "bv TEF, TAF, MTAF,...", v => { d.centralText = v; save(); });
+        ta.style.cssText += `text-align:center;color:${TXT};`;
+        ta.addEventListener('focus', () => {
+          let v = ta.value.trim();
+          if (v.startsWith("'") && v.endsWith("'") && v.length > 2) ta.value = v.slice(1,-1);
+        });
+        ta.addEventListener('blur', () => {
+          let v = ta.value.trim();
+          if (v && !v.startsWith("'")) v = "'" + v + "'";
+          if (ta.value !== v) ta.value = v;
+          d.centralText = v; save();
+        });
+        el.append(lblRow, ta);
+        (function(){ function upd(){ const filled=ta.value.trim().length>0; el.style.background=filled?LBLU:N_BG; el.style.borderColor=filled?BLU:N_BD; lbl.style.color=filled?BLU:N_BD; resetMC.style.color=filled?BLU:N_BD; } upd(); ta.addEventListener('input',upd); })();
       } else {
         /* geen subtype gekozen: toon klikbare keuze — alleen de keuzerij, gecentreerd */
         const choiceDiv = document.createElement('div');
-        choiceDiv.style.cssText = 'display:flex;flex-direction:row;gap:3px;align-items:center;justify-content:center;';
+        choiceDiv.style.cssText = 'display:flex;flex-direction:column;gap:2px;align-items:center;justify-content:center;';
         const mkChoice = (label, subtypeVal) => {
           const span = document.createElement('span');
           span.textContent = label;
@@ -1790,10 +1816,7 @@ function buildBACanvas(container, d, save, redraw) {
           span.addEventListener('click', () => { d.centralSubtype = subtypeVal; save(); redraw(); });
           return span;
         };
-        const slash = document.createElement('span');
-        slash.textContent = '/';
-        slash.style.cssText = `font-size:12px;color:${N_BD};`;
-        choiceDiv.append(mkChoice('kernthema', 'kernthema'), slash, mkChoice('kerngebeurtenis', 'kerngebeurtenis'));
+        choiceDiv.append(mkChoice('kernthema', 'kernthema'), mkChoice('kerngebeurtenis', 'kerngebeurtenis'), mkChoice('metacognitieve kennis', 'metacognitief'));
         el.append(choiceDiv);
       }
       canvas.appendChild(el);
