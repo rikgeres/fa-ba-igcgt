@@ -1662,7 +1662,7 @@ function buildBACanvas(container, d, save, redraw) {
     // Bereken het exacte punt op de ellips-rand bij die x
     const dx = (targetOvX - ovCX) / (OV_W/2);
     const targetOvY = ovY + OV_H/2 - (OV_H/2) * Math.sqrt(Math.max(0, 1 - dx*dx));
-    svgLine(archCX, TOP_Y+ZW_H, targetOvX, targetOvY);
+    svgLine(archCX, TOP_Y+92, targetOvX, targetOvY);
   });
 
   /* Extra ovaaltjes boven archief-ovaal */
