@@ -2157,7 +2157,7 @@ function buildHT(c, d, save, redrawHT) {
   svg.innerHTML = `
     <defs>
       <marker id="ht-arr-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${ht.p}"/></marker>
-      <marker id="ht-arr-k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#444"/></marker>
+      <marker id="ht-arr-k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${ht.s}"/></marker>
       <marker id="ht-arr-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${ht.s}"/></marker>
     </defs>
     <!-- Aanleg → Persoonlijkheid -->
@@ -2165,7 +2165,7 @@ function buildHT(c, d, save, redrawHT) {
     <!-- Persoonlijkheid → Klachten -->
     <path d="M720 ${177+SH}L728 ${177+SH}L728 ${752+SH}L720 ${752+SH}M728 ${460+SH}L800 ${460+SH}" stroke="${ht.p}" stroke-width="2" fill="none" marker-end="url(#ht-arr-p)"/>
     <!-- Stressoren + Beschermende factoren → Klachten -->
-    <path d="M1160 ${190+SH}L1140 ${190+SH}L1140 ${505+SH}L1160 ${505+SH}M1140 ${347+SH}L1120 ${347+SH}" stroke="#444" stroke-width="2" fill="none" marker-end="url(#ht-arr-k)"/>
+    <path d="M1160 ${190+SH}L1140 ${190+SH}L1140 ${505+SH}L1160 ${505+SH}M1140 ${347+SH}L1120 ${347+SH}" stroke="${ht.s}" stroke-width="2" fill="none" marker-end="url(#ht-arr-k)"/>
     <!-- Klachten ↕ Gevolgen -->
     <line x1="940" y1="${655+SH}" x2="940" y2="${685+SH}" stroke="${ht.p}" stroke-width="2.5" marker-end="url(#ht-arr-p)"/>
     <line x1="980" y1="${685+SH}" x2="980" y2="${655+SH}" stroke="${ht.p}" stroke-width="2.5" marker-end="url(#ht-arr-p)"/>
