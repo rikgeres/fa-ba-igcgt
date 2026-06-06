@@ -1804,7 +1804,11 @@ function buildBACanvas(container, d, save, redraw) {
         el.append(lblRow, ta);
         (function(){ function upd(){ const filled=ta.value.trim().length>0; el.style.background=filled?LBLU:N_BG; el.style.borderColor=filled?BLU:N_BD; lbl.style.color=filled?BLU:N_BD; resetMC.style.color=filled?BLU:N_BD; } upd(); ta.addEventListener('input',upd); })();
       } else {
-        /* geen subtype gekozen: toon klikbare keuze — alleen de keuzerij, gecentreerd */
+        /* geen subtype gekozen: toon klikbare keuze */
+        const lbl = document.createElement('div');
+        lbl.textContent = 'US/UR-repr';
+        lbl.style.cssText = `font-size:8px;font-weight:800;color:${N_BD};margin-bottom:4px;flex-shrink:0;`;
+        el.appendChild(lbl);
         const choiceDiv = document.createElement('div');
         choiceDiv.style.cssText = 'display:flex;flex-direction:column;gap:2px;align-items:center;justify-content:center;';
         const mkChoice = (label, subtypeVal) => {
