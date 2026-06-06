@@ -1657,8 +1657,9 @@ function buildBACanvas(container, d, save, redraw) {
       svgLine(ovX+OV_W, ovY+OV_H/2, reprX-2, ovY+OV_H/2);
     }
   } else {
+    const isSq  = d.assocType === 'sequentieel';
     const ovLbl = isKT ? 'US/UR-repr van een kernthema' : 'US/UR-repr';
-    const ovPh  = isKT ? "'kernthema'" : 'mentale representatie';
+    const ovPh  = isKT ? "'kernthema'" : isSq ? 'mentale representatie van een kerngebeurtenis' : 'mentale representatie';
     canvas.appendChild(mkOval(ovX,ovY,OV_W,OV_H,ovLbl,'centralText',ovPh,LBLU,BLU));
     if (d.showRepr) {
       canvas.appendChild(mkRepr(reprX, reprY));
