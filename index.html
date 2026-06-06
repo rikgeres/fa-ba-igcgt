@@ -1623,11 +1623,43 @@ function buildBACanvas(container, d, save, redraw) {
     const el=document.createElement('div');
     el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${REPR_W}px;background:#fafafa;border:1.5px solid #bbb;border-radius:6px;padding:8px 10px;box-sizing:border-box;`;
     const hdr=document.createElement('div'); hdr.textContent='representatieniveaus:'; hdr.style.cssText='font-size:9px;font-weight:800;color:#888;margin-bottom:5px;'; el.appendChild(hdr);
+    const sq = d.assocType === 'sequentieel';
     [['reprStimulus','stimulusaspect'],['reprResponse','responsaspect'],['reprBetekenis','betekenisaspect']].forEach(([k,lb])=>{
-      const row=document.createElement('div'); row.style.marginBottom='4px';
-      const ll=document.createElement('div'); ll.textContent=lb; ll.style.cssText='font-size:9px;font-style:italic;color:#888;';
-      const ta=makeTa(d[k]||'','',v=>{d[k]=v;save();}); ta.style.cssText+='font-size:10px;color:#333;';
-      row.append(ll,ta); el.appendChild(row);
+      const irrelevant = sq && k !== 'reprStimulus';
+      const overruled  = irrelevant && !!d[k]; // al ingevuld → toon gewoon
+      const row=document.createElement('div'); row.style.marginBottom = irrelevant && !overruled ? '2px' : '4px';
+      const ll=document.createElement('div'); ll.textContent=lb; ll.style.cssText=`font-size:9px;font-style:italic;color:${irrelevant && !overruled ? '#ccc' : '#888'};`;
+      if (irrelevant && !overruled) {
+        // Geblokkeerd veld: klik toont melding + override-knop
+        const blocked = document.createElement('div');
+        blocked.style.cssText='font-size:9px;color:#ccc;cursor:pointer;padding:2px 0;';
+        blocked.textContent='— niet relevant —';
+        let msgShown = false;
+        blocked.addEventListener('click', () => {
+          if (msgShown) return;
+          msgShown = true;
+          blocked.textContent = 'Niet relevant bij sequentieel.';
+          blocked.style.color = '#e07040';
+          const ovr = document.createElement('span');
+          ovr.textContent = ' Toch invullen?';
+          ovr.style.cssText = 'text-decoration:underline;cursor:pointer;color:#e07040;font-size:9px;';
+          ovr.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // vervang blocked door echte textarea
+            const ta=makeTa(d[k]||'','',v=>{d[k]=v;save();}); ta.style.cssText+='font-size:10px;color:#333;';
+            row.replaceChild(ta, blocked);
+            ta.focus();
+          });
+          blocked.appendChild(ovr);
+        });
+        row.append(ll, blocked);
+      } else {
+        // Normaal invulveld (stimulusaspect of overruled)
+        const ta=makeTa(d[k]||'','',v=>{d[k]=v;save();}); ta.style.cssText+='font-size:10px;color:#333;';
+        if (sq && k==='reprStimulus') ta.style.minHeight='40px'; // meer ruimte
+        row.append(ll,ta);
+      }
+      el.appendChild(row);
     });
     return el;
   }
