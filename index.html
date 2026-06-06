@@ -1697,11 +1697,11 @@ function buildBACanvas(container, d, save, redraw) {
     descLbl.style.cssText=`font-size:8px;font-weight:700;color:${N_BD};margin-bottom:4px;flex-shrink:0;line-height:1.3;`;
     // Titel-rij: "titel:" + invoerveld
     const titleRow=document.createElement('div');
-    titleRow.style.cssText='display:flex;align-items:center;gap:3px;flex-shrink:0;width:100%;justify-content:center;';
+    titleRow.style.cssText='display:flex;align-items:baseline;gap:4px;flex-shrink:0;width:100%;justify-content:center;';
     const titlePfx=document.createElement('span');
     titlePfx.textContent='titel:';
-    titlePfx.style.cssText=`font-size:9px;font-weight:700;color:${N_BD};white-space:nowrap;flex-shrink:0;`;
-    const ta=makeTa(d.centralArchiefLabel||'','',v=>{d.centralArchiefLabel=v;save();}); ta.style.cssText+=`text-align:left;color:${DBLUE};font-size:10px;`;
+    titlePfx.style.cssText=`font-size:11px;font-weight:700;color:${N_BD};white-space:nowrap;flex-shrink:0;`;
+    const ta=makeTa(d.centralArchiefLabel||'','',v=>{d.centralArchiefLabel=v;save();}); ta.style.cssText+=`text-align:left;color:${DBLUE};font-size:14px;font-weight:600;`;
     titleRow.append(titlePfx, ta);
     el.append(descLbl, titleRow); canvas.appendChild(el);
     // liveFill met callback voor zowel descLbl als titlePfx
