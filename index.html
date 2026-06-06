@@ -1722,7 +1722,7 @@ function buildBACanvas(container, d, save, redraw) {
     }
   } else {
     const isSq  = d.assocType === 'sequentieel';
-    const isRef = d.assocType === 'referentieel';
+    const isRef = d.assocType === 'referentieel' || d.assocType === '';
     const isIdt = d.assocType === 'identiteit';
     // Bij identiteit is US/UR altijd kernthema; sub hoeft niet gekozen te worden
     const sub   = isIdt ? 'kernthema' : (d.centralSubtype || '');
