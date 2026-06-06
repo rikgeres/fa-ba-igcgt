@@ -1301,7 +1301,7 @@ function mailFA(d) {
    centralText        – tekst in de ovaal (usur / kernthema)
    centralArchiefLabel– label in archief-ovaal
    extraOvals  [{id,text}] – boven de archief-ovaal (type 2b bewijzen)
-   zweefArchieven [{id,label}] – zwevende archieven bóven de centrale ovaal (max 2)
+   zweefArchieven [{id,label}] – zwevende archieven bóven de centrale ovaal (max 3)
 */
 function pgBA(c, id) {
   const isNew = id === 'new';
@@ -1460,7 +1460,7 @@ function buildBACfgBar(bar, d, save, redraw) {
     }));
   } else {
     const nz = (d.zweefArchieven||[]).length;
-    if (nz < 2) {
+    if (nz < 3) {
       bar.append(addBtn('+ zweefarchief', () => {
         d.zweefArchieven = [...(d.zweefArchieven||[]), {id:uid(), label:''}];
         save(); redraw();
@@ -1493,7 +1493,7 @@ function buildBACanvas(container, d, save, redraw) {
   const CR_W = 195, CR_H = 85;
   const OS_W = 120;
   const EX_W = 152, EX_H = 82;
-  const ZW_W = 165, ZW_H = 72;
+  const ZW_W = 130, ZW_H = 72;
 
   const csX = d.showOs ? OS_W + 22 : 10;
   const ovX = csX + CS_W + 75;
@@ -1655,7 +1655,14 @@ function buildBACanvas(container, d, save, redraw) {
     del.addEventListener('click',()=>{d.zweefArchieven.splice(i,1);save();redraw();});
     el.append(ico,ta,del); canvas.appendChild(el);
     const archCX = ax+ZW_W/2;
-    svgLine(archCX, TOP_Y+ZW_H, ovCX, ovY-2);
+    // Pijl wijst naar een gespreid punt op de bovenrand van het ovaal
+    // Bij 1 archief: midden. Bij meerdere: spreid over 60% van de ovaalsbreedte.
+    const spread = nZw === 1 ? 0 : (OV_W * 0.6);
+    const targetOvX = nZw === 1 ? ovCX : ovX + (OV_W - spread)/2 + i * spread/(nZw-1);
+    // Bereken het exacte punt op de ellips-rand bij die x
+    const dx = (targetOvX - ovCX) / (OV_W/2);
+    const targetOvY = ovY + OV_H/2 - (OV_H/2) * Math.sqrt(Math.max(0, 1 - dx*dx));
+    svgLine(archCX, TOP_Y+ZW_H, targetOvX, targetOvY);
   });
 
   /* Extra ovaaltjes boven archief-ovaal */
