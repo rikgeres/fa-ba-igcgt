@@ -1537,17 +1537,38 @@ function buildBACanvas(container, d, save, redraw) {
     });
   }
 
-  function mkBox(x,y,w,h,lblTxt,key,ph,clr) {
-    const el=document.createElement('div');
-    el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${clr.bg};border:1.5px solid ${clr.bd};border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
-    if(lblTxt){const l=document.createElement('div');l.textContent=lblTxt;l.style.cssText=`font-size:9px;font-weight:800;color:${clr.bd};margin-bottom:2px;letter-spacing:.04em;flex-shrink:0;`;el.appendChild(l);}
-    const ta=makeTa(d[key]||'',ph,v=>{d[key]=v;save();}); ta.style.color=TXT; el.appendChild(ta); return el;
+  /* Neutrale kleuren voor lege velden */
+  const N_BG = '#F4F4F4', N_BD = '#C8CDD2';
+
+  /* Pas kleur live toe op een element op basis van of de textarea content heeft */
+  function liveFill(el, ta, filledBg, filledBd, lbl) {
+    function upd() {
+      const filled = ta.value.trim().length > 0;
+      el.style.background   = filled ? filledBg : N_BG;
+      el.style.borderColor  = filled ? filledBd : N_BD;
+      if (lbl) lbl.style.color = filled ? filledBd : N_BD;
+    }
+    upd();
+    ta.addEventListener('input', upd);
   }
-  function mkOval(x,y,w,h,lblTxt,key,ph,clr) {
+
+  function mkBox(x,y,w,h,lblTxt,key,ph,filledBg,filledBd) {
     const el=document.createElement('div');
-    el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${clr.bg};border:2px solid ${clr.bd};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:${Math.round(h*.17)}px ${Math.round(w*.1)}px;box-sizing:border-box;overflow:hidden;`;
-    if(lblTxt){const l=document.createElement('div');l.textContent=lblTxt;l.style.cssText=`font-size:8px;font-weight:800;color:${clr.bd};margin-bottom:2px;flex-shrink:0;`;el.appendChild(l);}
-    const ta=makeTa(d[key]||'',ph,v=>{d[key]=v;save();}); ta.style.cssText+=`text-align:center;color:${TXT};`; el.appendChild(ta); return el;
+    el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${N_BG};border:1.5px solid ${N_BD};border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
+    let lbl=null;
+    if(lblTxt){lbl=document.createElement('div');lbl.textContent=lblTxt;lbl.style.cssText=`font-size:9px;font-weight:800;color:${N_BD};margin-bottom:2px;letter-spacing:.04em;flex-shrink:0;`;el.appendChild(lbl);}
+    const ta=makeTa(d[key]||'',ph,v=>{d[key]=v;save();}); ta.style.color=TXT; el.appendChild(ta);
+    liveFill(el, ta, filledBg, filledBd, lbl);
+    return el;
+  }
+  function mkOval(x,y,w,h,lblTxt,key,ph,filledBg,filledBd) {
+    const el=document.createElement('div');
+    el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:${Math.round(h*.17)}px ${Math.round(w*.1)}px;box-sizing:border-box;overflow:hidden;`;
+    let lbl=null;
+    if(lblTxt){lbl=document.createElement('div');lbl.textContent=lblTxt;lbl.style.cssText=`font-size:8px;font-weight:800;color:${N_BD};margin-bottom:2px;flex-shrink:0;`;el.appendChild(lbl);}
+    const ta=makeTa(d[key]||'',ph,v=>{d[key]=v;save();}); ta.style.cssText+=`text-align:center;color:${TXT};`; el.appendChild(ta);
+    liveFill(el, ta, filledBg, filledBd, lbl);
+    return el;
   }
   function mkRepr(x,y) {
     const el=document.createElement('div');
@@ -1562,9 +1583,9 @@ function buildBACanvas(container, d, save, redraw) {
     return el;
   }
 
-  /* OS */
+  /* OS — altijd subtiel groen (context-vak, eigen kleur) */
   if (d.showOs) {
-    canvas.appendChild(mkBox(10, csY, OS_W, CS_H, 'OS (5)', 'os', 'context', {bg:'#F2F6F0',bd:'#8AAA8A'}));
+    canvas.appendChild(mkBox(10, csY, OS_W, CS_H, 'OS (5)', 'os', 'context', '#F2F6F0', '#8AAA8A'));
     [csY+CS_H/2-7, csY+CS_H/2+7].forEach(cy => {
       const c2=document.createElementNS('http://www.w3.org/2000/svg','circle');
       setA(c2,{cx:csX-10,cy,r:'3.5',fill:'#bbb'}); svg.appendChild(c2);
@@ -1572,7 +1593,7 @@ function buildBACanvas(container, d, save, redraw) {
   }
 
   /* CS */
-  canvas.appendChild(mkBox(csX, csY, CS_W, CS_H, 'CS (1)', 'cs', 'uitlokkende situatie', {bg:LGRN,bd:GRN}));
+  canvas.appendChild(mkBox(csX, csY, CS_W, CS_H, 'CS (1)', 'cs', 'uitlokkende situatie', LGRN, GRN));
 
   /* Zwevende archieven boven centrale ovaal */
   zweefs.forEach((arch, i) => {
@@ -1594,13 +1615,14 @@ function buildBACanvas(container, d, save, redraw) {
   extras.forEach((ov, i) => {
     const ex = exStartX + i*(EX_W+12);
     const el = document.createElement('div');
-    el.style.cssText=`position:absolute;left:${ex}px;top:${TOP_Y}px;width:${EX_W}px;height:${EX_H}px;background:${LBLU};border:2px solid ${BLU};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 14px;box-sizing:border-box;overflow:hidden;`;
-    const lbl2=Object.assign(document.createElement('div'),{textContent:'US/UR-repr'}); lbl2.style.cssText=`font-size:8px;font-weight:800;color:${BLU};margin-bottom:2px;flex-shrink:0;`;
+    el.style.cssText=`position:absolute;left:${ex}px;top:${TOP_Y}px;width:${EX_W}px;height:${EX_H}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 14px;box-sizing:border-box;overflow:hidden;`;
+    const lbl2=document.createElement('div'); lbl2.textContent='US/UR-repr'; lbl2.style.cssText=`font-size:8px;font-weight:800;color:${N_BD};margin-bottom:2px;flex-shrink:0;`;
     const ta=makeTa(ov.text||'','kerngebeurtenis',v=>{d.extraOvals[i].text=v;save();}); ta.style.cssText+=`text-align:center;color:${DBLUE};font-size:10px;`;
     const del=document.createElement('button'); del.textContent='×'; del.className='no-print';
     del.style.cssText='position:absolute;top:3px;right:7px;border:none;background:transparent;cursor:pointer;font-size:12px;color:#aaa;';
     del.addEventListener('click',()=>{d.extraOvals.splice(i,1);save();redraw();});
     el.append(lbl2,ta,del); canvas.appendChild(el);
+    liveFill(el, ta, LBLU, BLU, lbl2);
     const exCX = ex+EX_W/2;
     const targetX = nEx===1 ? ovCX : ovX+(i/(nEx-1))*OV_W;
     svgLine(exCX, TOP_Y+EX_H, targetX, ovY-2);
@@ -1615,11 +1637,12 @@ function buildBACanvas(container, d, save, redraw) {
   /* Centrale ovaal */
   if (isArc) {
     const el=document.createElement('div');
-    el.style.cssText=`position:absolute;left:${ovX}px;top:${ovY}px;width:${OV_W}px;height:${OV_H}px;background:${LBLU};border:2px solid ${BLU};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:${Math.round(OV_H*.2)}px ${Math.round(OV_W*.1)}px;box-sizing:border-box;overflow:hidden;`;
-    const lbl2=Object.assign(document.createElement('div'),{textContent:'US/UR-repr'}); lbl2.style.cssText=`font-size:8px;font-weight:800;color:${BLU};margin-bottom:2px;flex-shrink:0;`;
+    el.style.cssText=`position:absolute;left:${ovX}px;top:${ovY}px;width:${OV_W}px;height:${OV_H}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:${Math.round(OV_H*.2)}px ${Math.round(OV_W*.1)}px;box-sizing:border-box;overflow:hidden;`;
+    const lbl2=document.createElement('div'); lbl2.textContent='US/UR-repr'; lbl2.style.cssText=`font-size:8px;font-weight:800;color:${N_BD};margin-bottom:2px;flex-shrink:0;`;
     const ta=makeTa(d.centralArchiefLabel||'','archief-label',v=>{d.centralArchiefLabel=v;save();}); ta.style.cssText+=`text-align:center;color:${DBLUE};`;
     const ico=Object.assign(document.createElement('div'),{textContent:'🗄',style:`font-size:17px;margin-top:4px;opacity:.4;flex-shrink:0;`});
     el.append(lbl2,ta,ico); canvas.appendChild(el);
+    liveFill(el, ta, LBLU, BLU, lbl2);
     if (d.showRepr && nEx===0) {
       canvas.appendChild(mkRepr(reprX, reprY));
       svgLine(ovX+OV_W, ovY+OV_H/2, reprX-2, ovY+OV_H/2);
@@ -1627,7 +1650,7 @@ function buildBACanvas(container, d, save, redraw) {
   } else {
     const ovLbl = isKT ? 'US/UR-repr van een kernthema' : 'US/UR-repr';
     const ovPh  = isKT ? "'kernthema'" : 'mentale representatie';
-    canvas.appendChild(mkOval(ovX,ovY,OV_W,OV_H,ovLbl,'centralText',ovPh,{bg:LBLU,bd:BLU}));
+    canvas.appendChild(mkOval(ovX,ovY,OV_W,OV_H,ovLbl,'centralText',ovPh,LBLU,BLU));
     if (d.showRepr) {
       canvas.appendChild(mkRepr(reprX, reprY));
       svgLine(ovX+OV_W, ovY+OV_H/2, reprX-2, ovY+OV_H/2);
@@ -1635,7 +1658,7 @@ function buildBACanvas(container, d, save, redraw) {
   }
 
   /* CR */
-  canvas.appendChild(mkBox(crX, crY, CR_W, CR_H, 'CR (2)', 'cr', 'emotionele reactie', {bg:LGRN,bd:GRN}));
+  canvas.appendChild(mkBox(crX, crY, CR_W, CR_H, 'CR (2)', 'cr', 'emotionele reactie', LGRN, GRN));
 
   /* Pijlen CS → centrale ovaal */
   const csMY=csY+CS_H/2, csR=csX+CS_W, ovMY=ovY+OV_H/2;
