@@ -1642,7 +1642,7 @@ function buildBACanvas(container, d, save, redraw) {
   }
 
   /* CS */
-  canvas.appendChild(mkBox(csX, csY, CS_W, CS_H, 'CS (1)', 'cs', 'uitlokkende situatie', LGRN, GRN));
+  canvas.appendChild(mkBox(csX, csY, CS_W, CS_H, 'CS', 'cs', 'uitlokkende situatie', LGRN, GRN));
 
   /* Zwevende archieven boven centrale ovaal */
   zweefs.forEach((arch, i) => {
@@ -1807,7 +1807,7 @@ function buildBACanvas(container, d, save, redraw) {
   }
 
   /* CR */
-  canvas.appendChild(mkBox(crX, crY, CR_W, CR_H, 'CR (2)', 'cr', 'emotionele reactie', LGRN, GRN));
+  canvas.appendChild(mkBox(crX, crY, CR_W, CR_H, 'CR', 'cr', 'emotionele reactie', LGRN, GRN));
 
   /* Pijlen CS → centrale ovaal */
   const csMY=csY+CS_H/2, csR=csX+CS_W, ovMY=ovY+OV_H/2;
