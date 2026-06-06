@@ -1197,25 +1197,58 @@ function mailFA(d) {
 }
 
 /* ══════════════════════════════════════════
-   BA — BETEKENISANALYSE
+   BA — BETEKENISANALYSE  v2
 ══════════════════════════════════════════ */
+
+/* Data model v2:
+   centralType : 'usur' | 'kernthema' | 'archief'
+     'usur'     – gewone US/UR-repr ovaal
+     'kernthema'– ovaal met "van een kernthema" label
+     'archief'  – de ovaal ZÉlf is een archief (type 2b), extra ovaaltjes boven
+   centralText        – tekst in de ovaal (usur / kernthema)
+   centralArchiefLabel– label in archief-ovaal
+   extraOvals  [{id,text}] – boven de archief-ovaal (type 2b bewijzen)
+   zweefArchieven [{id,label}] – zwevende archieven bóven de centrale ovaal (max 2)
+*/
 function pgBA(c, id) {
   const isNew = id === 'new';
-  let d = isNew ? {
+
+  /* Standaard leeg schema */
+  const defaultD = {
     id: uid(), type: 'BA', title: '', client: '', date: today(),
     showOs: false, os: '',
     cs: '',
-    assocType: 'referentieel',   // referentieel | sequentieel | identiteit
-    showArchief: false,
-    archiefLabel: '',
-    mainText: '',
-    extraOvals: [],              // [{id, text}]
-    showKernthema: false,
-    kernthemaText: '',
+    assocType: 'referentieel',
+    centralType: 'usur',
+    centralText: '',
+    centralArchiefLabel: '',
+    extraOvals: [],
+    zweefArchieven: [],
     showRepr: false,
     reprStimulus: '', reprResponse: '', reprBetekenis: '',
     cr: ''
-  } : byId(id);
+  };
+
+  let raw = isNew ? null : byId(id);
+
+  /* Migratie v1 → v2 */
+  let d;
+  if (!raw) {
+    d = defaultD;
+  } else if (raw.centralType !== undefined) {
+    d = raw; // al v2
+  } else {
+    // v1 had showArchief / showKernthema / mainText / archiefLabel / kernthemaText
+    d = {
+      ...defaultD, ...raw,
+      centralType: raw.showArchief ? (raw.showKernthema ? 'kernthema' : 'archief') : 'usur',
+      centralText: raw.showKernthema ? (raw.kernthemaText || '') : (raw.mainText || ''),
+      centralArchiefLabel: raw.archiefLabel || '',
+      extraOvals: raw.extraOvals || [],
+      zweefArchieven: (raw.showArchief && raw.showKernthema && raw.archiefLabel)
+        ? [{ id: uid(), label: raw.archiefLabel }] : [],
+    };
+  }
 
   if (!d) { c.innerHTML = '<p style="padding:20px">Niet gevonden.</p>'; return; }
 
@@ -1268,7 +1301,7 @@ function pgBA(c, id) {
   redraw();
 }
 
-/* ── Instellingenbalk voor BA ── */
+/* ── Instellingenbalk voor BA v2 ── */
 function buildBACfgBar(bar, d, save, redraw) {
   bar.innerHTML = '';
   bar.style.cssText = 'display:flex;gap:5px;flex-wrap:wrap;padding:7px 14px;align-items:center;background:#f7faf6;border-bottom:1px solid #dde8d8;font-size:11px;';
@@ -1276,301 +1309,245 @@ function buildBACfgBar(bar, d, save, redraw) {
   const tog = (lbl, active, fn) => {
     const b = document.createElement('button');
     b.textContent = lbl;
-    b.style.cssText = `font-size:11px;padding:2px 10px;border-radius:20px;border:1.5px solid var(--cgt-blue);cursor:pointer;transition:all .15s;background:${active ? 'var(--cgt-blue)' : 'transparent'};color:${active ? '#fff' : 'var(--cgt-blue)'};`;
-    b.addEventListener('click', fn);
-    return b;
+    b.style.cssText = `font-size:11px;padding:2px 10px;border-radius:20px;border:1.5px solid var(--cgt-blue);cursor:pointer;transition:all .15s;background:${active?'var(--cgt-blue)':'transparent'};color:${active?'#fff':'var(--cgt-blue)'};`;
+    b.addEventListener('click', fn); return b;
   };
   const rad = (lbl, active, fn) => {
     const b = document.createElement('button');
     b.textContent = lbl;
-    b.style.cssText = `font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid ${active ? 'var(--cgt-blue)' : '#ccc'};cursor:pointer;background:${active ? 'var(--cgt-blue)' : '#fff'};color:${active ? '#fff' : '#555'};`;
-    b.addEventListener('click', fn);
-    return b;
+    b.style.cssText = `font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid ${active?'var(--cgt-blue)':'#ccc'};cursor:pointer;background:${active?'var(--cgt-blue)':'#fff'};color:${active?'#fff':'#555'};`;
+    b.addEventListener('click', fn); return b;
   };
-  const sep = () => Object.assign(document.createElement('span'), { textContent: '|', style: 'color:#ccc;padding:0 2px;' });
-  const lbl = t => Object.assign(document.createElement('span'), { textContent: t, style: 'color:#777;' });
+  const sep = () => Object.assign(document.createElement('span'), {textContent:'|',style:'color:#ccc;padding:0 2px;'});
+  const lbl = t => Object.assign(document.createElement('span'), {textContent:t,style:'color:#777;'});
+  const addBtn = (label, fn) => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.style.cssText = 'font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid var(--cgt-blue);cursor:pointer;background:#fff;color:var(--cgt-blue);';
+    b.addEventListener('click', fn); return b;
+  };
 
   bar.append(
-    tog(d.showOs ? '✓ OS' : '+ OS', d.showOs, () => { save({ showOs: !d.showOs }); redraw(); }),
+    tog(d.showOs ? '✓ OS' : '+ OS', d.showOs, () => { save({showOs:!d.showOs}); redraw(); }),
     sep(),
     lbl('Associatie:'),
-    rad('referentieel', d.assocType === 'referentieel', () => { save({ assocType: 'referentieel' }); redraw(); }),
-    rad('sequentieel',  d.assocType === 'sequentieel',  () => { save({ assocType: 'sequentieel' });  redraw(); }),
-    rad('identiteit',   d.assocType === 'identiteit',   () => { save({ assocType: 'identiteit' });   redraw(); }),
+    rad('referentieel', d.assocType==='referentieel', () => { save({assocType:'referentieel'}); redraw(); }),
+    rad('sequentieel',  d.assocType==='sequentieel',  () => { save({assocType:'sequentieel'});  redraw(); }),
+    rad('identiteit',   d.assocType==='identiteit',   () => { save({assocType:'identiteit'});   redraw(); }),
     sep(),
-    tog(d.showArchief ? '✓ Archief' : '+ Archief', d.showArchief, () => { save({ showArchief: !d.showArchief }); redraw(); })
+    lbl('Centrale ovaal:'),
+    rad('US/UR-repr',    d.centralType==='usur',      () => { save({centralType:'usur'});      redraw(); }),
+    rad('Kernthema',     d.centralType==='kernthema', () => { save({centralType:'kernthema'}); redraw(); }),
+    rad('Archief-ovaal', d.centralType==='archief',   () => { save({centralType:'archief'});   redraw(); }),
+    sep()
   );
 
-  if (d.showArchief) {
-    const addOvBtn = document.createElement('button');
-    addOvBtn.textContent = '+ ovaal';
-    addOvBtn.style.cssText = 'font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid var(--cgt-blue);cursor:pointer;background:#fff;color:var(--cgt-blue);';
-    addOvBtn.addEventListener('click', () => { d.extraOvals = [...(d.extraOvals || []), { id: uid(), text: '' }]; save(); redraw(); });
-    bar.append(
-      tog(d.showKernthema ? '✓ Kernthema' : '+ Kernthema', d.showKernthema, () => { save({ showKernthema: !d.showKernthema }); redraw(); }),
-      addOvBtn
-    );
+  if (d.centralType === 'archief') {
+    bar.append(addBtn('+ ovaaltje', () => {
+      d.extraOvals = [...(d.extraOvals||[]), {id:uid(), text:''}];
+      save(); redraw();
+    }));
+  } else {
+    const nz = (d.zweefArchieven||[]).length;
+    if (nz < 2) {
+      bar.append(addBtn('+ zweefarchief', () => {
+        d.zweefArchieven = [...(d.zweefArchieven||[]), {id:uid(), label:''}];
+        save(); redraw();
+      }));
+    }
   }
 
   bar.append(
     sep(),
-    tog(d.showRepr ? '✓ Repr.niveaus' : '+ Repr.niveaus', d.showRepr, () => { save({ showRepr: !d.showRepr }); redraw(); })
+    tog(d.showRepr ? '✓ Repr.niveaus' : '+ Repr.niveaus', d.showRepr, () => { save({showRepr:!d.showRepr}); redraw(); })
   );
 }
 
-/* ── Canvas renderfunctie ── */
+/* ── Canvas renderfunctie v2 ── */
 function buildBACanvas(container, d, save, redraw) {
   const BLU = '#2A76A2', LBLU = '#DDEAF7', DBLUE = '#1A3A5C';
   const GRN = '#4A6E8A', LGRN = '#E8F0E4', TXT = '#1D3557';
-  const isArc   = d.showArchief;
-  const extras   = d.extraOvals || [];
-  const hasRepr  = d.showRepr;
-  const hasKT    = d.showArchief && d.showKernthema;
-  const REPR_W   = 190;
+  const REPR_W = 190;
 
-  /* ── Canvas afmetingen ── */
-  let CW, CH;
-  if (!isArc) {
-    // Simpel: CS → ovaal → CR  (optioneel OS links, repr rechts)
-    const baseW = (d.showOs ? 155 : 20) + 150 + 85 + 210 + 30; // ~650 no-OS, ~785 OS
-    CW = (hasRepr ? baseW + REPR_W + 20 : baseW);
-    CH = 410;
-  } else {
-    // Archief: CS ⌒ archief (extra ovaaltjes rechts) → (kernthema) → CR
-    const extraColW = extras.length > 0 ? 200 : 0;
-    CW = 185 + 255 + extraColW + (hasRepr ? REPR_W + 20 : 30);
-    CH = 80 + 225 + (hasKT ? 130 : 0) + 110; // archief + optioneel kernthema + CR
-  }
-  CW = Math.max(CW, 480);
+  const isArc = d.centralType === 'archief';
+  const isKT  = d.centralType === 'kernthema';
+  const extras = d.extraOvals    || [];
+  const zweefs = d.zweefArchieven || [];
+  const nEx = extras.length, nZw = zweefs.length;
+
+  const CS_W = 145, CS_H = 90;
+  const OV_W = 215, OV_H = 145;
+  const CR_W = 195, CR_H = 85;
+  const OS_W = 120;
+  const EX_W = 152, EX_H = 82;
+  const ZW_W = 165, ZW_H = 72;
+
+  const csX = d.showOs ? OS_W + 22 : 10;
+  const ovX = csX + CS_W + 75;
+  const ovCX = ovX + OV_W / 2;
+
+  const hasTop = (nZw > 0) || (isArc && nEx > 0);
+  const TOP_H  = hasTop ? 105 : 0;
+
+  const exTotalW = nEx > 0 ? nEx * EX_W + (nEx-1)*12 : 0;
+  const exStartX = nEx > 0 ? Math.max(csX + CS_W + 10, Math.round(ovCX - exTotalW/2)) : ovX;
+
+  const zwTotalW = nZw > 0 ? nZw * ZW_W + (nZw-1)*20 : 0;
+  const zwStartX = Math.round(ovCX - zwTotalW/2);
+
+  const TOP_Y = 16;
+  const ovY   = TOP_H + 22;
+  const csY   = ovY + Math.round((OV_H - CS_H) / 2);
+  const crY   = ovY + OV_H + 50;
+  const crX   = Math.round(ovCX - CR_W / 2);
+
+  const reprY = ovY - 5;
+  let   reprX = ovX + OV_W + 18;
+  if (isArc && nEx > 0) reprX = exStartX + exTotalW + 15;
+
+  const rightMost = d.showRepr
+    ? reprX + REPR_W + 12
+    : (isArc && nEx > 0 ? exStartX + exTotalW + 12 : ovX + OV_W + 20);
+  const CW = Math.max(480, rightMost);
+  const CH = crY + CR_H + 24;
 
   const canvas = document.createElement('div');
   canvas.className = 'ba-canvas';
   canvas.style.cssText = `position:relative;width:${CW}px;height:${CH}px;background:#fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.1);`;
 
-  /* ── SVG overlay voor pijlen ── */
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
   svg.setAttribute('width', CW); svg.setAttribute('height', CH);
   svg.setAttribute('viewBox', `0 0 ${CW} ${CH}`);
   svg.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:10;overflow:visible;';
-  svg.innerHTML = `<defs>
-    <marker id="ba-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M0 0L10 5L0 10z" fill="${GRN}"/></marker></defs>`;
+  svg.innerHTML = `<defs><marker id="ba-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${GRN}"/></marker></defs>`;
 
-  function svgLine(x1, y1, x2, y2) {
-    const e = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    [['x1',x1],['y1',y1],['x2',x2],['y2',y2],['stroke',GRN],['stroke-width','1.5'],['marker-end','url(#ba-arr)']].forEach(([a,v]) => e.setAttribute(a, v));
-    svg.appendChild(e);
+  const setA = (e, obj) => { Object.entries(obj).forEach(([a,v]) => e.setAttribute(a,v)); return e; };
+  function svgLine(x1,y1,x2,y2) {
+    svg.appendChild(setA(document.createElementNS('http://www.w3.org/2000/svg','line'),
+      {x1,y1,x2,y2,stroke:GRN,'stroke-width':'1.5','marker-end':'url(#ba-arr)'}));
   }
-  function svgArc(x1, y1, x2, y2) {
-    const mx = (x1 + x2) / 2, my = Math.min(y1, y2) - 40;
-    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    p.setAttribute('d', `M${x1},${y1} Q${mx},${my} ${x2},${y2}`);
-    [['stroke',GRN],['stroke-width','1.5'],['fill','none'],['marker-end','url(#ba-arr)']].forEach(([a,v]) => p.setAttribute(a, v));
+  function svgArc(x1,y1,x2,y2) {
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d',`M${x1},${y1} Q${(x1+x2)/2},${Math.min(y1,y2)-40} ${x2},${y2}`);
+    setA(p,{stroke:GRN,'stroke-width':'1.5',fill:'none','marker-end':'url(#ba-arr)'});
     svg.appendChild(p);
   }
-  function svgDblLine(x1, y1, x2, y2) {
-    const horiz = Math.abs(x2 - x1) > Math.abs(y2 - y1);
-    const [ox, oy] = horiz ? [0, 4] : [4, 0];
-    [-1, 1].forEach(s => {
-      const e = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      [['x1',x1+ox*s],['y1',y1+oy*s],['x2',x2+ox*s],['y2',y2+oy*s],['stroke',GRN],['stroke-width','1.5']].forEach(([a,v]) => e.setAttribute(a, v));
-      svg.appendChild(e);
-    });
-    // pijlpunt aan het einde
-    const pu = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    [['x1',x2],['y1',y2],['x2',x2],['y2',y2],['stroke',GRN],['stroke-width','1.5'],['marker-end','url(#ba-arr)']].forEach(([a,v]) => pu.setAttribute(a,v));
-    svg.appendChild(pu);
+  function svgDbl(x1,y1,x2,y2) {
+    const h=Math.abs(x2-x1)>Math.abs(y2-y1),[ox,oy]=h?[0,4]:[4,0];
+    [-1,1].forEach(s=>svg.appendChild(setA(document.createElementNS('http://www.w3.org/2000/svg','line'),
+      {x1:x1+ox*s,y1:y1+oy*s,x2:x2+ox*s,y2:y2+oy*s,stroke:GRN,'stroke-width':'1.5'})));
+    svg.appendChild(setA(document.createElementNS('http://www.w3.org/2000/svg','line'),
+      {x1:x2,y1:y2,x2,y2,stroke:GRN,'stroke-width':'1.5','marker-end':'url(#ba-arr)'}));
   }
 
-  /* ── DOM-elementen ── */
-  function mkBox(x, y, w, h, lblTxt, key, ph, clr) {
-    const el = document.createElement('div');
-    el.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${clr.bg};border:1.5px solid ${clr.bd};border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
-    if (lblTxt) {
-      const l = document.createElement('div');
-      l.textContent = lblTxt;
-      l.style.cssText = `font-size:9px;font-weight:800;color:${clr.bd};margin-bottom:2px;letter-spacing:.04em;flex-shrink:0;`;
-      el.appendChild(l);
-    }
-    const ta = makeTa(d[key], ph, v => { d[key] = v; save(); });
-    ta.style.color = TXT;
-    el.appendChild(ta);
-    return el;
+  function mkBox(x,y,w,h,lblTxt,key,ph,clr) {
+    const el=document.createElement('div');
+    el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${clr.bg};border:1.5px solid ${clr.bd};border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
+    if(lblTxt){const l=document.createElement('div');l.textContent=lblTxt;l.style.cssText=`font-size:9px;font-weight:800;color:${clr.bd};margin-bottom:2px;letter-spacing:.04em;flex-shrink:0;`;el.appendChild(l);}
+    const ta=makeTa(d[key]||'',ph,v=>{d[key]=v;save();}); ta.style.color=TXT; el.appendChild(ta); return el;
   }
-
-  function mkOval(x, y, w, h, lblTxt, key, ph, clr) {
-    const el = document.createElement('div');
-    el.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${clr.bg};border:2px solid ${clr.bd};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:${Math.round(h*.17)}px ${Math.round(w*.1)}px;box-sizing:border-box;overflow:hidden;`;
-    if (lblTxt) {
-      const l = document.createElement('div');
-      l.textContent = lblTxt;
-      l.style.cssText = `font-size:8px;font-weight:800;color:${clr.bd};margin-bottom:2px;flex-shrink:0;`;
-      el.appendChild(l);
-    }
-    const ta = makeTa(d[key], ph, v => { d[key] = v; save(); });
-    ta.style.cssText += `text-align:center;color:${TXT};`;
-    el.appendChild(ta);
-    return el;
+  function mkOval(x,y,w,h,lblTxt,key,ph,clr) {
+    const el=document.createElement('div');
+    el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${clr.bg};border:2px solid ${clr.bd};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:${Math.round(h*.17)}px ${Math.round(w*.1)}px;box-sizing:border-box;overflow:hidden;`;
+    if(lblTxt){const l=document.createElement('div');l.textContent=lblTxt;l.style.cssText=`font-size:8px;font-weight:800;color:${clr.bd};margin-bottom:2px;flex-shrink:0;`;el.appendChild(l);}
+    const ta=makeTa(d[key]||'',ph,v=>{d[key]=v;save();}); ta.style.cssText+=`text-align:center;color:${TXT};`; el.appendChild(ta); return el;
   }
-
-  function mkReprBox(x, y) {
-    const el = document.createElement('div');
-    el.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${REPR_W}px;background:#fafafa;border:1.5px solid #bbb;border-radius:6px;padding:8px 10px;box-sizing:border-box;`;
-    const hdr = document.createElement('div');
-    hdr.textContent = 'representatieniveaus:';
-    hdr.style.cssText = 'font-size:9px;font-weight:800;color:#888;margin-bottom:5px;';
-    el.appendChild(hdr);
-    [['reprStimulus','stimulusaspect'], ['reprResponse','responsaspect'], ['reprBetekenis','betekenisaspect']].forEach(([key, lbl]) => {
-      const row = document.createElement('div'); row.style.marginBottom = '4px';
-      const l = document.createElement('div'); l.textContent = lbl;
-      l.style.cssText = 'font-size:9px;font-style:italic;color:#888;';
-      const ta = makeTa(d[key] || '', '', v => { d[key] = v; save(); });
-      ta.style.cssText += 'font-size:10px;color:#333;';
-      row.append(l, ta); el.appendChild(row);
+  function mkRepr(x,y) {
+    const el=document.createElement('div');
+    el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${REPR_W}px;background:#fafafa;border:1.5px solid #bbb;border-radius:6px;padding:8px 10px;box-sizing:border-box;`;
+    const hdr=document.createElement('div'); hdr.textContent='representatieniveaus:'; hdr.style.cssText='font-size:9px;font-weight:800;color:#888;margin-bottom:5px;'; el.appendChild(hdr);
+    [['reprStimulus','stimulusaspect'],['reprResponse','responsaspect'],['reprBetekenis','betekenisaspect']].forEach(([k,lb])=>{
+      const row=document.createElement('div'); row.style.marginBottom='4px';
+      const ll=document.createElement('div'); ll.textContent=lb; ll.style.cssText='font-size:9px;font-style:italic;color:#888;';
+      const ta=makeTa(d[k]||'','',v=>{d[k]=v;save();}); ta.style.cssText+='font-size:10px;color:#333;';
+      row.append(ll,ta); el.appendChild(row);
     });
     return el;
   }
 
-  /* ════════════════════════════
-     SIMPELE LAYOUT (geen archief)
-  ════════════════════════════ */
-  if (!isArc) {
-    const osX = 10, osW = 120, osH = 90;
-    const csX = d.showOs ? osX + osW + 15 : 10;
-    const csY = 155, csW = 145, csH = 90;
-    const ovX = csX + csW + 80, ovY = 120, ovW = 215, ovH = 150;
-    const crX = ovX + 10, crY = ovY + ovH + 55, crW = 195, crH = 90;
+  /* OS */
+  if (d.showOs) {
+    canvas.appendChild(mkBox(10, csY, OS_W, CS_H, 'OS (5)', 'os', 'context', {bg:'#F2F6F0',bd:'#8AAA8A'}));
+    [csY+CS_H/2-7, csY+CS_H/2+7].forEach(cy => {
+      const c2=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      setA(c2,{cx:csX-10,cy,r:'3.5',fill:'#bbb'}); svg.appendChild(c2);
+    });
+  }
 
-    // OS
-    if (d.showOs) {
-      canvas.appendChild(mkBox(osX, csY, osW, osH, 'OS (5)', 'os', 'context', { bg: '#F2F6F0', bd: '#8AAA8A' }));
-      // stippeltjes OS — CS
-      [csY + csH / 2 - 7, csY + csH / 2 + 7].forEach(cy => {
-        const c2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        c2.setAttribute('cx', csX - 10); c2.setAttribute('cy', cy);
-        c2.setAttribute('r', '3.5'); c2.setAttribute('fill', '#bbb');
-        svg.appendChild(c2);
-      });
+  /* CS */
+  canvas.appendChild(mkBox(csX, csY, CS_W, CS_H, 'CS (1)', 'cs', 'uitlokkende situatie', {bg:LGRN,bd:GRN}));
+
+  /* Zwevende archieven boven centrale ovaal */
+  zweefs.forEach((arch, i) => {
+    const ax = zwStartX + i*(ZW_W+20);
+    const el = document.createElement('div');
+    el.style.cssText=`position:absolute;left:${ax}px;top:${TOP_Y}px;width:${ZW_W}px;display:flex;flex-direction:column;align-items:center;text-align:center;`;
+    const ico=Object.assign(document.createElement('div'),{textContent:'🗄',style:'font-size:18px;opacity:.55;flex-shrink:0;'});
+    const ta=makeTa(arch.label||'','archief-label',v=>{d.zweefArchieven[i].label=v;save();}); ta.style.cssText+='text-align:center;color:#555;font-size:10px;';
+    const del=document.createElement('button'); del.textContent='×'; del.className='no-print';
+    del.style.cssText='position:absolute;top:0;right:4px;border:none;background:transparent;cursor:pointer;font-size:12px;color:#aaa;';
+    del.addEventListener('click',()=>{d.zweefArchieven.splice(i,1);save();redraw();});
+    el.append(ico,ta,del); canvas.appendChild(el);
+    const archCX = ax+ZW_W/2;
+    const targetX = nZw===1 ? ovCX : ovX+(i/(nZw-1))*OV_W;
+    svgLine(archCX, TOP_Y+ZW_H, targetX, ovY-2);
+  });
+
+  /* Extra ovaaltjes boven archief-ovaal */
+  extras.forEach((ov, i) => {
+    const ex = exStartX + i*(EX_W+12);
+    const el = document.createElement('div');
+    el.style.cssText=`position:absolute;left:${ex}px;top:${TOP_Y}px;width:${EX_W}px;height:${EX_H}px;background:${LBLU};border:2px solid ${BLU};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 14px;box-sizing:border-box;overflow:hidden;`;
+    const lbl2=Object.assign(document.createElement('div'),{textContent:'US/UR-repr'}); lbl2.style.cssText=`font-size:8px;font-weight:800;color:${BLU};margin-bottom:2px;flex-shrink:0;`;
+    const ta=makeTa(ov.text||'','kerngebeurtenis',v=>{d.extraOvals[i].text=v;save();}); ta.style.cssText+=`text-align:center;color:${DBLUE};font-size:10px;`;
+    const del=document.createElement('button'); del.textContent='×'; del.className='no-print';
+    del.style.cssText='position:absolute;top:3px;right:7px;border:none;background:transparent;cursor:pointer;font-size:12px;color:#aaa;';
+    del.addEventListener('click',()=>{d.extraOvals.splice(i,1);save();redraw();});
+    el.append(lbl2,ta,del); canvas.appendChild(el);
+    const exCX = ex+EX_W/2;
+    const targetX = nEx===1 ? ovCX : ovX+(i/(nEx-1))*OV_W;
+    svgLine(exCX, TOP_Y+EX_H, targetX, ovY-2);
+  });
+
+  /* Repr bij archief-ovaal + top-rij ovaaltjes */
+  if (isArc && nEx > 0 && d.showRepr) {
+    canvas.appendChild(mkRepr(reprX, TOP_Y));
+    svgLine(exStartX+exTotalW, TOP_Y+EX_H/2, reprX-2, TOP_Y+EX_H/2);
+  }
+
+  /* Centrale ovaal */
+  if (isArc) {
+    const el=document.createElement('div');
+    el.style.cssText=`position:absolute;left:${ovX}px;top:${ovY}px;width:${OV_W}px;height:${OV_H}px;background:${LBLU};border:2px solid ${BLU};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:${Math.round(OV_H*.2)}px ${Math.round(OV_W*.1)}px;box-sizing:border-box;overflow:hidden;`;
+    const lbl2=Object.assign(document.createElement('div'),{textContent:'US/UR-repr'}); lbl2.style.cssText=`font-size:8px;font-weight:800;color:${BLU};margin-bottom:2px;flex-shrink:0;`;
+    const ta=makeTa(d.centralArchiefLabel||'','archief-label',v=>{d.centralArchiefLabel=v;save();}); ta.style.cssText+=`text-align:center;color:${DBLUE};`;
+    const ico=Object.assign(document.createElement('div'),{textContent:'🗄',style:`font-size:17px;margin-top:4px;opacity:.4;flex-shrink:0;`});
+    el.append(lbl2,ta,ico); canvas.appendChild(el);
+    if (d.showRepr && nEx===0) {
+      canvas.appendChild(mkRepr(reprX, reprY));
+      svgLine(ovX+OV_W, ovY+OV_H/2, reprX-2, ovY+OV_H/2);
     }
-
-    // CS
-    canvas.appendChild(mkBox(csX, csY, csW, csH, 'CS (1)', 'cs', 'uitlokkende situatie', { bg: LGRN, bd: GRN }));
-
-    // US/UR-repr ovaal
-    const ovLbl = d.assocType === 'identiteit' ? 'US/UR-repr (3)' : 'US/UR-repr (3)';
-    canvas.appendChild(mkOval(ovX, ovY, ovW, ovH, ovLbl, 'mainText', 'mentale representatie', { bg: LBLU, bd: BLU }));
-
-    // CR
-    canvas.appendChild(mkBox(crX, crY, crW, crH, 'CR (2)', 'cr', 'emotionele reactie', { bg: LGRN, bd: GRN }));
-
-    // Repr.niveaus (optioneel)
-    if (hasRepr) {
-      const rx = ovX + ovW + 18;
-      canvas.appendChild(mkReprBox(rx, ovY - 5));
-      svgLine(ovX + ovW, ovY + ovH / 2, rx - 2, ovY + ovH / 2);
-    }
-
-    // Pijlen
-    const csR = csX + csW, csMY = csY + csH / 2;
-    const ovMY = ovY + ovH / 2;
-    if (d.assocType === 'referentieel')   svgArc(csR, csMY, ovX, ovMY);
-    else if (d.assocType === 'identiteit') svgDblLine(csR, csMY, ovX, ovMY);
-    else                                   svgLine(csR, csMY, ovX - 2, ovMY);
-
-    svgLine(ovX + ovW / 2, ovY + ovH, crX + crW / 2, crY - 2);
-
-  /* ════════════════════════════
-     ARCHIEF LAYOUT
-  ════════════════════════════ */
   } else {
-    const csX = 15, csY = 175, csW = 125, csH = 80;
-    const arX = 185, arY = 65, arW = 255, arH = 225;
-    const arCX = arX + arW / 2, arCY = arY + arH / 2;
-    const exX = arX + arW + 18;
-
-    // CS
-    canvas.appendChild(mkBox(csX, csY, csW, csH, 'CS (1)', 'cs', 'uitlokkende situatie', { bg: LGRN, bd: GRN }));
-
-    // Archief ovaal (groot)
-    const arcEl = document.createElement('div');
-    arcEl.style.cssText = `position:absolute;left:${arX}px;top:${arY}px;width:${arW}px;height:${arH}px;background:${LBLU};border:2px solid ${BLU};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:38px 30px;box-sizing:border-box;overflow:hidden;`;
-    const arcLbl = Object.assign(document.createElement('div'), { textContent: 'archief' });
-    arcLbl.style.cssText = `font-size:9px;font-weight:800;color:${BLU};margin-bottom:2px;flex-shrink:0;`;
-    const arcTa = makeTa(d.archiefLabel || '', 'label', v => { d.archiefLabel = v; save(); });
-    arcTa.style.cssText += `text-align:center;color:${DBLUE};`;
-    const arcIco = Object.assign(document.createElement('div'), { textContent: '🗄', style: `font-size:18px;margin-top:5px;opacity:.4;flex-shrink:0;` });
-    arcEl.append(arcLbl, arcTa, arcIco);
-    canvas.appendChild(arcEl);
-
-    // Extra ovaaltjes (rechts van archief)
-    extras.forEach((ov, i) => {
-      const ey = arY + 8 + i * 108, ew = 175, eh = 90;
-      const el = document.createElement('div');
-      el.style.cssText = `position:absolute;left:${exX}px;top:${ey}px;width:${ew}px;height:${eh}px;background:${LBLU};border:2px solid ${BLU};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px 18px;box-sizing:border-box;overflow:hidden;`;
-      const exLbl = Object.assign(document.createElement('div'), { textContent: 'US/UR-repr' });
-      exLbl.style.cssText = `font-size:8px;font-weight:800;color:${BLU};margin-bottom:2px;flex-shrink:0;`;
-      const exTa = makeTa(ov.text || '', 'kerngebeurtenis', v => { d.extraOvals[i].text = v; save(); });
-      exTa.style.cssText += `text-align:center;color:${DBLUE};font-size:10px;`;
-      const delB = document.createElement('button');
-      delB.textContent = '×'; delB.className = 'no-print';
-      delB.style.cssText = 'position:absolute;top:4px;right:8px;border:none;background:transparent;cursor:pointer;font-size:13px;color:#aaa;line-height:1;';
-      delB.addEventListener('click', () => { d.extraOvals.splice(i, 1); save(); redraw(); });
-      el.append(exLbl, exTa, delB);
-      canvas.appendChild(el);
-      // Pijl: extra ovaal → archief
-      svgLine(exX, ey + eh / 2, arX + arW - 2, arCY + (i - (extras.length - 1) / 2) * 28);
-    });
-
-    // Kernthema ovaal (optioneel, onder archief)
-    let belowArchiefY = arY + arH;
-    if (hasKT) {
-      const ktX = arX + 15, ktY = belowArchiefY + 28, ktW = 225, ktH = 115;
-      const ktCX = ktX + ktW / 2;
-      canvas.appendChild(mkOval(ktX, ktY, ktW, ktH, 'US/UR-repr van een kernthema', 'kernthemaText', "'kernthema'", { bg: '#EEF2FA', bd: GRN }));
-      svgLine(arCX, arY + arH, ktCX, ktY - 2);
-
-      // Repr.niveaus rechts van kernthema
-      if (hasRepr) {
-        const rx = ktX + ktW + 18, ry = ktY;
-        canvas.appendChild(mkReprBox(rx, ry));
-        svgLine(ktX + ktW, ktY + ktH / 2, rx - 2, ktY + ktH / 2);
-      }
-
-      belowArchiefY = ktY + ktH;
-      // CR
-      const crX = ktX, crY = belowArchiefY + 28, crW = 200, crH = 85;
-      canvas.appendChild(mkBox(crX, crY, crW, crH, 'CR (2)', 'cr', 'emotionele reactie', { bg: LGRN, bd: GRN }));
-      svgLine(ktCX, belowArchiefY, crX + crW / 2, crY - 2);
-
-      // Pas canvas hoogte aan
-      const newH = crY + crH + 24;
-      canvas.style.height = newH + 'px';
-      svg.setAttribute('height', newH); svg.setAttribute('viewBox', `0 0 ${CW} ${newH}`);
-
-    } else {
-      // Geen kernthema: CR direct onder archief
-      if (hasRepr) {
-        // Repr rechts (naast archief of naast extra ovaaltjes)
-        const rx = extras.length > 0 ? exX + 180 : arX + arW + 18;
-        const ry = arY + 10;
-        canvas.appendChild(mkReprBox(rx, ry));
-        svgLine(arX + arW, arCY, rx - 2, arCY);
-      }
-      const crX = arX + 20, crY = belowArchiefY + 35, crW = 215, crH = 85;
-      canvas.appendChild(mkBox(crX, crY, crW, crH, 'CR (2)', 'cr', 'emotionele reactie', { bg: LGRN, bd: GRN }));
-      svgLine(arCX, arY + arH, crX + crW / 2, crY - 2);
-
-      const newH = crY + crH + 24;
-      canvas.style.height = newH + 'px';
-      svg.setAttribute('height', newH); svg.setAttribute('viewBox', `0 0 ${CW} ${newH}`);
+    const ovLbl = isKT ? 'US/UR-repr van een kernthema' : 'US/UR-repr';
+    const ovPh  = isKT ? "'kernthema'" : 'mentale representatie';
+    canvas.appendChild(mkOval(ovX,ovY,OV_W,OV_H,ovLbl,'centralText',ovPh,{bg:LBLU,bd:BLU}));
+    if (d.showRepr) {
+      canvas.appendChild(mkRepr(reprX, reprY));
+      svgLine(ovX+OV_W, ovY+OV_H/2, reprX-2, ovY+OV_H/2);
     }
-
-    // Pijl CS → archief
-    const csMY = csY + csH / 2, csR = csX + csW;
-    if (d.assocType === 'referentieel')   svgArc(csR, csMY, arX, arCY);
-    else if (d.assocType === 'identiteit') svgDblLine(csR, csMY, arX, arCY);
-    else                                   svgLine(csR, csMY, arX - 2, arCY);
   }
+
+  /* CR */
+  canvas.appendChild(mkBox(crX, crY, CR_W, CR_H, 'CR (2)', 'cr', 'emotionele reactie', {bg:LGRN,bd:GRN}));
+
+  /* Pijlen CS → centrale ovaal */
+  const csMY=csY+CS_H/2, csR=csX+CS_W, ovMY=ovY+OV_H/2;
+  if      (d.assocType==='referentieel') svgArc(csR,csMY,ovX,ovMY);
+  else if (d.assocType==='identiteit')   svgDbl(csR,csMY,ovX,ovMY);
+  else                                   svgLine(csR,csMY,ovX-2,ovMY);
+
+  /* Pijl centrale ovaal → CR */
+  svgLine(ovCX, ovY+OV_H, crX+CR_W/2, crY-2);
 
   canvas.appendChild(svg);
   container.appendChild(canvas);
