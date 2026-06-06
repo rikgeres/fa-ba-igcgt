@@ -1798,7 +1798,7 @@ function buildGroupBar(container, d) {
     };
 
     const delBtn = mkTrashBtn('no-print', 'Verwijder', () => {
-      if(confirm(`Verwijder deze ${sibling.type}?`)) { remove(sibling.id); groupSection.innerHTML=''; buildGroupBar(groupSection, d); }
+      if(confirm(`Verwijder deze ${sibling.type}?`)) { remove(sibling.id); render(); }
     });
     delBtn.style.cssText+='background:none;border:none;cursor:pointer;color:#ccc;padding:4px;display:flex;align-items:center;';
     delBtn.addEventListener('mouseenter',()=>delBtn.style.color='var(--danger)');
@@ -1806,8 +1806,8 @@ function buildGroupBar(container, d) {
 
     miniBar.append(
       typeBadge, titleInp,
-      mkArr('▲', idx===0, ()=>{ const l=[...fullList]; swap(l,idx,idx-1); saveGroupOrder(l); groupSection.innerHTML=''; buildGroupBar(groupSection,d); }),
-      mkArr('▼', idx===fullList.length-1, ()=>{ const l=[...fullList]; swap(l,idx,idx+1); saveGroupOrder(l); groupSection.innerHTML=''; buildGroupBar(groupSection,d); }),
+      mkArr('▲', idx===0, ()=>{ const l=[...fullList]; swap(l,idx,idx-1); saveGroupOrder(l); render(); }),
+      mkArr('▼', idx===fullList.length-1, ()=>{ const l=[...fullList]; swap(l,idx,idx+1); saveGroupOrder(l); render(); }),
       delBtn
     );
     sec.appendChild(miniBar);
@@ -1847,8 +1847,11 @@ function buildGroupBar(container, d) {
     return [...ordered, ...rest];
   }
 
+  const inner = document.createElement('div');
+  container.appendChild(inner);
+
   function render() {
-    container.innerHTML = '';
+    inner.innerHTML = '';
     const siblings = getSorted();
     // Toon alle analyses BEHALVE de huidige (die staat al boven)
     const others = siblings.filter(s => s.id !== d.id);
@@ -1904,7 +1907,7 @@ function buildGroupBar(container, d) {
     document.addEventListener('click', ()=>{ menu.style.display='none'; }, {once:true});
 
     footer.append(plusBtn, menu);
-    container.appendChild(footer);
+    inner.appendChild(footer);
   }
 
   render();
