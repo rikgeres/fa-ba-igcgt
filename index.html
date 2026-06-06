@@ -1723,9 +1723,11 @@ function buildBACanvas(container, d, save, redraw) {
   } else {
     const isSq  = d.assocType === 'sequentieel';
     const isRef = d.assocType === 'referentieel';
-    const sub   = d.centralSubtype || '';
+    const isIdt = d.assocType === 'identiteit';
+    // Bij identiteit is US/UR altijd kernthema; sub hoeft niet gekozen te worden
+    const sub   = isIdt ? 'kernthema' : (d.centralSubtype || '');
 
-    if (isRef) {
+    if (isRef || isIdt) {
       /* --- Referentieel: klikbare subtype-keuze in de ovaal --- */
       const el = document.createElement('div');
       el.style.cssText = `position:absolute;left:${ovX}px;top:${ovY}px;width:${OV_W}px;height:${OV_H}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:${Math.round(OV_H*.17)}px ${Math.round(OV_W*.1)}px;box-sizing:border-box;overflow:hidden;`;
@@ -1736,12 +1738,15 @@ function buildBACanvas(container, d, save, redraw) {
         const lbl = document.createElement('div');
         lbl.textContent = 'US/UR-kernthema';
         lbl.style.cssText = `font-size:10px;font-weight:800;color:${N_BD};`;
-        const resetKT = document.createElement('span');
-        resetKT.textContent = '↩';
-        resetKT.title = 'keuze ongedaan maken';
-        resetKT.style.cssText = `font-size:10px;color:${N_BD};cursor:pointer;opacity:.6;`;
-        resetKT.addEventListener('click', () => { d.centralSubtype=''; d.centralText=''; save(); redraw(); });
-        lblRow.append(lbl, resetKT);
+        if (!isIdt) {
+          const resetKT = document.createElement('span');
+          resetKT.textContent = '↩';
+          resetKT.title = 'keuze ongedaan maken';
+          resetKT.style.cssText = `font-size:10px;color:${N_BD};cursor:pointer;opacity:.6;`;
+          resetKT.addEventListener('click', () => { d.centralSubtype=''; d.centralText=''; save(); redraw(); });
+          lblRow.append(resetKT);
+        }
+        lblRow.prepend(lbl);
         const ta = makeTa(d.centralText || '', 'zelfbeeld/ mensbeeld/ wereldbeeld', v => { d.centralText = v; save(); });
         ta.style.cssText += `text-align:center;color:${TXT};font-size:13px;`;
         ta.addEventListener('focus', () => {
