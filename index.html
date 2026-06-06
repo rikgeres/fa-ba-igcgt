@@ -2487,31 +2487,84 @@ function mkBtn(cls, html, fn) {
 
 const TRASH_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
 
-/* Archiefkast SVG: 3 lades, bovenste open met uitgetrokken lade */
+/* Archiefkast SVG: 2 lades, onderste open met hangmappen, perspectief */
 function mkCabinetSvg(w, h, color) {
-  color = color || '#888';
-  const s = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 60 80">
-    <!-- Kast body -->
-    <rect x="4" y="2" width="52" height="76" rx="3" ry="3" fill="#e8e8e8" stroke="${color}" stroke-width="2"/>
-    <!-- Bovenkant -->
-    <rect x="4" y="2" width="52" height="6" rx="2" fill="#d0d0d0" stroke="${color}" stroke-width="1.5"/>
-    <!-- Lade 1 (open) - uitgetrokken -->
-    <rect x="0" y="10" width="52" height="20" rx="2" fill="#c8c8c8" stroke="${color}" stroke-width="1.5"/>
-    <rect x="2" y="12" width="48" height="16" rx="1" fill="#b8b8b8" stroke="${color}" stroke-width="1"/>
-    <!-- Greep lade 1 -->
-    <rect x="18" y="19" width="16" height="4" rx="2" fill="#999" stroke="${color}" stroke-width="1"/>
-    <!-- Schaduwlijn open lade -->
-    <line x1="52" y1="10" x2="56" y2="14" stroke="${color}" stroke-width="1.5"/>
-    <line x1="52" y1="30" x2="56" y2="34" stroke="${color}" stroke-width="1.5"/>
-    <line x1="56" y1="14" x2="56" y2="34" stroke="${color}" stroke-width="1.5"/>
-    <!-- Lade 2 (dicht) -->
-    <rect x="6" y="32" width="48" height="20" rx="2" fill="#ddd" stroke="${color}" stroke-width="1.5"/>
-    <rect x="8" y="34" width="44" height="16" rx="1" fill="#d4d4d4" stroke="${color}" stroke-width="1"/>
-    <rect x="20" y="41" width="14" height="4" rx="2" fill="#bbb" stroke="${color}" stroke-width="1"/>
-    <!-- Lade 3 (dicht) -->
-    <rect x="6" y="54" width="48" height="20" rx="2" fill="#ddd" stroke="${color}" stroke-width="1.5"/>
-    <rect x="8" y="56" width="44" height="16" rx="1" fill="#d4d4d4" stroke="${color}" stroke-width="1"/>
-    <rect x="20" y="63" width="14" height="4" rx="2" fill="#bbb" stroke="${color}" stroke-width="1"/>
+  const s = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 90 110">
+    <defs>
+      <linearGradient id="cab-front" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#b0b8c4"/>
+        <stop offset="100%" stop-color="#8e98a6"/>
+      </linearGradient>
+      <linearGradient id="cab-side" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#6e7a88"/>
+        <stop offset="100%" stop-color="#58636f"/>
+      </linearGradient>
+      <linearGradient id="cab-top" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#cdd4dc"/>
+        <stop offset="100%" stop-color="#a8b2bc"/>
+      </linearGradient>
+      <linearGradient id="drawer-front" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#9aa5b2"/>
+        <stop offset="100%" stop-color="#7e8d9c"/>
+      </linearGradient>
+    </defs>
+
+    <!-- Zijkant (rechterkant, perspectief) -->
+    <polygon points="62,4 80,12 80,108 62,100" fill="url(#cab-side)"/>
+
+    <!-- Voorkant kast body -->
+    <rect x="4" y="4" width="58" height="96" rx="2" fill="url(#cab-front)"/>
+
+    <!-- Bovenkant (perspectief vlak) -->
+    <polygon points="4,4 62,4 80,12 22,12" fill="url(#cab-top)"/>
+
+    <!-- Rand boven -->
+    <rect x="4" y="4" width="58" height="4" rx="1" fill="#c8d0d8"/>
+
+    <!-- === BOVENSTE LADE (dicht) === -->
+    <rect x="6" y="10" width="54" height="40" rx="2" fill="url(#drawer-front)" stroke="#6a7888" stroke-width="1"/>
+    <!-- Label houder bovenste lade -->
+    <rect x="20" y="16" width="24" height="12" rx="2" fill="#dde3ea" stroke="#8898a8" stroke-width="1"/>
+    <rect x="22" y="18" width="20" height="8" rx="1" fill="#f2f4f6"/>
+    <!-- Greep bovenste lade -->
+    <rect x="24" y="34" width="18" height="6" rx="3" fill="#5a6878" stroke="#48586a" stroke-width="1"/>
+    <rect x="26" y="35.5" width="14" height="3" rx="1.5" fill="#707e8e"/>
+
+    <!-- === ONDERSTE LADE (open, uitgetrokken) === -->
+    <!-- Lade-front uitgetrokken (naar voren) -->
+    <rect x="2" y="56" width="54" height="40" rx="2" fill="url(#drawer-front)" stroke="#6a7888" stroke-width="1"/>
+    <!-- Label houder onderste lade -->
+    <rect x="16" y="62" width="24" height="12" rx="2" fill="#dde3ea" stroke="#8898a8" stroke-width="1"/>
+    <rect x="18" y="64" width="20" height="8" rx="1" fill="#f2f4f6"/>
+    <!-- Greep onderste lade -->
+    <rect x="20" y="82" width="18" height="6" rx="3" fill="#5a6878" stroke="#48586a" stroke-width="1"/>
+    <rect x="22" y="83.5" width="14" height="3" rx="1.5" fill="#707e8e"/>
+
+    <!-- Lade-geleiders (zijkant zichtbaar) -->
+    <rect x="56" y="55" width="6" height="42" fill="#58636f" rx="1"/>
+
+    <!-- Binnenste van de kast waar mappen in zitten -->
+    <rect x="6" y="52" width="50" height="4" fill="#4a5560"/>
+
+    <!-- Hangmappen in de open lade -->
+    <!-- Map 1 (achterste) -->
+    <rect x="14" y="36" width="36" height="22" rx="1" fill="#e8eaec" stroke="#b0b8c0" stroke-width="0.8"/>
+    <rect x="14" y="36" width="12" height="4" rx="1" fill="#d0d4d8" stroke="#a8b0b8" stroke-width="0.8"/>
+    <text x="20" y="39.5" font-size="4" fill="#5a6878" font-family="Arial" font-weight="bold">A-D</text>
+
+    <!-- Map 2 -->
+    <rect x="26" y="34" width="36" height="22" rx="1" fill="#eceef0" stroke="#b8bec6" stroke-width="0.8"/>
+    <rect x="34" y="34" width="12" height="4" rx="1" fill="#d4d8dc" stroke="#aab0b8" stroke-width="0.8"/>
+    <text x="40" y="37.5" font-size="4" fill="#5a6878" font-family="Arial" font-weight="bold">E-H</text>
+
+    <!-- Map 3 (voorste) -->
+    <rect x="38" y="32" width="18" height="22" rx="1" fill="#f0f2f4" stroke="#c0c6cc" stroke-width="0.8"/>
+    <rect x="44" y="32" width="12" height="4" rx="1" fill="#d8dce0" stroke="#b0b8be" stroke-width="0.8"/>
+    <text x="50" y="35.5" font-size="4" fill="#5a6878" font-family="Arial" font-weight="bold">I-L</text>
+
+    <!-- Kastrand / outline -->
+    <rect x="4" y="4" width="58" height="96" rx="2" fill="none" stroke="#5a6878" stroke-width="1.5"/>
+    <polygon points="4,4 62,4 80,12 80,108 62,100 4,100" fill="none" stroke="#5a6878" stroke-width="1.5"/>
   </svg>`;
   const div = document.createElement('div');
   div.innerHTML = s;
