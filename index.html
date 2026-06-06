@@ -542,27 +542,27 @@ let _pendingGroup = null;
 ───────────────────────────────────────── */
 const THEMES = {
   blauw: { label:'Blauw',  swatch:'#2A76A2',
-    ba:{ blu:'#2A76A2', lblu:'#DDEAF7', grn:'#2A76A2', lgrn:'#EBF5FB' },
+    ba:{ blu:'#2A76A2', lblu:'#DDEAF7', grn:'#2A76A2', lgrn:'#EBF5FB', osl:'#E8F4FA', osb:'#7AAEC4' },
     fa:{ dot:'#7A99B0', bg:'#E8EEF5' },
     ht:{ p:'#2A76A2', pl:'#CDDEEA', s:'#83B1C0' } },
   groen: { label:'Groen',  swatch:'#2A7A4A',
-    ba:{ blu:'#2A7A4A', lblu:'#D4EEE0', grn:'#2A7A4A', lgrn:'#E8F7F0' },
+    ba:{ blu:'#2A7A4A', lblu:'#D4EEE0', grn:'#2A7A4A', lgrn:'#E8F7F0', osl:'#F2F6F0', osb:'#8AAA8A' },
     fa:{ dot:'#5A8A6A', bg:'#E8F5EE' },
     ht:{ p:'#2A7A4A', pl:'#C8E8D8', s:'#6AAB80' } },
   paars: { label:'Paars',  swatch:'#6B3FA0',
-    ba:{ blu:'#6B3FA0', lblu:'#EDE0F8', grn:'#6B3FA0', lgrn:'#F5EEFF' },
+    ba:{ blu:'#6B3FA0', lblu:'#EDE0F8', grn:'#6B3FA0', lgrn:'#F5EEFF', osl:'#F5EEF8', osb:'#A880C8' },
     fa:{ dot:'#8A70B8', bg:'#F0EAF8' },
     ht:{ p:'#6B3FA0', pl:'#DDD0F0', s:'#9A70C8' } },
   warm:  { label:'Warm',   swatch:'#B85C38',
-    ba:{ blu:'#B85C38', lblu:'#FAE5DC', grn:'#B85C38', lgrn:'#FDF2EE' },
+    ba:{ blu:'#B85C38', lblu:'#FAE5DC', grn:'#B85C38', lgrn:'#FDF2EE', osl:'#FAF0EC', osb:'#C89080' },
     fa:{ dot:'#C07050', bg:'#F8EDE8' },
     ht:{ p:'#B85C38', pl:'#F0D8CC', s:'#D4906A' } },
   amber: { label:'Amber',  swatch:'#A07830',
-    ba:{ blu:'#A07830', lblu:'#FAF0D0', grn:'#A07830', lgrn:'#FDF8EC' },
+    ba:{ blu:'#A07830', lblu:'#FAF0D0', grn:'#A07830', lgrn:'#FDF8EC', osl:'#FAF5E0', osb:'#C0A858' },
     fa:{ dot:'#B89048', bg:'#F8F4E0' },
     ht:{ p:'#A07830', pl:'#EEE0B8', s:'#C8A850' } },
   grijs: { label:'Grijs',  swatch:'#5A6070',
-    ba:{ blu:'#5A6070', lblu:'#E4E8EC', grn:'#5A6070', lgrn:'#F0F2F4' },
+    ba:{ blu:'#5A6070', lblu:'#E4E8EC', grn:'#5A6070', lgrn:'#F0F2F4', osl:'#EDEEF0', osb:'#8A9098' },
     fa:{ dot:'#7A808A', bg:'#EEEEEE' },
     ht:{ p:'#5A6070', pl:'#D0D4D8', s:'#8A9098' } },
 };
@@ -1457,6 +1457,7 @@ function buildBACanvas(container, d, save, redraw) {
   const th = THEMES[d.theme || 'blauw'].ba;
   const BLU = th.blu, LBLU = th.lblu, DBLUE = '#1A3A5C';
   const GRN = th.grn, LGRN = th.lgrn, TXT = '#1D3557';
+  const OSL = th.osl, OSB = th.osb;
   const REPR_W = 128;
 
   const isArc = d.centralType === 'archief';
@@ -1585,7 +1586,7 @@ function buildBACanvas(container, d, save, redraw) {
 
   /* OS — altijd subtiel groen (context-vak, eigen kleur) */
   if (d.showOs) {
-    canvas.appendChild(mkBox(10, csY, OS_W, CS_H, 'OS (5)', 'os', 'context', '#F2F6F0', '#8AAA8A'));
+    canvas.appendChild(mkBox(10, csY, OS_W, CS_H, 'OS (5)', 'os', 'context', OSL, OSB));
     [csY+CS_H/2-7, csY+CS_H/2+7].forEach(cy => {
       const c2=document.createElementNS('http://www.w3.org/2000/svg','circle');
       setA(c2,{cx:csX-10,cy,r:'3.5',fill:'#bbb'}); svg.appendChild(c2);
