@@ -1314,7 +1314,7 @@ function pgBA(c, id) {
     theme: 'blauw',
     showOs: false, os: '',
     cs: '',
-    assocType: 'referentieel',
+    assocType: '',
     centralType: 'usur',
     centralSubtype: '',
     centralText: '',
@@ -1889,8 +1889,9 @@ function buildBACanvas(container, d, save, redraw) {
   const csMY=csY+CS_H/2, csR=csX+CS_W, ovMY=ovY+OV_H/2;
   if      (d.assocType==='referentieel') svgArc(csR,csMY,ovX,ovMY);
   else if (d.assocType==='identiteit')   svgDbl(csR,csMY,ovX,ovMY);
-  else if (d.causal)                     svgThickArrow(csR+4,csMY,ovX-4,ovMY);
-  else                                   svgLine(csR,csMY,ovX-2,ovMY);
+  else if (d.assocType==='sequentieel' && d.causal) svgThickArrow(csR+4,csMY,ovX-4,ovMY);
+  else if (d.assocType==='sequentieel')  svgLine(csR,csMY,ovX-2,ovMY);
+  /* anders (assocType leeg): geen pijl tekenen */
 
   /* Pijl centrale ovaal → CR */
   svgLine(ovCX, ovY+OV_H, crX+CR_W/2, crY-2);
@@ -2062,7 +2063,7 @@ function buildGroupBar(container, d) {
         const newId2 = uid();
         const newAnalysis = type==='FA'
           ? { id:newId2, type:'FA', title:'', client:'', date:today(), groupId:d.groupId, theme:'blauw', sd:'', r:'', fnc:'', srPosTxt:'', srPosType:'', srNegItems:[{type:'',txt:''}], notities:'' }
-          : { id:newId2, type:'BA', title:'', client:'', date:today(), groupId:d.groupId, theme:'blauw', showOs:false, os:'', cs:'', assocType:'referentieel', centralType:'usur', centralSubtype:'', centralText:'', centralArchiefLabel:'', extraOvals:[], zweefArchieven:[], showRepr:false, reprStimulus:'', reprResponse:'', reprBetekenis:'', cr:'' };
+          : { id:newId2, type:'BA', title:'', client:'', date:today(), groupId:d.groupId, theme:'blauw', showOs:false, os:'', cs:'', assocType:'', centralType:'usur', centralSubtype:'', centralText:'', centralArchiefLabel:'', extraOvals:[], zweefArchieven:[], showRepr:false, reprStimulus:'', reprResponse:'', reprBetekenis:'', cr:'' };
         upsert(newAnalysis);
         // Sla volgorde op in alle groepsleden
         const allData2 = load();
