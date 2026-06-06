@@ -837,7 +837,7 @@ function buildFA(c, d, save) {
   c.appendChild(bar);
 
   /* ── Titelregel ── */
-  c.appendChild(mkTitleRow(d, save, 'Functieanalyse'));
+  c.appendChild(mkTitleRow(d, save, 'FA'));
 
   /* ── Themakiezer ── */
   c.appendChild(mkThemePicker(d, id => { save({ theme: id }); redraw(); }));
@@ -1358,7 +1358,7 @@ function pgBA(c, id) {
   c.appendChild(bar);
 
   /* ── Titelregel ── */
-  c.appendChild(mkTitleRow(d, save, 'Betekenisanalyse'));
+  c.appendChild(mkTitleRow(d, save, 'BA'));
 
   /* ── Themakiezer ── */
   const themeRow = document.createElement('div');
@@ -1652,19 +1652,27 @@ function buildBACanvas(container, d, save, redraw) {
 /* ─────────────────────────────────────────
    Titelregel — bovenaan FA en BA
 ───────────────────────────────────────── */
-function mkTitleRow(d, save, placeholder) {
+function mkTitleRow(d, save, typeLabel) {
   const row = document.createElement('div');
   row.className = 'no-print';
-  row.style.cssText = 'padding:10px 24px 4px;';
+  row.style.cssText = 'padding:10px 24px 4px;display:flex;align-items:baseline;gap:8px;';
 
+  /* Type-badge ("FA", "BA", "HT") */
+  const badge = document.createElement('span');
+  badge.textContent = typeLabel;
+  badge.style.cssText = 'font-size:13px;font-weight:800;color:#aaa;letter-spacing:.05em;flex-shrink:0;';
+  row.appendChild(badge);
+
+  /* Titel-input */
   const inp = document.createElement('input');
   inp.type = 'text';
   inp.value = d.title || '';
-  inp.placeholder = placeholder || 'Titel…';
-  inp.style.cssText = 'width:100%;box-sizing:border-box;font-size:18px;font-weight:700;border:none;border-bottom:2px solid transparent;background:transparent;color:#1D3557;outline:none;padding:2px 0;transition:border-color .15s;';
-  inp.addEventListener('focus', () => inp.style.borderBottomColor = 'var(--cgt-blue)');
-  inp.addEventListener('blur',  () => inp.style.borderBottomColor = 'transparent');
-  inp.addEventListener('input', () => { d.title = inp.value; save(); });
+  inp.placeholder = '… geef een naam';
+  inp.style.cssText = 'flex:1;font-size:18px;font-weight:700;border:none;border-bottom:2px dashed #ddd;background:transparent;color:#1D3557;outline:none;padding:2px 0;transition:border-color .15s, border-style .15s;';
+  inp.addEventListener('focus', () => { inp.style.borderBottomColor = 'var(--cgt-blue)'; inp.style.borderBottomStyle = 'solid'; });
+  inp.addEventListener('blur',  () => { inp.style.borderBottomColor = '#ddd';            inp.style.borderBottomStyle = 'dashed'; });
+  /* Fix: gebruik save({title}) zodat de spread in FA/BA save() de nieuwe waarde meepakt */
+  inp.addEventListener('input', () => save({ title: inp.value }));
 
   row.appendChild(inp);
   return row;
@@ -1789,7 +1797,8 @@ function pgHT(c, id) {
   if (!d.theme) d.theme = 'blauw';
 
   let saveTimer = null;
-  function save() {
+  function save(extra) {
+    if (extra) Object.assign(d, extra);
     upsert(d);
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => toast('Automatisch opgeslagen ✓'), 1200);
@@ -1915,7 +1924,7 @@ function buildHT(c, d, save, redrawHT) {
   c.appendChild(bar);
 
   /* ── Titelregel + themakiezer ── */
-  c.appendChild(mkTitleRow(d, save, 'Holistische Theorie'));
+  c.appendChild(mkTitleRow(d, save, 'HT'));
   if (redrawHT) c.appendChild(mkThemePicker(d, id => { d.theme = id; save(); redrawHT(); }));
 
   /* ── Scroll wrapper + canvas ── */
