@@ -1431,6 +1431,7 @@ function buildBACfgBar(bar, d, save, redraw) {
     rad('referentieel', d.assocType==='referentieel', () => { save({assocType:'referentieel'}); redraw(); }),
     rad('sequentieel',  d.assocType==='sequentieel',  () => { save({assocType:'sequentieel'});  redraw(); }),
     rad('identiteit',   d.assocType==='identiteit',   () => { save({assocType:'identiteit'});   redraw(); }),
+    ...(d.assocType==='sequentieel' ? [sep(), lbl('Pijl CS→US/UR:'), rad('voorspelt', !d.causal, () => { save({causal:false}); redraw(); }), rad('veroorzaakt (causaal)', !!d.causal, () => { save({causal:true}); redraw(); })] : []),
     sep(),
     lbl('Centrale ovaal:'),
     rad('US/UR-repr',    d.centralType!=='archief',   () => { save({centralType:'usur'});      redraw(); }),
@@ -1523,6 +1524,31 @@ function buildBACanvas(container, d, save, redraw) {
   function svgLine(x1,y1,x2,y2) {
     svg.appendChild(setA(document.createElementNS('http://www.w3.org/2000/svg','line'),
       {x1,y1,x2,y2,stroke:GRN,'stroke-width':'1.5','marker-end':'url(#ba-arr)'}));
+  }
+  function svgThickArrow(x1,y1,x2,y2) {
+    // Dikke gevulde pijl voor causaal verband
+    const dx = x2-x1, dy = y2-y1, len = Math.sqrt(dx*dx+dy*dy);
+    const ux = dx/len, uy = dy/len;
+    const hw = 9, tipLen = 22, shaftW = 5;
+    // shaft eindigt voor de punt
+    const sx2 = x2 - ux*tipLen, sy2 = y2 - uy*tipLen;
+    // loodrechte richting
+    const px = -uy, py = ux;
+    // shaft als rechthoek (polygon)
+    const pts = [
+      [x1+px*shaftW, y1+py*shaftW],
+      [sx2+px*shaftW, sy2+py*shaftW],
+      [sx2+px*hw, sy2+py*hw],
+      [x2, y2],
+      [sx2-px*hw, sy2-py*hw],
+      [sx2-px*shaftW, sy2-py*shaftW],
+      [x1-px*shaftW, y1-py*shaftW],
+    ].map(p=>p.join(',')).join(' ');
+    const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    poly.setAttribute('points', pts);
+    poly.setAttribute('fill', GRN);
+    poly.setAttribute('stroke', 'none');
+    svg.appendChild(poly);
   }
   function svgArc(x1,y1,x2,y2) {
     // Boogje zweeft vrij tussen de elementen (raakt niet de randen)
@@ -1673,6 +1699,7 @@ function buildBACanvas(container, d, save, redraw) {
   const csMY=csY+CS_H/2, csR=csX+CS_W, ovMY=ovY+OV_H/2;
   if      (d.assocType==='referentieel') svgArc(csR,csMY,ovX,ovMY);
   else if (d.assocType==='identiteit')   svgDbl(csR,csMY,ovX,ovMY);
+  else if (d.causal)                     svgThickArrow(csR+4,csMY,ovX-4,ovMY);
   else                                   svgLine(csR,csMY,ovX-2,ovMY);
 
   /* Pijl centrale ovaal → CR */
