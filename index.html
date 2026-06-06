@@ -908,7 +908,7 @@ function buildFA(c, d, save) {
       ? [{ type: d.srNegType || '', txt: d.srNegTxt || '' }]
       : [{ type: '', txt: '' }];
   }
-  const nodeSrNeg = makeFncNode(d.srNegItems, save);
+  const nodeSrNeg = makeFncNode(d.srNegItems, save, faTheme.dot);
   nodeSrNeg.style.gridArea = '2 / 5 / 3 / 6';
 
   diag.append(nodeSd, dotsEl, nodeR, bpArr1, nodeSrPos, bpArr2, nodeSrNeg);
@@ -1099,7 +1099,8 @@ function makeSrNode(shape, labelTxt, bodyTxt, selectedType, types, save, prefix)
 
 
 /* ── FNC node: meerdere items, elk met type-prefix + omschrijving ── */
-function makeFncNode(items, save) {
+function makeFncNode(items, save, accentColor) {
+  accentColor = accentColor || '#9B7B7B';
   const el = document.createElement('div');
   el.className = 'fa-node';
   if (items.some(i => i.txt || i.type)) el.classList.add('filled');
@@ -1217,8 +1218,8 @@ function makeFncNode(items, save) {
     addBtn.textContent = '+ voeg toe';
     addBtn.className = 'fa-edit-hint';
     addBtn.style.cssText = `
-      background:none;border:1px dashed ${faTheme.dot};border-radius:4px;
-      color:${faTheme.dot};font-size:11px;cursor:pointer;padding:2px 6px;
+      background:none;border:1px dashed ${accentColor};border-radius:4px;
+      color:${accentColor};font-size:11px;cursor:pointer;padding:2px 6px;
       margin-top:2px;align-self:flex-start;
     `;
     addBtn.addEventListener('click', e => {
