@@ -1493,7 +1493,7 @@ function buildBACanvas(container, d, save, redraw) {
   const CR_W = 195, CR_H = 85;
   const OS_W = 120;
   const EX_W = 152, EX_H = 82;
-  const ZW_W = 130, ZW_H = 72;
+  const ZW_W = 130, ZW_H = 90;
 
   const csX = d.showOs ? OS_W + 22 : 10;
   const ovX = csX + CS_W + 75;
@@ -1648,7 +1648,7 @@ function buildBACanvas(container, d, save, redraw) {
     const ax = zwStartX + i*(ZW_W+20);
     const el = document.createElement('div');
     el.style.cssText=`position:absolute;left:${ax}px;top:${TOP_Y}px;width:${ZW_W}px;display:flex;flex-direction:column;align-items:center;text-align:center;`;
-    const ico=Object.assign(document.createElement('div'),{textContent:'🗄',style:'font-size:18px;opacity:.55;flex-shrink:0;'});
+    const ico=mkCabinetSvg(44, 58, '#888');
     const ta=makeTa(arch.label||'','archief-label',v=>{d.zweefArchieven[i].label=v;save();}); ta.style.cssText+='text-align:center;color:#555;font-size:10px;';
     const del=document.createElement('button'); del.textContent='×'; del.className='no-print';
     del.style.cssText='position:absolute;top:0;right:4px;border:none;background:transparent;cursor:pointer;font-size:12px;color:#aaa;';
@@ -1693,7 +1693,7 @@ function buildBACanvas(container, d, save, redraw) {
     el.style.cssText=`position:absolute;left:${ovX}px;top:${ovY}px;width:${OV_W}px;height:${OV_H}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:${Math.round(OV_H*.2)}px ${Math.round(OV_W*.1)}px;box-sizing:border-box;overflow:hidden;`;
     const lbl2=document.createElement('div'); lbl2.textContent='US/UR-repr'; lbl2.style.cssText=`font-size:8px;font-weight:800;color:${N_BD};margin-bottom:2px;flex-shrink:0;`;
     const ta=makeTa(d.centralArchiefLabel||'','archief-label',v=>{d.centralArchiefLabel=v;save();}); ta.style.cssText+=`text-align:center;color:${DBLUE};`;
-    const ico=Object.assign(document.createElement('div'),{textContent:'🗄',style:`font-size:17px;margin-top:4px;opacity:.4;flex-shrink:0;`});
+    const ico=mkCabinetSvg(40, 54, '#999');
     el.append(lbl2,ta,ico); canvas.appendChild(el);
     liveFill(el, ta, LBLU, BLU, lbl2);
     if (d.showRepr && nEx===0) {
@@ -2467,6 +2467,38 @@ function mkBtn(cls, html, fn) {
 }
 
 const TRASH_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+
+/* Archiefkast SVG: 3 lades, bovenste open met uitgetrokken lade */
+function mkCabinetSvg(w, h, color) {
+  color = color || '#888';
+  const s = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 60 80">
+    <!-- Kast body -->
+    <rect x="4" y="2" width="52" height="76" rx="3" ry="3" fill="#e8e8e8" stroke="${color}" stroke-width="2"/>
+    <!-- Bovenkant -->
+    <rect x="4" y="2" width="52" height="6" rx="2" fill="#d0d0d0" stroke="${color}" stroke-width="1.5"/>
+    <!-- Lade 1 (open) - uitgetrokken -->
+    <rect x="0" y="10" width="52" height="20" rx="2" fill="#c8c8c8" stroke="${color}" stroke-width="1.5"/>
+    <rect x="2" y="12" width="48" height="16" rx="1" fill="#b8b8b8" stroke="${color}" stroke-width="1"/>
+    <!-- Greep lade 1 -->
+    <rect x="18" y="19" width="16" height="4" rx="2" fill="#999" stroke="${color}" stroke-width="1"/>
+    <!-- Schaduwlijn open lade -->
+    <line x1="52" y1="10" x2="56" y2="14" stroke="${color}" stroke-width="1.5"/>
+    <line x1="52" y1="30" x2="56" y2="34" stroke="${color}" stroke-width="1.5"/>
+    <line x1="56" y1="14" x2="56" y2="34" stroke="${color}" stroke-width="1.5"/>
+    <!-- Lade 2 (dicht) -->
+    <rect x="6" y="32" width="48" height="20" rx="2" fill="#ddd" stroke="${color}" stroke-width="1.5"/>
+    <rect x="8" y="34" width="44" height="16" rx="1" fill="#d4d4d4" stroke="${color}" stroke-width="1"/>
+    <rect x="20" y="41" width="14" height="4" rx="2" fill="#bbb" stroke="${color}" stroke-width="1"/>
+    <!-- Lade 3 (dicht) -->
+    <rect x="6" y="54" width="48" height="20" rx="2" fill="#ddd" stroke="${color}" stroke-width="1.5"/>
+    <rect x="8" y="56" width="44" height="16" rx="1" fill="#d4d4d4" stroke="${color}" stroke-width="1"/>
+    <rect x="20" y="63" width="14" height="4" rx="2" fill="#bbb" stroke="${color}" stroke-width="1"/>
+  </svg>`;
+  const div = document.createElement('div');
+  div.innerHTML = s;
+  div.style.cssText = `flex-shrink:0;display:flex;align-items:center;justify-content:center;`;
+  return div;
+}
 
 function mkTrashBtn(cls, title, fn) {
   const b = document.createElement('button');
