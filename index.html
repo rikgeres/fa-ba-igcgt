@@ -1658,21 +1658,20 @@ function mkTitleRow(d, save, typeLabel) {
   row.className = 'no-print';
   row.style.cssText = 'padding:10px 24px 4px;display:flex;align-items:baseline;gap:8px;';
 
-  /* Type-badge ("FA", "BA", "HT") */
+  /* Type-label ("FA", "BA", "HT") — duidelijk */
   const badge = document.createElement('span');
   badge.textContent = typeLabel;
-  badge.style.cssText = 'font-size:13px;font-weight:800;color:#aaa;letter-spacing:.05em;flex-shrink:0;';
+  badge.style.cssText = 'font-size:15px;font-weight:800;color:#4A6E8A;letter-spacing:.06em;flex-shrink:0;';
   row.appendChild(badge);
 
   /* Titel-input */
   const inp = document.createElement('input');
   inp.type = 'text';
   inp.value = d.title || '';
-  inp.placeholder = '… geef een naam';
-  inp.style.cssText = 'flex:1;font-size:18px;font-weight:700;border:none;border-bottom:2px dashed #ddd;background:transparent;color:#1D3557;outline:none;padding:2px 0;transition:border-color .15s, border-style .15s;';
-  inp.addEventListener('focus', () => { inp.style.borderBottomColor = 'var(--cgt-blue)'; inp.style.borderBottomStyle = 'solid'; });
-  inp.addEventListener('blur',  () => { inp.style.borderBottomColor = '#ddd';            inp.style.borderBottomStyle = 'dashed'; });
-  /* Fix: gebruik save({title}) zodat de spread in FA/BA save() de nieuwe waarde meepakt */
+  inp.placeholder = 'naam';
+  inp.style.cssText = 'flex:1;font-size:13px;font-weight:400;border:none;border-bottom:1px dashed #ccc;background:transparent;color:#1D3557;outline:none;padding:1px 0;transition:border-color .15s, border-style .15s;';
+  inp.addEventListener('focus', () => { inp.style.borderBottomColor = '#4A6E8A'; inp.style.borderBottomStyle = 'solid'; inp.style.fontWeight = '600'; });
+  inp.addEventListener('blur',  () => { inp.style.borderBottomColor = '#ccc';    inp.style.borderBottomStyle = 'dashed'; inp.style.fontWeight = d.title ? '600' : '400'; });
   inp.addEventListener('input', () => save({ title: inp.value }));
 
   row.appendChild(inp);
