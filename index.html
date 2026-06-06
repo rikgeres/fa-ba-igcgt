@@ -1655,8 +1655,7 @@ function buildBACanvas(container, d, save, redraw) {
     del.addEventListener('click',()=>{d.zweefArchieven.splice(i,1);save();redraw();});
     el.append(ico,ta,del); canvas.appendChild(el);
     const archCX = ax+ZW_W/2;
-    const targetX = nZw===1 ? ovCX : ovX+(i/(nZw-1))*OV_W;
-    svgLine(archCX, TOP_Y+ZW_H, targetX, ovY-2);
+    svgLine(archCX, TOP_Y+ZW_H, ovCX, ovY-2);
   });
 
   /* Extra ovaaltjes boven archief-ovaal */
@@ -1672,8 +1671,7 @@ function buildBACanvas(container, d, save, redraw) {
     el.append(lbl2,ta,del); canvas.appendChild(el);
     liveFill(el, ta, LBLU, BLU, lbl2);
     const exCX = ex+EX_W/2;
-    const targetX = nEx===1 ? ovCX : ovX+(i/(nEx-1))*OV_W;
-    svgLine(exCX, TOP_Y+EX_H, targetX, ovY-2);
+    svgLine(exCX, TOP_Y+EX_H, ovCX, ovY-2);
   });
 
   /* Repr bij archief-ovaal + top-rij ovaaltjes */
