@@ -625,33 +625,6 @@ function buildFA(c, d, save) {
 
   const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Print', () => window.print());
 
-  const btnMail = mkBtn('btn-ghost btn-sm', '✉️ Mail', () => {
-    const canvasEl = c.querySelector('.fa-canvas');
-    if (!canvasEl) return;
-    toast('PDF wordt aangemaakt…', 2500);
-    html2canvas(canvasEl, { backgroundColor: '#E8EEF5', scale: 2, useCORS: true }).then(cvs => {
-      const { jsPDF } = window.jspdf;
-      const imgData = cvs.toDataURL('image/png');
-      // A4 in mm: 210 x 297, met 15mm marge aan alle kanten
-      const pageW = 210, pageH = 297, margin = 15;
-      const maxW = pageW - margin * 2;
-      const maxH = pageH - margin * 2;
-      const ratio = cvs.width / cvs.height;
-      let imgW = maxW;
-      let imgH = imgW / ratio;
-      if (imgH > maxH) { imgH = maxH; imgW = imgH * ratio; }
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      pdf.addImage(imgData, 'PNG', margin, margin, imgW, imgH);
-      pdf.save('functieanalyse.pdf');
-      setTimeout(() => {
-        const subject = encodeURIComponent('Functieanalyse IGCGT');
-        const body = encodeURIComponent('Zie bijgevoegde PDF met de functieanalyse.');
-        window.location.href = `mailto:?subject=${subject}&body=${body}`;
-        toast('PDF opgeslagen — voeg toe als bijlage in je mail ✓', 4000);
-      }, 800);
-    });
-  });
-
   const btnClip = mkBtn('btn-ghost btn-sm', '📋 Kopieer', () => {
     const canvas = c.querySelector('.fa-canvas');
     if (!canvas) return;
@@ -675,7 +648,7 @@ function buildFA(c, d, save) {
     if (confirm('Verwijder deze FA?')) { remove(d.id); go('/'); }
   });
   btnDel.style.color = 'var(--danger)';
-  bar.append(btnPrint, btnMail, btnClip, btnDel);
+  bar.append(btnPrint, btnClip, btnDel);
   c.appendChild(bar);
 
   /* ══════════════════════════
