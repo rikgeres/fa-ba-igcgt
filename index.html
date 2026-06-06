@@ -1648,7 +1648,7 @@ function buildBACanvas(container, d, save, redraw) {
     const ax = zwStartX + i*(ZW_W+20);
     const el = document.createElement('div');
     el.style.cssText=`position:absolute;left:${ax}px;top:${TOP_Y}px;width:${ZW_W}px;display:flex;flex-direction:column;align-items:center;text-align:center;`;
-    const ico=mkCabinetSvg(70, 92, '#888');
+    const ico=mkCabinetSvg(60, 70, '#888');
     const ta=makeTa(arch.label||'','titel',v=>{d.zweefArchieven[i].label=v;save();});
     ta.style.cssText+='text-align:center;color:#555;font-size:11px;font-weight:600;margin-top:2px;';
     const del=document.createElement('button'); del.textContent='×'; del.className='no-print';
@@ -1657,7 +1657,7 @@ function buildBACanvas(container, d, save, redraw) {
     el.append(ico,ta,del); canvas.appendChild(el);
     const archCX = ax+ZW_W/2;
     // Pijl start onder de titel (kast 92px + titel ~20px)
-    const arrowStartY = TOP_Y + 92 + 20;
+    const arrowStartY = TOP_Y + 70 + 18;
     const spread = nZw === 1 ? 0 : (OV_W * 0.6);
     const targetOvX = nZw === 1 ? ovCX : ovX + (OV_W - spread)/2 + i * spread/(nZw-1);
     const dx = (targetOvX - ovCX) / (OV_W/2);
@@ -2492,11 +2492,10 @@ const CABINET_IMG_SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABYAAAAMAC
 
 function mkCabinetSvg(w, h, color) {
   const div = document.createElement('div');
-  div.style.cssText = 'flex-shrink:0;display:flex;align-items:center;justify-content:center;';
+  div.style.cssText = `flex-shrink:0;width:${w}px;height:${h}px;overflow:hidden;`;
   const img = document.createElement('img');
   img.src = CABINET_IMG_SRC;
-  img.width = w; img.height = h;
-  img.style.cssText = 'object-fit:contain;display:block;';
+  img.style.cssText = `width:${Math.round(w*1.4)}px;height:${Math.round(h*1.4)}px;object-fit:contain;display:block;margin:-${Math.round(h*0.1)}px auto 0;`;
   div.appendChild(img);
   return div;
 }
