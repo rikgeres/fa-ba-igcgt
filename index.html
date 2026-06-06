@@ -1316,6 +1316,7 @@ function pgBA(c, id) {
     cs: '',
     assocType: 'referentieel',
     centralType: 'usur',
+    centralSubtype: '',
     centralText: '',
     centralArchiefLabel: '',
     extraOvals: [],
@@ -1442,9 +1443,9 @@ function buildBACfgBar(bar, d, save, redraw) {
     tog(d.showOs ? '✓ OS' : '+ OS', d.showOs, () => { save({showOs:!d.showOs}); redraw(); }),
     sep(),
     lbl('Associatie:'),
-    rad('referentieel', d.assocType==='referentieel', () => { save({assocType:'referentieel'}); redraw(); }),
-    rad('sequentieel',  d.assocType==='sequentieel',  () => { save({assocType:'sequentieel'});  redraw(); }),
-    rad('identiteit',   d.assocType==='identiteit',   () => { save({assocType:'identiteit'});   redraw(); }),
+    rad('referentieel', d.assocType==='referentieel', () => { save({assocType:'referentieel', centralSubtype: d.centralSubtype||''}); redraw(); }),
+    rad('sequentieel',  d.assocType==='sequentieel',  () => { save({assocType:'sequentieel',  centralSubtype:''}); redraw(); }),
+    rad('identiteit',   d.assocType==='identiteit',   () => { save({assocType:'identiteit',   centralSubtype:''}); redraw(); }),
     ...(d.assocType==='sequentieel' ? [sep(), lbl('Pijl CS→US/UR:'), rad('voorspelt', !d.causal, () => { save({causal:false}); redraw(); }), rad('veroorzaakt (causaal)', !!d.causal, () => { save({causal:true}); redraw(); })] : []),
     sep(),
     lbl('Centrale ovaal:'),
@@ -1721,9 +1722,84 @@ function buildBACanvas(container, d, save, redraw) {
     }
   } else {
     const isSq  = d.assocType === 'sequentieel';
-    const ovLbl = 'US/UR-repr';
-    const ovPh  = isSq ? 'kerngebeurtenis' : 'kernthema/ kerngebeurtenis';
-    canvas.appendChild(mkOval(ovX,ovY,OV_W,OV_H,ovLbl,'centralText',ovPh,LBLU,BLU));
+    const isRef = d.assocType === 'referentieel';
+    const sub   = d.centralSubtype || '';
+
+    if (isRef) {
+      /* --- Referentieel: klikbare subtype-keuze in de ovaal --- */
+      const el = document.createElement('div');
+      el.style.cssText = `position:absolute;left:${ovX}px;top:${ovY}px;width:${OV_W}px;height:${OV_H}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:${Math.round(OV_H*.17)}px ${Math.round(OV_W*.1)}px;box-sizing:border-box;overflow:hidden;`;
+
+      if (sub === 'kernthema') {
+        const lblRow = document.createElement('div');
+        lblRow.style.cssText = 'display:flex;align-items:center;gap:4px;justify-content:center;flex-shrink:0;margin-bottom:2px;';
+        const lbl = document.createElement('div');
+        lbl.textContent = 'US/UR-kernthema';
+        lbl.style.cssText = `font-size:10px;font-weight:800;color:${N_BD};`;
+        const resetKT = document.createElement('span');
+        resetKT.textContent = '↩';
+        resetKT.title = 'keuze ongedaan maken';
+        resetKT.style.cssText = `font-size:10px;color:${N_BD};cursor:pointer;opacity:.6;`;
+        resetKT.addEventListener('click', () => { d.centralSubtype=''; d.centralText=''; save(); redraw(); });
+        lblRow.append(lbl, resetKT);
+        const ta = makeTa(d.centralText || '', 'zelfbeeld/ mensbeeld/ wereldbeeld', v => { d.centralText = v; save(); });
+        ta.style.cssText += `text-align:center;color:${TXT};font-size:13px;`;
+        ta.addEventListener('focus', () => {
+          let v = ta.value.trim();
+          if (v.startsWith('(') && v.endsWith(')') && v.length > 2) ta.value = v.slice(1,-1);
+        });
+        ta.addEventListener('blur', () => {
+          let v = ta.value.trim();
+          if (v && !v.startsWith('(')) v = '(' + v + ')';
+          if (ta.value !== v) ta.value = v;
+          d.centralText = v; save();
+        });
+        el.append(lblRow, ta);
+        (function(){ function upd(){ const filled=ta.value.trim().length>0; el.style.background=filled?LBLU:N_BG; el.style.borderColor=filled?BLU:N_BD; lbl.style.color=filled?BLU:N_BD; resetKT.style.color=filled?BLU:N_BD; } upd(); ta.addEventListener('input',upd); })();
+      } else if (sub === 'kerngebeurtenis') {
+        const lblRow = document.createElement('div');
+        lblRow.style.cssText = 'display:flex;align-items:center;gap:4px;justify-content:center;flex-shrink:0;margin-bottom:2px;';
+        const lbl = document.createElement('div');
+        lbl.textContent = 'US/UR-repr';
+        lbl.style.cssText = `font-size:8px;font-weight:800;color:${N_BD};`;
+        const resetKG = document.createElement('span');
+        resetKG.textContent = '↩';
+        resetKG.title = 'keuze ongedaan maken';
+        resetKG.style.cssText = `font-size:10px;color:${N_BD};cursor:pointer;opacity:.6;`;
+        resetKG.addEventListener('click', () => { d.centralSubtype=''; d.centralText=''; save(); redraw(); });
+        lblRow.append(lbl, resetKG);
+        const ta = makeTa(d.centralText || '', 'kerngebeurtenis', v => { d.centralText = v; save(); });
+        ta.style.cssText += `text-align:center;color:${TXT};`;
+        el.append(lblRow, ta);
+        liveFill(el, ta, LBLU, BLU, lbl);
+      } else {
+        /* geen subtype gekozen: toon klikbare keuze */
+        const lbl = document.createElement('div');
+        lbl.textContent = 'US/UR-repr';
+        lbl.style.cssText = `font-size:8px;font-weight:800;color:${N_BD};margin-bottom:6px;flex-shrink:0;`;
+        const choiceDiv = document.createElement('div');
+        choiceDiv.style.cssText = 'display:flex;flex-direction:row;gap:3px;align-items:center;justify-content:center;';
+        const mkChoice = (label, subtypeVal) => {
+          const span = document.createElement('span');
+          span.textContent = label;
+          span.style.cssText = `font-size:12px;color:${N_BD};cursor:pointer;text-decoration:underline;text-underline-offset:2px;text-decoration-style:dotted;padding:1px 2px;border-radius:3px;transition:color .15s;`;
+          span.addEventListener('mouseenter', () => span.style.color = BLU);
+          span.addEventListener('mouseleave', () => span.style.color = N_BD);
+          span.addEventListener('click', () => { d.centralSubtype = subtypeVal; save(); redraw(); });
+          return span;
+        };
+        const slash = document.createElement('span');
+        slash.textContent = '/';
+        slash.style.cssText = `font-size:12px;color:${N_BD};`;
+        choiceDiv.append(mkChoice('kernthema', 'kernthema'), slash, mkChoice('kerngebeurtenis', 'kerngebeurtenis'));
+        el.append(lbl, choiceDiv);
+      }
+      canvas.appendChild(el);
+    } else {
+      const ovPh = isSq ? 'kerngebeurtenis' : 'kernthema/ kerngebeurtenis';
+      canvas.appendChild(mkOval(ovX,ovY,OV_W,OV_H,'US/UR-repr','centralText',ovPh,LBLU,BLU));
+    }
+
     if (d.showRepr) {
       canvas.appendChild(mkRepr(reprX, reprY));
       svgLine(ovX+OV_W, ovY+OV_H/2, reprX-2, ovY+OV_H/2);
@@ -1910,7 +1986,7 @@ function buildGroupBar(container, d) {
         const newId2 = uid();
         const newAnalysis = type==='FA'
           ? { id:newId2, type:'FA', title:'', client:'', date:today(), groupId:d.groupId, theme:'blauw', sd:'', r:'', fnc:'', srPosTxt:'', srPosType:'', srNegItems:[{type:'',txt:''}], notities:'' }
-          : { id:newId2, type:'BA', title:'', client:'', date:today(), groupId:d.groupId, theme:'blauw', showOs:false, os:'', cs:'', assocType:'referentieel', centralType:'usur', centralText:'', centralArchiefLabel:'', extraOvals:[], zweefArchieven:[], showRepr:false, reprStimulus:'', reprResponse:'', reprBetekenis:'', cr:'' };
+          : { id:newId2, type:'BA', title:'', client:'', date:today(), groupId:d.groupId, theme:'blauw', showOs:false, os:'', cs:'', assocType:'referentieel', centralType:'usur', centralSubtype:'', centralText:'', centralArchiefLabel:'', extraOvals:[], zweefArchieven:[], showRepr:false, reprStimulus:'', reprResponse:'', reprBetekenis:'', cr:'' };
         upsert(newAnalysis);
         // Sla volgorde op in alle groepsleden
         const allData2 = load();
