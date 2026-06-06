@@ -1742,20 +1742,40 @@ function mkTitleRow(d, save, typeLabel) {
 ───────────────────────────────────────── */
 function buildGroupBar(container, d) {
   if (!d.groupId) return;
-  const siblings = load().filter(a => a.groupId === d.groupId);
+
+  /* Sorteer siblings op groupOrder (array van ids opgeslagen op de huidige analyse) */
+  function getSorted() {
+    const all = load().filter(a => a.groupId === d.groupId);
+    const order = (d.groupOrder || []);
+    const ordered = order.map(id => all.find(a => a.id === id)).filter(Boolean);
+    const rest = all.filter(a => !order.includes(a.id));
+    return [...ordered, ...rest];
+  }
+
+  function saveOrder(sorted) {
+    const newOrder = sorted.map(a => a.id);
+    const allData = load();
+    allData.forEach(a => { if (a.groupId === d.groupId) a.groupOrder = newOrder; });
+    dump(allData);
+    d.groupOrder = newOrder;
+  }
 
   const wrap = document.createElement('div');
   wrap.className = 'no-print';
-  wrap.style.cssText = 'padding:6px 24px 22px;';
+  wrap.style.cssText = 'border-top:1px solid var(--border);margin-top:8px;';
 
-  /* Gezamenlijke groepstitel tonen als er meerdere analyses zijn */
-  if (siblings.length > 1) {
+  function render() {
+    wrap.innerHTML = '';
+    const siblings = getSorted();
+    if (siblings.length === 0) return;
+
+    /* Header met groepslabel + groepsnaam + plusknop */
     const types = new Set(siblings.map(s => s.type));
     const groupLabel = types.has('FA') && types.has('BA') ? 'FABA' : [...types].join('/');
     const existingTitle = siblings.map(s => s.title).find(t => t && t.trim()) || '';
 
-    const titleRow = document.createElement('div');
-    titleRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:10px;';
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 20px 6px;';
 
     const badge = document.createElement('span');
     badge.textContent = groupLabel;
@@ -1765,74 +1785,87 @@ function buildGroupBar(container, d) {
     inp.type = 'text';
     inp.value = existingTitle;
     inp.placeholder = 'Groepsnaam…';
-    inp.style.cssText = 'flex:1;font-size:14px;font-weight:600;border:none;border-bottom:2px solid transparent;background:transparent;color:#1D3557;outline:none;padding:1px 0;transition:border-color .15s;';
+    inp.style.cssText = 'flex:1;font-size:13px;font-weight:600;border:none;border-bottom:1px dashed #ccc;background:transparent;color:#1D3557;outline:none;padding:1px 0;';
     inp.addEventListener('focus', () => inp.style.borderBottomColor = 'var(--cgt-blue)');
-    inp.addEventListener('blur',  () => inp.style.borderBottomColor = 'transparent');
+    inp.addEventListener('blur',  () => inp.style.borderBottomColor = '#ccc');
     inp.addEventListener('input', () => {
-      // Schrijf titel naar alle analyses in de groep
-      const all = load();
-      all.forEach(a => { if (a.groupId === d.groupId) a.title = inp.value; });
-      dump(all);
-      d.title = inp.value;
+      const allData = load();
+      allData.forEach(a => { if (a.groupId === d.groupId) a.title = inp.value; });
+      dump(allData); d.title = inp.value;
     });
 
-    titleRow.append(badge, inp);
-    wrap.appendChild(titleRow);
+    /* + knop */
+    const plusBtn = document.createElement('button');
+    plusBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+    plusBtn.title = 'Voeg analyse toe aan groep';
+    plusBtn.style.cssText = 'width:26px;height:26px;border-radius:50%;border:1.5px solid var(--cgt-blue);background:#fff;color:var(--cgt-blue);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;';
+
+    const menu = document.createElement('div');
+    menu.style.cssText = 'display:none;position:absolute;top:30px;right:0;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);overflow:hidden;z-index:200;min-width:160px;';
+    [['FA', 'Functieanalyse'], ['BA', 'Betekenisanalyse']].forEach(([type, lbl]) => {
+      const opt = document.createElement('button');
+      opt.textContent = lbl;
+      opt.style.cssText = 'display:block;width:100%;padding:9px 18px;border:none;background:#fff;text-align:left;cursor:pointer;font-size:13px;color:#333;white-space:nowrap;';
+      opt.addEventListener('mouseenter', () => opt.style.background = '#f0f6ff');
+      opt.addEventListener('mouseleave', () => opt.style.background = '#fff');
+      opt.addEventListener('click', () => { menu.style.display='none'; _pendingGroup = d.groupId; go(`/${type.toLowerCase()}/new`); });
+      menu.appendChild(opt);
+    });
+    const plusWrap = document.createElement('div');
+    plusWrap.style.cssText = 'position:relative;flex-shrink:0;';
+    plusBtn.addEventListener('click', e => { e.stopPropagation(); menu.style.display = menu.style.display==='none'?'block':'none'; });
+    document.addEventListener('click', () => { menu.style.display='none'; }, { once:true });
+    plusWrap.append(plusBtn, menu);
+
+    hdr.append(badge, inp, plusWrap);
+    wrap.appendChild(hdr);
+
+    /* Lijst van gekoppelde analyses */
+    const list = document.createElement('div');
+    list.style.cssText = 'padding:0 12px 14px;display:flex;flex-direction:column;gap:6px;';
+
+    siblings.forEach((s, i) => {
+      const isCurrent = s.id === d.id;
+      const typeColor = s.type==='FA' ? 'var(--fa)' : 'var(--bas)';
+      const titleStr = (s.title||'').trim() || (s.type==='FA' ? 'Functieanalyse' : 'Betekenisanalyse');
+
+      const row = document.createElement('div');
+      row.style.cssText = `display:flex;align-items:center;gap:8px;background:${isCurrent?'#EEF4FA':'var(--surface)'};border:1.5px solid ${isCurrent?'var(--cgt-blue)':'var(--border)'};border-radius:10px;padding:8px 10px;cursor:${isCurrent?'default':'pointer'};transition:background .12s;`;
+      if (!isCurrent) { row.addEventListener('mouseenter',()=>row.style.background='#f5f8fc'); row.addEventListener('mouseleave',()=>row.style.background='var(--surface)'); }
+
+      const typeBadge = document.createElement('span');
+      typeBadge.textContent = s.type;
+      typeBadge.style.cssText = `font-size:10px;font-weight:800;background:${typeColor};color:#fff;border-radius:4px;padding:2px 6px;flex-shrink:0;`;
+
+      const titleEl = document.createElement('span');
+      titleEl.textContent = titleStr;
+      titleEl.style.cssText = `flex:1;font-size:13px;font-weight:${isCurrent?'700':'500'};color:${isCurrent?'var(--cgt-blue)':'#333'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;`;
+
+      /* Volgorde-knoppen */
+      const orderWrap = document.createElement('div');
+      orderWrap.style.cssText = 'display:flex;flex-direction:column;gap:1px;flex-shrink:0;';
+      const mkOrd = (icon, disabled, fn) => {
+        const b = document.createElement('button');
+        b.innerHTML = icon; b.disabled = disabled;
+        b.style.cssText = `background:none;border:none;cursor:${disabled?'default':'pointer'};color:${disabled?'#ddd':'#888'};line-height:1;padding:1px 2px;font-size:12px;`;
+        b.addEventListener('click', e => { e.stopPropagation(); fn(); });
+        return b;
+      };
+      const swap = (arr, a, b) => { [arr[a],arr[b]] = [arr[b],arr[a]]; };
+      orderWrap.append(
+        mkOrd('▲', i===0, () => { const s2=[...siblings]; swap(s2,i,i-1); saveOrder(s2); render(); }),
+        mkOrd('▼', i===siblings.length-1, () => { const s2=[...siblings]; swap(s2,i,i+1); saveOrder(s2); render(); })
+      );
+
+      row.append(typeBadge, titleEl, orderWrap);
+      if (!isCurrent) row.addEventListener('click', () => go(`/${s.type.toLowerCase()}/${s.id}`));
+      list.appendChild(row);
+    });
+
+    wrap.appendChild(list);
   }
 
-  /* Chips + plusknop */
-  const bar = document.createElement('div');
-  bar.style.cssText = 'display:flex;align-items:center;flex-wrap:wrap;gap:8px;';
-
-  const label = document.createElement('span');
-  label.textContent = 'Gekoppeld:';
-  label.style.cssText = 'font-size:11px;color:#999;flex-shrink:0;';
-  bar.appendChild(label);
-
-  siblings.forEach(s => {
-    const chip = document.createElement('button');
-    const isCurrent = s.id === d.id;
-    const typeLabel = s.type === 'FA' ? 'FA' : 'BA';
-    const titleStr = (s.title || '').trim() || (s.type === 'FA' ? 'Functieanalyse' : 'Betekenisanalyse');
-    chip.textContent = `${typeLabel}: ${titleStr}`;
-    chip.style.cssText = `font-size:11px;padding:3px 10px;border-radius:20px;border:1.5px solid ${isCurrent?'var(--cgt-blue)':'#bbb'};background:${isCurrent?'var(--cgt-blue)':'#fff'};color:${isCurrent?'#fff':'#555'};cursor:${isCurrent?'default':'pointer'};`;
-    if (!isCurrent) chip.addEventListener('click', () => go(`/${s.type.toLowerCase()}/${s.id}`));
-    bar.appendChild(chip);
-  });
-
-  /* + knop */
-  const addBtn = document.createElement('button');
-  addBtn.textContent = '+';
-  addBtn.title = 'Voeg gekoppelde analyse toe';
-  addBtn.style.cssText = 'width:26px;height:26px;border-radius:50%;border:1.5px solid var(--cgt-blue);background:#fff;color:var(--cgt-blue);font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
-
-  const menu = document.createElement('div');
-  menu.style.cssText = 'display:none;position:absolute;bottom:32px;left:0;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);overflow:hidden;z-index:200;';
-  [['FA', 'Functieanalyse'], ['BA', 'Betekenisanalyse']].forEach(([type, lbl]) => {
-    const opt = document.createElement('button');
-    opt.textContent = lbl;
-    opt.style.cssText = 'display:block;width:100%;padding:9px 18px;border:none;background:#fff;text-align:left;cursor:pointer;font-size:12px;color:#333;white-space:nowrap;';
-    opt.addEventListener('mouseenter', () => opt.style.background = '#f0f6ff');
-    opt.addEventListener('mouseleave', () => opt.style.background = '#fff');
-    opt.addEventListener('click', () => {
-      menu.style.display = 'none';
-      _pendingGroup = d.groupId;
-      go(`/${type.toLowerCase()}/new`);
-    });
-    menu.appendChild(opt);
-  });
-
-  const plusWrap = document.createElement('div');
-  plusWrap.style.cssText = 'position:relative;flex-shrink:0;';
-  addBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-  });
-  document.addEventListener('click', () => { menu.style.display = 'none'; }, { once: true });
-  plusWrap.append(addBtn, menu);
-  bar.appendChild(plusWrap);
-
-  wrap.appendChild(bar);
+  render();
   container.appendChild(wrap);
 }
 
