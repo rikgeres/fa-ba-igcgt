@@ -5,30 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="FA & BA">
+  <meta name="apple-mobile-web-app-title" content="CGT Analyse">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#1D4ED8">
-  <title>FA &amp; BA — IGCGT</title>
+  <meta name="theme-color" content="#4A6E8A">
+  <title>CGT Analyse Tool</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --fa:      #1D4ED8;
+      --cgt-blue: #4A6E8A;
+      --cgt-green: #C5DDB8;
+      --fa:      #4A6E8A;
+      --bas:     #4A6E8A;
+      --bar:     #4A6E8A;
       --fa-bg:   #EFF6FF;
-      --bas:     #6D28D9;
       --bas-bg:  #F5F3FF;
-      --bar:     #065F46;
       --bar-bg:  #ECFDF5;
-      --bg:      #F1F5F9;
+      --bg:      #F4F7F2;
       --surface: #FFFFFF;
       --border:  #CBD5E1;
       --txt:     #0F172A;
       --muted:   #64748B;
       --danger:  #DC2626;
-      --node-bg: #BFDBFE;
-      --node-border: #93C5FD;
-      --node-txt: #1E3A5F;
+      --node-bg: #E8F0E4;
+      --node-border: #B2CCAA;
+      --node-txt: #2A3D22;
       --r: 10px; --r-sm: 7px;
       --sh: 0 1px 3px rgba(0,0,0,.10), 0 1px 2px rgba(0,0,0,.06);
       --sh-md: 0 4px 12px rgba(0,0,0,.10);
@@ -40,12 +42,12 @@
     #app { max-width: 760px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
     .app-header {
       position: sticky; top: 0; z-index: 100;
-      background: var(--surface); border-bottom: 1px solid var(--border);
+      background: var(--cgt-blue); border-bottom: none;
       padding: 12px 14px; display: flex; align-items: center; gap: 8px;
       box-shadow: var(--sh);
     }
-    .app-header h1 { font-size: 17px; font-weight: 700; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .back-btn { background: none; border: none; font-size: 28px; line-height: 1; color: var(--fa); cursor: pointer; padding: 2px 6px 2px 0; }
+    .app-header h1 { font-size: 17px; font-weight: 700; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #fff; }
+    .back-btn { background: none; border: none; font-size: 28px; line-height: 1; color: #fff; cursor: pointer; padding: 2px 6px 2px 0; }
     .app-main { flex: 1; padding: 16px; }
     .page { animation: fade .18s ease; }
     @keyframes fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
@@ -391,7 +393,7 @@
 <div id="app">
   <header class="app-header" id="hdr">
     <span id="hdr-back"></span>
-    <h1 id="hdr-title">FA &amp; BA</h1>
+    <h1 id="hdr-title">CGT Analyse Tool</h1>
     <span id="hdr-act"></span>
   </header>
   <main class="app-main" id="main"></main>
@@ -463,11 +465,10 @@ function render() {
   };
 
   switch (seg) {
-    case 'home':  setTitle('FA & BA'); pgHome(main); break;
-    case 'nieuw': setTitle('Nieuwe analyse'); backBtn('/'); pgNieuw(main); break;
+    case 'home':  setTitle('CGT Analyse Tool'); pgHome(main); break;
     case 'fa':    setTitle(p1==='new'?'Nieuwe FA':'FA'); backBtn('/'); pgFA(main, p1); break;
-    case 'ba-s':  setTitle(p1==='new'?'Nieuwe BA Sequentieel':'BA-S'); backBtn('/'); pgBAS(main, p1); break;
-    case 'ba-r':  setTitle(p1==='new'?'Nieuwe BA Referentieel':'BA-R'); backBtn('/'); pgBAR(main, p1); break;
+    case 'ba':    setTitle(p1==='new'?'Nieuwe BA':'BA'); backBtn('/'); pgBA(main, p1); break;
+    case 'ht':    setTitle(p1==='new'?'Nieuwe HT':'HT'); backBtn('/'); pgHT(main, p1); break;
     default:      main.innerHTML = '<p style="padding:20px">Pagina niet gevonden.</p>';
   }
 }
@@ -476,23 +477,61 @@ function render() {
    HOME
 ══════════════════════════════════════════ */
 function pgHome(c) {
+  // Titel/subtitel
+  const hero = document.createElement('div');
+  hero.style.cssText = 'text-align:center;padding:28px 16px 20px';
+  hero.innerHTML = `
+    <div style="font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--cgt-blue);margin-bottom:6px">Geïntegreerde CGT</div>
+    <h2 style="font-size:22px;font-weight:800;color:var(--txt);margin-bottom:6px">CGT Analyse Tool</h2>
+    <p style="font-size:13px;color:var(--muted)">Kies een analyse om te starten of door te gaan</p>`;
+  c.appendChild(hero);
+
+  // Drie analyse-kaarten
+  const tools = [
+    { key:'FA', label:'Functieanalyse', sub:'Sd → R → Sr-pos / FNC', color:'var(--cgt-blue)', icon:'🔍', path:'/fa/new' },
+    { key:'BA', label:'Betekenisanalyse', sub:'Gedachten · Emoties · Gedrag', color:'var(--cgt-blue)', icon:'💬', path:'/ba/new' },
+    { key:'HT', label:'Holistische Theorie', sub:'Kernschema & levenspatronen', color:'var(--cgt-blue)', icon:'🗺', path:'/ht/new' },
+  ];
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:flex;flex-direction:column;gap:10px;margin-bottom:24px';
+  tools.forEach(t => {
+    const btn = document.createElement('button');
+    btn.style.cssText = `
+      display:flex;align-items:center;gap:14px;width:100%;
+      background:var(--surface);border:1.5px solid var(--border);border-radius:12px;
+      padding:16px 18px;cursor:pointer;text-align:left;
+      box-shadow:0 2px 6px rgba(0,0,0,.06);transition:box-shadow .15s,border-color .15s;
+    `;
+    btn.onmouseover = () => { btn.style.boxShadow='0 4px 14px rgba(74,110,138,.18)'; btn.style.borderColor='var(--cgt-blue)'; };
+    btn.onmouseout  = () => { btn.style.boxShadow='0 2px 6px rgba(0,0,0,.06)'; btn.style.borderColor='var(--border)'; };
+    btn.innerHTML = `
+      <div style="width:44px;height:44px;border-radius:10px;background:var(--cgt-blue);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${t.icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:16px;font-weight:700;color:var(--txt);margin-bottom:2px">${t.label}</div>
+        <div style="font-size:12px;color:var(--muted)">${t.sub}</div>
+      </div>
+      <span style="font-size:20px;color:var(--muted)">›</span>`;
+    btn.onclick = () => go(t.path);
+    grid.appendChild(btn);
+  });
+  c.appendChild(grid);
+
+  // Recente analyses
   const all = load();
-  if (!all.length) {
-    c.innerHTML = `<div class="empty">
-      <div class="empty-ico">📋</div>
-      <h3>Nog geen analyses</h3>
-      <p>Tik op <strong>+</strong> om je eerste analyse aan te maken.</p>
-    </div>`;
-  } else {
-    const card = document.createElement('div'); card.className = 'card';
-    all.forEach(item => {
+  if (all.length) {
+    const secLbl = document.createElement('div');
+    secLbl.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding:0 2px';
+    secLbl.textContent = 'Recente analyses';
+    c.appendChild(secLbl);
+    const card = document.createElement('div');
+    card.className = 'card';
+    all.slice().reverse().forEach(item => {
       const el = document.createElement('div'); el.className = 'list-item';
-      el.onclick = () => go(`/${item.type.toLowerCase()}/${item.id}`);
-      const bc = { FA:'badge-fa','BA-S':'badge-bas','BA-R':'badge-bar' }[item.type] || 'badge-fa';
-      const lbl = item.type;
+      const route = item.type === 'FA' ? 'fa' : item.type === 'BA' ? 'ba' : 'ht';
+      el.onclick = () => go(`/${route}/${item.id}`);
       const meta = [item.client, item.date].filter(Boolean).join(' · ');
       el.innerHTML = `
-        <div class="badge ${bc}">${lbl}</div>
+        <div class="badge badge-fa">${item.type}</div>
         <div class="item-info">
           <div class="item-title">${esc(item.title||'(Geen titel)')}</div>
           <div class="item-meta">${esc(meta)}</div>
@@ -502,37 +541,8 @@ function pgHome(c) {
     });
     c.appendChild(card);
   }
-  addFab(() => go('/nieuw'));
 }
 
-/* ══════════════════════════════════════════
-   NIEUW — TYPE KIEZEN
-══════════════════════════════════════════ */
-function pgNieuw(c) {
-  const p = document.createElement('p');
-  p.style.cssText = 'color:var(--muted);font-size:14px;margin-bottom:14px';
-  p.textContent = 'Kies het type analyse:';
-  c.appendChild(p);
-  [
-    { type:'FA',   color:'var(--fa)',  path:'/fa/new',
-      naam:'Functieanalyse (IGCGT)',
-      omschr:'Operant model: Sd → R → Sr-pos-repr / FNC — incl. FNC (functionele negatieve cognitie)' },
-    { type:'BA-S', color:'var(--bas)', path:'/ba-s/new',
-      naam:'Betekenisanalyse — Sequentieel',
-      omschr:'Stap-voor-stap keten: situatie → gedachte → emotie → gedrag' },
-    { type:'BA-R', color:'var(--bar)', path:'/ba-r/new',
-      naam:'Betekenisanalyse — Referentieel',
-      omschr:'Kernschema: vroegere ervaringen, grondovertuigingen, activering heden' },
-  ].forEach(t => {
-    const d = document.createElement('div'); d.className = 'type-card';
-    d.onclick = () => go(t.path);
-    d.innerHTML = `
-      <div class="type-icon" style="background:${t.color}">${t.type}</div>
-      <div class="type-info"><h3>${t.naam}</h3><p>${t.omschr}</p></div>
-      <span style="color:var(--muted);font-size:20px">›</span>`;
-    c.appendChild(d);
-  });
-}
 
 /* ══════════════════════════════════════════
    UITKLAPMODAL
@@ -1071,184 +1081,25 @@ function mailFA(d) {
 }
 
 /* ══════════════════════════════════════════
-   BA SEQUENTIEEL — FORMULIER
+   BA — PLACEHOLDER
 ══════════════════════════════════════════ */
-function pgBAS(c, id) {
-  const isNew = id === 'new';
-  let d = isNew ? {
-    id: uid(), type: 'BA-S', title:'', client:'', date: today(),
-    stappen: [newStap()], notities:''
-  } : byId(id);
-  if (!d) { c.innerHTML = '<p style="padding:20px">Niet gevonden.</p>'; return; }
-  if (!d.stappen?.length) d.stappen = [newStap()];
-
-  function newStap() { return { sit:'', ged:'', emot:'', int:'', fys:'', gdr:'', cons:'' }; }
-
-  function lees() {
-    const frm = c.querySelector('#frm'); if (!frm) return;
-    const fd = new FormData(frm);
-    d.stappen.forEach((s,i) => {
-      s.sit  = fd.get(`s${i}_sit`)  || '';
-      s.ged  = fd.get(`s${i}_ged`)  || '';
-      s.emot = fd.get(`s${i}_emot`) || '';
-      s.int  = fd.get(`s${i}_int`)  || '';
-      s.fys  = fd.get(`s${i}_fys`)  || '';
-      s.gdr  = fd.get(`s${i}_gdr`)  || '';
-      s.cons = fd.get(`s${i}_cons`) || '';
-    });
-  }
-
-  function bouwStappen() {
-    const box = c.querySelector('#stappen'); box.innerHTML = '';
-    d.stappen.forEach((s,i) => {
-      if (i > 0) { const arr = document.createElement('div'); arr.className = 'seq-arr'; arr.textContent = '↓'; box.appendChild(arr); }
-      const div = document.createElement('div');
-      div.innerHTML = `<div class="step-card">
-        ${d.stappen.length > 1 ? `<button type="button" class="step-del" data-i="${i}">×</button>` : ''}
-        <div class="step-num">${i+1}</div>
-        ${i===0?`<div class="fgrp"><label>Situatie / Trigger</label><textarea name="s0_sit" placeholder="Beschrijf de situatie…">${esc(s.sit)}</textarea></div>`:`<input type="hidden" name="s${i}_sit" value="">`}
-        <div class="fgrp"><label>Automatische gedachte</label><textarea name="s${i}_ged" placeholder="Wat schiet er door het hoofd…">${esc(s.ged)}</textarea></div>
-        <div class="row2">
-          <div class="fgrp"><label>Emotie</label><input type="text" name="s${i}_emot" value="${esc(s.emot)}" placeholder="Angst, schaamte…"></div>
-          <div class="fgrp"><label>Intensiteit (0–100)</label><input type="text" name="s${i}_int" value="${esc(s.int)}" placeholder="75"></div>
-        </div>
-        <div class="fgrp"><label>Fysiologisch</label><input type="text" name="s${i}_fys" value="${esc(s.fys)}" placeholder="Hartkloppingen…"></div>
-        <div class="fgrp"><label>Gedrag</label><textarea name="s${i}_gdr" style="min-height:60px" placeholder="Wat doet de cliënt…">${esc(s.gdr)}</textarea></div>
-        <div class="fgrp"><label>Consequentie / Nieuw A</label><textarea name="s${i}_cons" style="min-height:60px" placeholder="Gevolg…">${esc(s.cons)}</textarea></div>
-      </div>`;
-      box.appendChild(div);
-    });
-    box.querySelectorAll('.step-del').forEach(btn => btn.addEventListener('click', () => {
-      lees(); d.stappen.splice(+btn.dataset.i,1); bouwStappen();
-    }));
-  }
-
-  c.innerHTML = `<form id="frm" autocomplete="off">
-    <div class="form-sec">
-      <div class="sec-label">Algemeen</div>
-      <div class="card card-pad">
-        <div class="fgrp"><label>Titel</label><input type="text" name="title" value="${esc(d.title)}" placeholder="bijv. Paniekaanval in de supermarkt"></div>
-        <div class="row2">
-          <div class="fgrp"><label>Cliënt</label><input type="text" name="client" value="${esc(d.client)}" placeholder="Initialen"></div>
-          <div class="fgrp"><label>Datum</label><input type="date" name="date" value="${esc(d.date)}"></div>
-        </div>
-      </div>
-    </div>
-    <div class="form-sec">
-      <div class="sec-label c-bas">Sequentiële stappen</div>
-      <div id="stappen"></div>
-      <button type="button" id="addStap" class="btn btn-ghost btn-full" style="margin-top:6px">+ Stap toevoegen</button>
-    </div>
-    <div class="form-sec">
-      <div class="sec-label">Notities</div>
-      <div class="card card-pad"><textarea name="notities" placeholder="Aanvullende opmerkingen…">${esc(d.notities)}</textarea></div>
-    </div>
-    <div class="form-footer no-print">
-      <div style="display:flex;gap:8px">
-        <button type="button" class="btn btn-ghost btn-sm no-print" onclick="window.print()">🖨 Print</button>
-        <button type="submit" class="btn btn-bas" style="flex:1">Opslaan</button>
-      </div>
-    </div>
-  </form>`;
-
-  bouwStappen();
-  c.querySelector('#addStap').addEventListener('click', () => { lees(); d.stappen.push(newStap()); bouwStappen(); });
-  c.querySelector('#frm').addEventListener('submit', e => {
-    e.preventDefault(); lees();
-    const f = Object.fromEntries(new FormData(e.target));
-    d.title = f.title||''; d.client = f.client||''; d.date = f.date||''; d.notities = f.notities||'';
-    upsert(d); toast('Opgeslagen ✓'); go('/');
-  });
+function pgBA(c, id) {
+  c.innerHTML = `<div class="empty">
+    <div class="empty-ico">💬</div>
+    <h3>Betekenisanalyse</h3>
+    <p style="color:var(--muted);font-size:14px;margin-top:8px">De betekenisanalyse wordt binnenkort toegevoegd.</p>
+  </div>`;
 }
 
 /* ══════════════════════════════════════════
-   BA REFERENTIEEL — FORMULIER
+   HT — PLACEHOLDER
 ══════════════════════════════════════════ */
-function pgBAR(c, id) {
-  const isNew = id === 'new';
-  const d = isNew ? {
-    id: uid(), type: 'BA-R', title:'', client:'', date: today(),
-    vroegErv:'', kern:'', condAan:'',
-    actSit:'', autGed:'', ductus:'',
-    emot:'', int:'', fys:'', gedrag:'', bevestig:'', notities:''
-  } : byId(id);
-  if (!d) { c.innerHTML = '<p style="padding:20px">Niet gevonden.</p>'; return; }
-
-  c.innerHTML = `<form id="frm" autocomplete="off">
-    <div class="form-sec">
-      <div class="sec-label">Algemeen</div>
-      <div class="card card-pad">
-        <div class="fgrp"><label>Titel</label><input type="text" name="title" value="${esc(d.title)}" placeholder="bijv. Schema: ongeliefd zijn"></div>
-        <div class="row2">
-          <div class="fgrp"><label>Cliënt</label><input type="text" name="client" value="${esc(d.client)}" placeholder="Initialen"></div>
-          <div class="fgrp"><label>Datum</label><input type="date" name="date" value="${esc(d.date)}"></div>
-        </div>
-      </div>
-    </div>
-    <div class="form-sec">
-      <div class="sec-label c-bar">Ontstaansgeschiedenis</div>
-      <div class="card card-pad">
-        <div class="fgrp"><label>Vroegere ervaringen <span class="hint">(leergeschiedenis)</span></label>
-          <textarea name="vroegErv" placeholder="Relevante vroegere ervaringen…">${esc(d.vroegErv)}</textarea></div>
-      </div>
-    </div>
-    <div class="form-sec">
-      <div class="sec-label c-bar">Kernschema</div>
-      <div class="card card-pad">
-        <div class="fgrp"><label>Kernschema / Grondovertuiging</label>
-          <textarea name="kern" placeholder="'Ik ben niet goed genoeg'…">${esc(d.kern)}</textarea></div>
-        <div class="fgrp"><label>Conditionele aanname <span class="hint">(Als… dan…)</span></label>
-          <textarea name="condAan" placeholder="'Als ik fouten maak, dan…'">${esc(d.condAan)}</textarea></div>
-      </div>
-    </div>
-    <div class="form-sec">
-      <div class="sec-label c-bar">Activering in het heden</div>
-      <div class="card card-pad">
-        <div class="fgrp"><label>Activerende situatie</label>
-          <textarea name="actSit" placeholder="De situatie die het schema triggert…">${esc(d.actSit)}</textarea></div>
-        <div class="fgrp"><label>Automatische gedachte / Hot cognition</label>
-          <textarea name="autGed" placeholder="Eerste gedachte of beeld…">${esc(d.autGed)}</textarea></div>
-        <div class="fgrp"><label>Ductus <span class="hint">(redenering, denkstijl)</span></label>
-          <textarea name="ductus" placeholder="De redenering of denkstijl…">${esc(d.ductus)}</textarea></div>
-      </div>
-    </div>
-    <div class="form-sec">
-      <div class="sec-label c-bar">Reactie</div>
-      <div class="card card-pad">
-        <div class="row2">
-          <div class="fgrp"><label>Emotie</label><input type="text" name="emot" value="${esc(d.emot)}" placeholder="Angst, schaamte…"></div>
-          <div class="fgrp"><label>Intensiteit (0–100)</label><input type="text" name="int" value="${esc(d.int)}" placeholder="80"></div>
-        </div>
-        <div class="fgrp"><label>Fysiologisch</label><input type="text" name="fys" value="${esc(d.fys)}" placeholder="Lichamelijke reacties…"></div>
-        <div class="fgrp"><label>Gedrag / Coping</label>
-          <textarea name="gedrag" placeholder="Hoe reageert de cliënt…">${esc(d.gedrag)}</textarea></div>
-      </div>
-    </div>
-    <div class="form-sec">
-      <div class="sec-label c-bar">Circulaire instandhouding</div>
-      <div class="card card-pad">
-        <div class="fgrp"><label>Schemabevestiging</label>
-          <textarea name="bevestig" placeholder="Het gedrag bevestigt het schema doordat…">${esc(d.bevestig)}</textarea></div>
-      </div>
-    </div>
-    <div class="form-sec">
-      <div class="sec-label">Notities</div>
-      <div class="card card-pad"><textarea name="notities" placeholder="Aanvullende opmerkingen…">${esc(d.notities)}</textarea></div>
-    </div>
-    <div class="form-footer no-print">
-      <div style="display:flex;gap:8px">
-        <button type="button" class="btn btn-ghost btn-sm no-print" onclick="window.print()">🖨 Print</button>
-        <button type="submit" class="btn btn-bar" style="flex:1">Opslaan</button>
-      </div>
-    </div>
-  </form>`;
-
-  c.querySelector('#frm').addEventListener('submit', e => {
-    e.preventDefault();
-    const f = Object.fromEntries(new FormData(e.target));
-    upsert({ ...d, ...f });
-    toast('Opgeslagen ✓'); go('/');
-  });
+function pgHT(c, id) {
+  c.innerHTML = `<div class="empty">
+    <div class="empty-ico">🗺</div>
+    <h3>Holistische Theorie</h3>
+    <p style="color:var(--muted);font-size:14px;margin-top:8px">De holistische theorie wordt binnenkort toegevoegd.</p>
+  </div>`;
 }
 
 /* ══════════════════════════════════════════
