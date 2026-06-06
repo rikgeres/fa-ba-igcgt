@@ -1773,10 +1773,7 @@ function buildBACanvas(container, d, save, redraw) {
         el.append(lblRow, ta);
         liveFill(el, ta, LBLU, BLU, lbl);
       } else {
-        /* geen subtype gekozen: toon klikbare keuze */
-        const lbl = document.createElement('div');
-        lbl.textContent = 'US/UR-repr';
-        lbl.style.cssText = `font-size:8px;font-weight:800;color:${N_BD};margin-bottom:6px;flex-shrink:0;`;
+        /* geen subtype gekozen: toon klikbare keuze — alleen de keuzerij, gecentreerd */
         const choiceDiv = document.createElement('div');
         choiceDiv.style.cssText = 'display:flex;flex-direction:row;gap:3px;align-items:center;justify-content:center;';
         const mkChoice = (label, subtypeVal) => {
@@ -1792,7 +1789,7 @@ function buildBACanvas(container, d, save, redraw) {
         slash.textContent = '/';
         slash.style.cssText = `font-size:12px;color:${N_BD};`;
         choiceDiv.append(mkChoice('kernthema', 'kernthema'), slash, mkChoice('kerngebeurtenis', 'kerngebeurtenis'));
-        el.append(lbl, choiceDiv);
+        el.append(choiceDiv);
       }
       canvas.appendChild(el);
     } else {
