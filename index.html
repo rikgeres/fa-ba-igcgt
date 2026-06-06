@@ -86,6 +86,9 @@
     }
     .list-item:last-child { border-bottom: none; }
     .list-item:active { background: var(--bg); }
+    .list-item .item-del { opacity:0; transition:opacity .15s; background:none; border:none; cursor:pointer; padding:6px 8px; border-radius:6px; color:var(--muted); flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+    .list-item:hover .item-del { opacity:1; }
+    .list-item .item-del:hover { color:var(--danger); background:rgba(220,38,38,.07); }
     .badge { width: 44px; height: 44px; border-radius: var(--r-sm); display: flex; align-items: center;
       justify-content: center; font-size: 11px; font-weight: 800; color: #fff; flex-shrink: 0; letter-spacing: .5px; }
     .badge-fa  { background: var(--fa); }
@@ -698,15 +701,20 @@ function pgHome(c) {
     all.slice().reverse().forEach(item => {
       const el = document.createElement('div'); el.className = 'list-item';
       const route = item.type === 'FA' ? 'fa' : item.type === 'BA' ? 'ba' : 'ht';
-      el.onclick = () => go(`/${route}/${item.id}`);
       const meta = [item.client, item.date].filter(Boolean).join(' · ');
+      const badgeCls = item.type === 'FA' ? 'badge-fa' : item.type === 'BA' ? 'badge-bas' : 'badge-ht';
       el.innerHTML = `
-        <div class="badge badge-fa">${item.type}</div>
+        <div class="badge ${badgeCls}">${item.type}</div>
         <div class="item-info">
           <div class="item-title">${esc(item.title||'(Geen titel)')}</div>
           <div class="item-meta">${esc(meta)}</div>
-        </div>
-        <span style="color:var(--muted);font-size:20px">›</span>`;
+        </div>`;
+      const delBtn = mkTrashBtn('item-del no-print', 'Verwijder', e => {
+        e.stopPropagation();
+        if (confirm(`Verwijder deze ${item.type}?`)) { remove(item.id); buildHome(); }
+      });
+      el.appendChild(delBtn);
+      el.onclick = () => go(`/${route}/${item.id}`);
       card.appendChild(el);
     });
     c.appendChild(card);
@@ -829,7 +837,7 @@ function buildFA(c, d, save) {
     });
   });
 
-  const btnDel = mkBtn('btn-ghost btn-sm', '🗑', () => {
+  const btnDel = mkTrashBtn('btn btn-sm btn-ghost', 'Verwijder FA', () => {
     if (confirm('Verwijder deze FA?')) { remove(d.id); go('/'); }
   });
   btnDel.style.color = 'var(--danger)';
@@ -1351,7 +1359,7 @@ function pgBA(c, id) {
       });
     });
   });
-  const btnDel = mkBtn('btn-ghost btn-sm', '🗑', () => {
+  const btnDel = mkTrashBtn('btn btn-sm btn-ghost', 'Verwijder BA', () => {
     if (confirm('Verwijder deze BA?')) { remove(d.id); go('/'); }
   });
   btnDel.style.color = 'var(--danger)';
@@ -1940,7 +1948,7 @@ function buildHT(c, d, save, redrawHT) {
     openHtFullscreen(c.querySelector('.ht-canvas'));
   });
 
-  const btnDel = mkBtn('btn-ghost btn-sm', '🗑', () => {
+  const btnDel = mkTrashBtn('btn btn-sm btn-ghost', 'Verwijder HT', () => {
     if (confirm('Verwijder deze HT?')) { remove(d.id); go('/'); }
   });
   btnDel.style.color = 'var(--danger)';
@@ -2275,6 +2283,14 @@ function addFab(fn) {
 function mkBtn(cls, html, fn) {
   const b = document.createElement('button');
   b.className = `btn btn-sm ${cls}`; b.innerHTML = html; b.onclick = fn; return b;
+}
+
+const TRASH_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+
+function mkTrashBtn(cls, title, fn) {
+  const b = document.createElement('button');
+  b.className = cls; b.innerHTML = TRASH_SVG; b.title = title; b.type = 'button';
+  b.onclick = fn; return b;
 }
 
 /* ══════════════════════════════════════════
