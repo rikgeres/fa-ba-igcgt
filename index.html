@@ -711,7 +711,7 @@ function pgHome(c) {
         </div>`;
       const delBtn = mkTrashBtn('item-del no-print', 'Verwijder', e => {
         e.stopPropagation();
-        if (confirm(`Verwijder deze ${item.type}?`)) { remove(item.id); buildHome(); }
+        if (confirm(`Verwijder deze ${item.type}?`)) { remove(item.id); const m=document.getElementById('main'); m.innerHTML=''; pgHome(m); }
       });
       el.appendChild(delBtn);
       el.onclick = () => go(`/${route}/${item.id}`);
