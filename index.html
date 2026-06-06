@@ -825,7 +825,7 @@ function pgFA(c, id) {
   redraw();
 }
 
-function buildFA(c, d, save) {
+function buildFA(c, d, save, _noGroup) {
   /* ── Actiebalk ── */
   const bar = document.createElement('div');
   bar.className = 'action-bar no-print';
@@ -937,8 +937,8 @@ function buildFA(c, d, save) {
   canvas.appendChild(diag);
   c.appendChild(canvas);
 
-  /* Groepbalk */
-  buildGroupBar(c, d);
+  /* Groepbalk (niet bij inline rendering binnen een groep) */
+  if (!_noGroup) buildGroupBar(c, d);
 
   /* Zorg dat FNC minstens even hoog is als R */
   requestAnimationFrame(() => {
@@ -1757,130 +1757,157 @@ function mkTitleRow(d, save, typeLabel) {
 function buildGroupBar(container, d) {
   if (!d.groupId) return;
 
-  /* Sorteer siblings op groupOrder (array van ids opgeslagen op de huidige analyse) */
+  /* ── Inline schema-renderer voor één analyse ── */
+  function renderInlineSchema(sibling, groupSection, fullList) {
+    const sec = document.createElement('div');
+    sec.style.cssText = 'border-top:2px solid var(--border);margin-top:4px;position:relative;';
+
+    // Mini-actiebalk: type-badge + titel + prullenbak + pijltjes
+    const miniBar = document.createElement('div');
+    miniBar.className = 'no-print';
+    miniBar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 16px;background:#fafafa;border-bottom:1px solid var(--border);';
+
+    const typeColor = sibling.type==='FA' ? 'var(--fa)' : 'var(--bas)';
+    const typeBadge = document.createElement('span');
+    typeBadge.textContent = sibling.type;
+    typeBadge.style.cssText = `font-size:10px;font-weight:800;background:${typeColor};color:#fff;border-radius:4px;padding:2px 6px;flex-shrink:0;`;
+
+    const titleInp = document.createElement('input');
+    titleInp.type='text'; titleInp.value=sibling.title||'';
+    titleInp.placeholder='naam';
+    titleInp.style.cssText='flex:1;font-size:13px;font-weight:600;border:none;border-bottom:1px dashed #ccc;background:transparent;color:#1D3557;outline:none;padding:1px 0;';
+    titleInp.addEventListener('focus',()=>titleInp.style.borderBottomColor='var(--cgt-blue)');
+    titleInp.addEventListener('blur', ()=>titleInp.style.borderBottomColor='#ccc');
+    titleInp.addEventListener('input',()=>{ sibling.title=titleInp.value; upsert(sibling); });
+
+    // Volgorde
+    const idx = fullList.findIndex(a=>a.id===sibling.id);
+    const mkArr = (icon, disabled, fn) => {
+      const b=document.createElement('button');
+      b.innerHTML=icon; b.disabled=disabled;
+      b.className='no-print';
+      b.style.cssText=`background:none;border:none;cursor:${disabled?'default':'pointer'};color:${disabled?'#ddd':'#999'};font-size:13px;padding:2px 4px;line-height:1;`;
+      b.addEventListener('click',fn); return b;
+    };
+    const swap=(arr,a,b)=>{[arr[a],arr[b]]=[arr[b],arr[a]];};
+    const saveGroupOrder = list => {
+      const allData=load();
+      const newOrder=list.map(a=>a.id);
+      allData.forEach(a=>{ if(a.groupId===d.groupId) a.groupOrder=newOrder; });
+      dump(allData); d.groupOrder=newOrder;
+    };
+
+    const delBtn = mkTrashBtn('no-print', 'Verwijder', () => {
+      if(confirm(`Verwijder deze ${sibling.type}?`)) { remove(sibling.id); groupSection.innerHTML=''; buildGroupBar(groupSection, d); }
+    });
+    delBtn.style.cssText+='background:none;border:none;cursor:pointer;color:#ccc;padding:4px;display:flex;align-items:center;';
+    delBtn.addEventListener('mouseenter',()=>delBtn.style.color='var(--danger)');
+    delBtn.addEventListener('mouseleave',()=>delBtn.style.color='#ccc');
+
+    miniBar.append(
+      typeBadge, titleInp,
+      mkArr('▲', idx===0, ()=>{ const l=[...fullList]; swap(l,idx,idx-1); saveGroupOrder(l); groupSection.innerHTML=''; buildGroupBar(groupSection,d); }),
+      mkArr('▼', idx===fullList.length-1, ()=>{ const l=[...fullList]; swap(l,idx,idx+1); saveGroupOrder(l); groupSection.innerHTML=''; buildGroupBar(groupSection,d); }),
+      delBtn
+    );
+    sec.appendChild(miniBar);
+
+    // Schema inline renderen
+    const schemaWrap = document.createElement('div');
+    sec.appendChild(schemaWrap);
+
+    if (sibling.type==='FA') {
+      let sd = sibling;
+      const saveSibling = extra => { sd={...sd,...extra}; upsert(sd); };
+      const redrawSibling = () => { schemaWrap.innerHTML=''; buildFA(schemaWrap, sd, saveSibling, true); };
+      buildFA(schemaWrap, sd, saveSibling, true);
+    } else if (sibling.type==='BA') {
+      let sd = sibling;
+      const themeRow2 = document.createElement('div'); schemaWrap.appendChild(themeRow2);
+      const cfgBar2   = document.createElement('div'); schemaWrap.appendChild(cfgBar2);
+      const canvasWrap2 = document.createElement('div'); canvasWrap2.style.cssText='padding:20px 24px;overflow:auto;'; schemaWrap.appendChild(canvasWrap2);
+      const saveSibling = extra => { sd={...sd,...extra}; upsert(sd); };
+      const redrawSibling = () => {
+        themeRow2.innerHTML=''; themeRow2.appendChild(mkThemePicker(sd, id=>{ saveSibling({theme:id}); redrawSibling(); }));
+        buildBACfgBar(cfgBar2, sd, saveSibling, redrawSibling);
+        canvasWrap2.innerHTML=''; buildBACanvas(canvasWrap2, sd, saveSibling, redrawSibling);
+      };
+      redrawSibling();
+    }
+
+    return sec;
+  }
+
+  /* ── Gesorteerde siblings ophalen (huidige analyse NIET tonen, die staat al boven) ── */
   function getSorted() {
     const all = load().filter(a => a.groupId === d.groupId);
-    const order = (d.groupOrder || []);
-    const ordered = order.map(id => all.find(a => a.id === id)).filter(Boolean);
-    const rest = all.filter(a => !order.includes(a.id));
+    const order = d.groupOrder || [];
+    const ordered = order.map(id=>all.find(a=>a.id===id)).filter(Boolean);
+    const rest = all.filter(a=>!order.includes(a.id));
     return [...ordered, ...rest];
   }
 
-  function saveOrder(sorted) {
-    const newOrder = sorted.map(a => a.id);
-    const allData = load();
-    allData.forEach(a => { if (a.groupId === d.groupId) a.groupOrder = newOrder; });
-    dump(allData);
-    d.groupOrder = newOrder;
-  }
-
-  const wrap = document.createElement('div');
-  wrap.className = 'no-print';
-  wrap.style.cssText = 'border-top:1px solid var(--border);margin-top:8px;';
-
   function render() {
-    wrap.innerHTML = '';
+    container.innerHTML = '';
     const siblings = getSorted();
-    if (siblings.length === 0) return;
+    // Toon alle analyses BEHALVE de huidige (die staat al boven)
+    const others = siblings.filter(s => s.id !== d.id);
 
-    /* Header met groepslabel + groepsnaam + plusknop */
-    const types = new Set(siblings.map(s => s.type));
-    const groupLabel = types.has('FA') && types.has('BA') ? 'FABA' : [...types].join('/');
-    const existingTitle = siblings.map(s => s.title).find(t => t && t.trim()) || '';
-
-    const hdr = document.createElement('div');
-    hdr.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 20px 6px;';
-
-    const badge = document.createElement('span');
-    badge.textContent = groupLabel;
-    badge.style.cssText = 'font-size:10px;font-weight:800;letter-spacing:.06em;background:var(--cgt-blue);color:#fff;border-radius:4px;padding:2px 7px;flex-shrink:0;';
-
-    const inp = document.createElement('input');
-    inp.type = 'text';
-    inp.value = existingTitle;
-    inp.placeholder = 'Groepsnaam…';
-    inp.style.cssText = 'flex:1;font-size:13px;font-weight:600;border:none;border-bottom:1px dashed #ccc;background:transparent;color:#1D3557;outline:none;padding:1px 0;';
-    inp.addEventListener('focus', () => inp.style.borderBottomColor = 'var(--cgt-blue)');
-    inp.addEventListener('blur',  () => inp.style.borderBottomColor = '#ccc');
-    inp.addEventListener('input', () => {
-      const allData = load();
-      allData.forEach(a => { if (a.groupId === d.groupId) a.title = inp.value; });
-      dump(allData); d.title = inp.value;
+    others.forEach(s => {
+      container.appendChild(renderInlineSchema(s, container, siblings));
     });
 
-    /* + knop */
+    /* ── + knop onderaan links ── */
+    const footer = document.createElement('div');
+    footer.className = 'no-print';
+    footer.style.cssText = 'display:flex;align-items:center;padding:10px 16px;gap:6px;position:relative;';
+
     const plusBtn = document.createElement('button');
-    plusBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
-    plusBtn.title = 'Voeg analyse toe aan groep';
-    plusBtn.style.cssText = 'width:26px;height:26px;border-radius:50%;border:1.5px solid var(--cgt-blue);background:#fff;color:var(--cgt-blue);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;';
+    plusBtn.title = 'Voeg analyse toe';
+    plusBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+    plusBtn.style.cssText = 'width:24px;height:24px;border-radius:50%;border:1.5px solid #aaa;background:#fff;color:#888;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+    plusBtn.addEventListener('mouseenter',()=>{plusBtn.style.borderColor='var(--cgt-blue)';plusBtn.style.color='var(--cgt-blue)';});
+    plusBtn.addEventListener('mouseleave',()=>{plusBtn.style.borderColor='#aaa';plusBtn.style.color='#888';});
 
     const menu = document.createElement('div');
-    menu.style.cssText = 'display:none;position:absolute;top:30px;right:0;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);overflow:hidden;z-index:200;min-width:160px;';
-    [['FA', 'Functieanalyse'], ['BA', 'Betekenisanalyse']].forEach(([type, lbl]) => {
+    menu.style.cssText = 'display:none;position:absolute;bottom:36px;left:14px;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.13);overflow:hidden;z-index:200;min-width:160px;';
+    [['FA','Functieanalyse'],['BA','Betekenisanalyse']].forEach(([type,lbl]) => {
       const opt = document.createElement('button');
       opt.textContent = lbl;
       opt.style.cssText = 'display:block;width:100%;padding:9px 18px;border:none;background:#fff;text-align:left;cursor:pointer;font-size:13px;color:#333;white-space:nowrap;';
-      opt.addEventListener('mouseenter', () => opt.style.background = '#f0f6ff');
-      opt.addEventListener('mouseleave', () => opt.style.background = '#fff');
-      opt.addEventListener('click', () => { menu.style.display='none'; _pendingGroup = d.groupId; go(`/${type.toLowerCase()}/new`); });
+      opt.addEventListener('mouseenter',()=>opt.style.background='#f0f6ff');
+      opt.addEventListener('mouseleave',()=>opt.style.background='#fff');
+      opt.addEventListener('click', () => {
+        menu.style.display='none';
+        // Maak nieuwe analyse aan in dezelfde groep, render inline
+        const newId2 = uid();
+        const newAnalysis = type==='FA'
+          ? { id:newId2, type:'FA', title:'', client:'', date:today(), groupId:d.groupId, theme:'blauw', sd:'', r:'', fnc:'', srPosTxt:'', srPosType:'', srNegItems:[{type:'',txt:''}], notities:'' }
+          : { id:newId2, type:'BA', title:'', client:'', date:today(), groupId:d.groupId, theme:'blauw', showOs:false, os:'', cs:'', assocType:'referentieel', centralType:'usur', centralText:'', centralArchiefLabel:'', extraOvals:[], zweefArchieven:[], showRepr:false, reprStimulus:'', reprResponse:'', reprBetekenis:'', cr:'' };
+        upsert(newAnalysis);
+        // Sla volgorde op in alle groepsleden
+        const allData2 = load();
+        const groupMembers = allData2.filter(a=>a.groupId===d.groupId);
+        const newOrder2 = groupMembers.map(a=>a.id);
+        allData2.forEach(a=>{ if(a.groupId===d.groupId) a.groupOrder=newOrder2; });
+        dump(allData2);
+        d.groupOrder = newOrder2;
+        render();
+      });
       menu.appendChild(opt);
     });
-    const plusWrap = document.createElement('div');
-    plusWrap.style.cssText = 'position:relative;flex-shrink:0;';
-    plusBtn.addEventListener('click', e => { e.stopPropagation(); menu.style.display = menu.style.display==='none'?'block':'none'; });
-    document.addEventListener('click', () => { menu.style.display='none'; }, { once:true });
-    plusWrap.append(plusBtn, menu);
 
-    hdr.append(badge, inp, plusWrap);
-    wrap.appendChild(hdr);
-
-    /* Lijst van gekoppelde analyses */
-    const list = document.createElement('div');
-    list.style.cssText = 'padding:0 12px 14px;display:flex;flex-direction:column;gap:6px;';
-
-    siblings.forEach((s, i) => {
-      const isCurrent = s.id === d.id;
-      const typeColor = s.type==='FA' ? 'var(--fa)' : 'var(--bas)';
-      const titleStr = (s.title||'').trim() || (s.type==='FA' ? 'Functieanalyse' : 'Betekenisanalyse');
-
-      const row = document.createElement('div');
-      row.style.cssText = `display:flex;align-items:center;gap:8px;background:${isCurrent?'#EEF4FA':'var(--surface)'};border:1.5px solid ${isCurrent?'var(--cgt-blue)':'var(--border)'};border-radius:10px;padding:8px 10px;cursor:${isCurrent?'default':'pointer'};transition:background .12s;`;
-      if (!isCurrent) { row.addEventListener('mouseenter',()=>row.style.background='#f5f8fc'); row.addEventListener('mouseleave',()=>row.style.background='var(--surface)'); }
-
-      const typeBadge = document.createElement('span');
-      typeBadge.textContent = s.type;
-      typeBadge.style.cssText = `font-size:10px;font-weight:800;background:${typeColor};color:#fff;border-radius:4px;padding:2px 6px;flex-shrink:0;`;
-
-      const titleEl = document.createElement('span');
-      titleEl.textContent = titleStr;
-      titleEl.style.cssText = `flex:1;font-size:13px;font-weight:${isCurrent?'700':'500'};color:${isCurrent?'var(--cgt-blue)':'#333'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;`;
-
-      /* Volgorde-knoppen */
-      const orderWrap = document.createElement('div');
-      orderWrap.style.cssText = 'display:flex;flex-direction:column;gap:1px;flex-shrink:0;';
-      const mkOrd = (icon, disabled, fn) => {
-        const b = document.createElement('button');
-        b.innerHTML = icon; b.disabled = disabled;
-        b.style.cssText = `background:none;border:none;cursor:${disabled?'default':'pointer'};color:${disabled?'#ddd':'#888'};line-height:1;padding:1px 2px;font-size:12px;`;
-        b.addEventListener('click', e => { e.stopPropagation(); fn(); });
-        return b;
-      };
-      const swap = (arr, a, b) => { [arr[a],arr[b]] = [arr[b],arr[a]]; };
-      orderWrap.append(
-        mkOrd('▲', i===0, () => { const s2=[...siblings]; swap(s2,i,i-1); saveOrder(s2); render(); }),
-        mkOrd('▼', i===siblings.length-1, () => { const s2=[...siblings]; swap(s2,i,i+1); saveOrder(s2); render(); })
-      );
-
-      row.append(typeBadge, titleEl, orderWrap);
-      if (!isCurrent) row.addEventListener('click', () => go(`/${s.type.toLowerCase()}/${s.id}`));
-      list.appendChild(row);
+    plusBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      menu.style.display = menu.style.display==='none' ? 'block' : 'none';
     });
+    document.addEventListener('click', ()=>{ menu.style.display='none'; }, {once:true});
 
-    wrap.appendChild(list);
+    footer.append(plusBtn, menu);
+    container.appendChild(footer);
   }
 
   render();
-  container.appendChild(wrap);
 }
 
 /* ══════════════════════════════════════════
