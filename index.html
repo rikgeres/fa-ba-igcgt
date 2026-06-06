@@ -2179,7 +2179,7 @@ function buildHT(c, d, save, redrawHT) {
         dot.textContent = '●'; dot.style.cssText = 'margin-top:10px;color:#888;font-size:9px;flex-shrink:0;';
         const ta = document.createElement('textarea');
         ta.value = val; ta.rows = 1;
-        ta.style.cssText = 'flex:1;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:13px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color .15s;';
+        ta.style.cssText = 'flex:1;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:16px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color .15s;';
         ta.addEventListener('focus', () => ta.style.borderColor = hBg);
         ta.addEventListener('blur',  () => ta.style.borderColor = '#ddd');
         const resize = () => { ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; };
