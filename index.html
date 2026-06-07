@@ -881,86 +881,96 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo) {
   c.appendChild(mkThemePicker(d, id => { save({ theme: id }); redraw(); }));
 
   /* ══════════════════════════
-     INTERACTIEF DIAGRAM
+     CANVAS — BA-stijl (wit, absolute posities, SVG pijlen)
   ══════════════════════════ */
-  const faTheme = THEMES[d.theme || 'blauw'].fa;
+  const th  = THEMES[d.theme || 'blauw'].ba;
+  const N_BG_FA = '#F5F8FA', N_BD_FA = '#8AAABB', TXT_FA = '#1D3557';
+  const BLU_FA = th.blu, LBLU_FA = th.lblu, GRN_FA = th.grn, LGRN_FA = th.lgrn;
+
+  const SD_W=145, SD_H=90, R_W=145, R_H=90, SR_W=195, SR_H=120, FNC_W=195;
+  const sdX=16, mainY=24;
+  const rX  = sdX + SD_W + 56;        // ruimte voor dots
+  const srX = rX  + R_W  + 52;        // ruimte voor pijl
+  const midY = mainY + Math.round(SD_H/2);
+  const fncY = mainY + SR_H + 28;
+  const CW  = srX + SR_W + 20;
+
   const canvas = document.createElement('div');
-  canvas.className = 'fa-canvas fa-interactive';
-  canvas.style.background = faTheme.bg;
+  canvas.className = 'fa-canvas';
+  canvas.style.cssText = `position:relative;background:#fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.1);`;
 
+  const inner = document.createElement('div');
+  inner.style.cssText = `position:relative;width:${CW}px;min-height:${fncY+FNC_W/2+24}px;`;
+  canvas.appendChild(inner);
 
-  /*
-   * Grid: 5 kolommen
-   * [Sd] [dots] [R (span 2 rijen)] [blokpijl rij1 / blokpijl rij2] [Sr-pos-repr / FNC]
-   */
-  const diag = document.createElement('div');
-  diag.style.cssText = `
-    display: grid;
-    grid-template-columns: 1fr auto 1fr auto 1fr;
-    grid-template-rows: auto auto;
-    gap: 6px;
-    align-items: stretch;
-  `;
-
-  /* ── Sd (rij 1, kolom 1) ── */
-  const nodeSd = makeInlineNode('Sd', 'Context waarbinnen het probleemgedrag plaatsvindt', d.sd || '', v => save({ sd: v }));
-  nodeSd.style.gridArea = '1 / 1 / 2 / 2';
-
-  /* ── Dots (rij 1, kolom 2) gecentreerd ── */
-  const dotsEl = document.createElement('div');
-  dotsEl.style.cssText = 'grid-area:1/2/2/3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:0 5px';
-  dotsEl.innerHTML = `
-    <div style="width:6px;height:6px;border-radius:50%;background:${faTheme.dot}"></div>
-    <div style="width:6px;height:6px;border-radius:50%;background:${faTheme.dot}"></div>`;
-
-  /* ── R (rij 1, kolom 3) — zelfde grootte als Sd ── */
-  const nodeR = makeInlineNode('R', 'Problematisch gedrag', d.r || '', v => save({ r: v }));
-  nodeR.style.gridArea = '1 / 3 / 2 / 4';
-
-  /* ── Pijl (slank, zelfde kleur als puntjes) ── */
-  function blokPijl(gridArea) {
-    const el = document.createElement('div');
-    el.style.cssText = `
-      grid-area: ${gridArea};
-      background: ${faTheme.dot};
-      clip-path: polygon(0% 35%, 68% 35%, 68% 18%, 100% 50%, 68% 82%, 68% 65%, 0% 65%);
-      width: 26px;
-      align-self: center;
-      height: 12px;
-      flex-shrink: 0;
-    `;
-    return el;
+  /* SVG overlay voor pijlen en dots */
+  const faSvg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  faSvg.setAttribute('width', CW); faSvg.setAttribute('height','100%');
+  faSvg.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:10;overflow:visible;';
+  faSvg.innerHTML=`<defs><marker id="fa-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${GRN_FA}"/></marker></defs>`;
+  const faSetA=(e,o)=>{Object.entries(o).forEach(([a,v])=>e.setAttribute(a,v));return e;};
+  function faSvgLine(x1,y1,x2,y2){
+    faSvg.appendChild(faSetA(document.createElementNS('http://www.w3.org/2000/svg','line'),
+      {x1,y1,x2,y2,stroke:GRN_FA,'stroke-width':'1.5','marker-end':'url(#fa-arr)'}));
   }
+  inner.appendChild(faSvg);
 
-  const bpArr1 = blokPijl('1 / 4 / 2 / 5');
-  const bpArr2 = blokPijl('2 / 4 / 3 / 5');
-
-  /* ── Sr-pos-repr ovaal (rij 1, kolom 5) ── */
-  const nodeSrPos = makeSrNode('oval', 'Sr-pos-repr:', d.srPosTxt, d.srPosType, SR_POS_TYPES, save, 'srPos');
-  nodeSrPos.style.gridArea = '1 / 5 / 2 / 6';
-
-  /* ── FNC rechthoek met meerdere items (rij 2, kolom 5) ── */
-  // Migreer oud formaat → nieuw
-  if (!d.srNegItems) {
-    d.srNegItems = (d.srNegTxt || d.srNegType)
-      ? [{ type: d.srNegType || '', txt: d.srNegTxt || '' }]
-      : [{ type: '', txt: '' }];
-  }
-  const nodeSrNeg = makeFncNode(d.srNegItems, save, faTheme.dot);
-  nodeSrNeg.style.gridArea = '2 / 5 / 3 / 6';
-
-  diag.append(nodeSd, dotsEl, nodeR, bpArr1, nodeSrPos, bpArr2, nodeSrNeg);
-  canvas.appendChild(diag);
-  c.appendChild(canvas);
-
-  /* Groepbalk (niet bij inline rendering binnen een groep) */
-  if (!_noGroup) buildGroupBar(c, d);
-
-  /* Zorg dat FNC minstens even hoog is als R */
-  requestAnimationFrame(() => {
-    const h = nodeR.offsetHeight;
-    if (h > 0) nodeSrNeg.style.minHeight = h + 'px';
+  /* Twee dots tussen Sd en R */
+  const dotsCX = Math.round((sdX+SD_W+rX)/2);
+  [midY-5, midY+5].forEach(cy=>{
+    const c2=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    faSetA(c2,{cx:dotsCX,cy,r:'4',fill:GRN_FA}); faSvg.appendChild(c2);
   });
+
+  /* Pijl R → Sr-pos (horizontaal) */
+  faSvgLine(rX+R_W+4, midY, srX-4, midY);
+
+  /* Pijl Sr-pos → FNC (verticaal vanuit midden Sr-pos) */
+  const srCX = srX + Math.round(SR_W/2);
+  faSvgLine(srCX, mainY+SR_H+4, srCX, fncY-4);
+
+  /* ── Sd box ── */
+  const sdEl = document.createElement('div');
+  sdEl.style.cssText=`position:absolute;left:${sdX}px;top:${mainY}px;width:${SD_W}px;height:${SD_H}px;background:${N_BG_FA};border:1.5px solid ${N_BD_FA};border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
+  const sdLbl=document.createElement('div'); sdLbl.textContent='Sd'; sdLbl.style.cssText=`font-size:10px;font-weight:800;color:${N_BD_FA};margin-bottom:2px;letter-spacing:.04em;flex-shrink:0;`;
+  const sdTa=makeTa(d.sd||'','context waarbinnen het probleemgedrag plaatsvindt',v=>{d.sd=v;save();});
+  sdTa.style.color=TXT_FA;
+  liveFill(sdEl,sdTa,LGRN_FA,GRN_FA,sdLbl);
+  sdEl.append(sdLbl,sdTa); inner.appendChild(sdEl);
+
+  /* ── R box ── */
+  const rEl = document.createElement('div');
+  rEl.style.cssText=`position:absolute;left:${rX}px;top:${mainY}px;width:${R_W}px;height:${R_H}px;background:${N_BG_FA};border:1.5px solid ${N_BD_FA};border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
+  const rLbl=document.createElement('div'); rLbl.textContent='R'; rLbl.style.cssText=`font-size:10px;font-weight:800;color:${N_BD_FA};margin-bottom:2px;letter-spacing:.04em;flex-shrink:0;`;
+  const rTa=makeTa(d.r||'','problematisch gedrag',v=>{d.r=v;save();});
+  rTa.style.color=TXT_FA;
+  liveFill(rEl,rTa,LGRN_FA,GRN_FA,rLbl);
+  rEl.append(rLbl,rTa); inner.appendChild(rEl);
+
+  /* ── Sr-pos ovaal ── */
+  if (!d.srNegItems) {
+    d.srNegItems = (d.srNegTxt||d.srNegType) ? [{type:d.srNegType||'',txt:d.srNegTxt||''}] : [{type:'',txt:''}];
+  }
+  const srEl = makeSrNode(srX, mainY, SR_W, SR_H, d.srPosTxt, d.srPosType, SR_POS_TYPES, save, 'srPos', N_BG_FA, N_BD_FA, BLU_FA, LBLU_FA, TXT_FA);
+  inner.appendChild(srEl);
+
+  /* ── FNC box ── */
+  const fncEl = makeFncNode(srX, fncY, FNC_W, d.srNegItems, save, N_BG_FA, N_BD_FA, GRN_FA, LGRN_FA, TXT_FA);
+  inner.appendChild(fncEl);
+
+  /* Canvas hoogte aanpassen na render */
+  requestAnimationFrame(()=>{
+    const h = fncEl.offsetTop + fncEl.offsetHeight + 24;
+    inner.style.minHeight = h+'px';
+    faSvg.setAttribute('height', h);
+  });
+
+  const wrap2 = document.createElement('div');
+  wrap2.style.cssText='padding:20px 24px;overflow:auto;';
+  wrap2.appendChild(canvas);
+  c.appendChild(wrap2);
+
+  if (!_noGroup) buildGroupBar(c, d);
 }
 
 /* ── Gedeelde textarea-helper voor inline bewerking ── */
@@ -1028,248 +1038,136 @@ function makeNode(shape, labelTxt, placeholderTxt, bodyTxt, wide) {
   return el;
 }
 
-/* ── SR-knoop (Sr-pos-repr): badge na keuze, dropdown verdwijnt ── */
-function makeSrNode(shape, labelTxt, bodyTxt, selectedType, types, save, prefix) {
+/* ── Sr-pos ovaal (BA-stijl, inline kleuren) ── */
+function makeSrNode(x, y, w, h, bodyTxt, selectedType, types, save, prefix, N_BG, N_BD, BLU, LBLU, TXT) {
   const el = document.createElement('div');
-  el.className = shape === 'oval' ? 'fa-node-oval' : 'fa-node';
-  if (bodyTxt || selectedType) el.classList.add('filled');
+  el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;box-sizing:border-box;overflow:hidden;`;
 
   const lbl = document.createElement('div');
-  lbl.className = 'fa-node-label';
-  lbl.textContent = labelTxt;
+  lbl.textContent = 'Sr-pos';
+  lbl.style.cssText=`font-size:10px;font-weight:800;color:${N_BD};margin-bottom:3px;flex-shrink:0;`;
   el.appendChild(lbl);
 
-  /* Container die dropdown OF badge+tekst toont */
   const body = document.createElement('div');
-  body.style.cssText = 'width:100%';
+  body.style.cssText='width:100%;display:flex;flex-direction:column;align-items:center;gap:3px;';
   el.appendChild(body);
 
-  const hint = document.createElement('span');
-  hint.className = 'fa-edit-hint';
-  hint.textContent = '✏️ tikken';
-  el.appendChild(hint);
+  function upd() {
+    const filled = !!(bodyTxt||selectedType);
+    el.style.background    = filled ? LBLU : N_BG;
+    el.style.borderColor   = filled ? BLU  : N_BD;
+    lbl.style.color        = filled ? BLU  : N_BD;
+  }
+
+  function makePosSel() {
+    const sel = document.createElement('select');
+    sel.style.cssText=`font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:1px;border-radius:4px;border:1.5px solid ${BLU};background:#fff;color:${BLU};cursor:pointer;width:40px;-webkit-appearance:auto;appearance:auto;`;
+    const emptyOpt=document.createElement('option'); emptyOpt.value=''; emptyOpt.textContent='—'; sel.appendChild(emptyOpt);
+    types.forEach(tp=>{const opt=document.createElement('option');opt.value=tp.val;opt.textContent=tp.label;sel.appendChild(opt);});
+    sel.addEventListener('click',e=>e.stopPropagation());
+    return sel;
+  }
 
   function render() {
-    body.innerHTML = '';
-    const t = types.find(x => x.val === selectedType);
-
-    function makePosSel(current) {
-      const sel = document.createElement('select');
-      sel.style.cssText = `
-        font-family:'Courier New',monospace; font-size:11px; font-weight:700;
-        padding:1px 1px; border-radius:4px; border:1.5px solid #93C5FD;
-        background:#fff; color:#1D4ED8; cursor:pointer; width:35px;
-        -webkit-appearance:auto; appearance:auto;
-      `;
-      const emptyOpt = document.createElement('option');
-      emptyOpt.value = ''; emptyOpt.textContent = '—';
-      sel.appendChild(emptyOpt);
-      types.forEach(tp => {
-        const opt = document.createElement('option');
-        opt.value = tp.val; opt.textContent = tp.label;
-        sel.appendChild(opt);
-      });
-      sel.addEventListener('click', e => e.stopPropagation());
-      return sel;
-    }
-
+    body.innerHTML='';
+    const t = types.find(x=>x.val===selectedType);
     if (!selectedType) {
-      /* ── Nog geen type gekozen: compact dropdown + textarea ── */
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:baseline;gap:6px';
-      const sel = makePosSel('');
-      sel.addEventListener('change', e => {
-        e.stopPropagation();
-        selectedType = e.target.value;
-        bodyTxt = ta.value;
-        if (bodyTxt || selectedType) el.classList.add('filled');
-        const upd = {}; upd[prefix + 'Type'] = selectedType; save(upd);
-        render();
-      });
-      const ta = makeTa(bodyTxt, 'Positieve versterker / consequentie', v => {
-        bodyTxt = v;
-        if (bodyTxt || selectedType) el.classList.add('filled');
-        const upd = {}; upd[prefix + 'Txt'] = v; save(upd);
-      });
-      row.append(sel, ta);
-      body.appendChild(row);
-
+      const sel=makePosSel();
+      sel.addEventListener('change',e=>{e.stopPropagation();selectedType=e.target.value;bodyTxt=ta.value;const upd2={};upd2[prefix+'Type']=selectedType;save(upd2);upd();render();});
+      const ta=makeTa(bodyTxt,'positieve versterker / consequentie',v=>{bodyTxt=v;const upd2={};upd2[prefix+'Txt']=v;save(upd2);upd();});
+      ta.style.cssText+=`text-align:center;color:${TXT};`;
+      body.append(sel,ta);
     } else {
-      /* ── Type gekozen: blauwe badge vóór inline textarea ── */
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:baseline;gap:6px';
-
-      const badge = document.createElement('span');
-      badge.title = 'Klik om type te wijzigen';
-      badge.style.cssText = `
-        font-family:'Courier New',monospace; font-weight:700; font-size:12px;
-        color:#1D4ED8; flex-shrink:0; cursor:pointer; line-height:1.35;
-      `;
-      badge.textContent = t.label;
-      badge.addEventListener('click', e => {
-        e.stopPropagation();
-        const sel = makePosSel(selectedType);
-        sel.addEventListener('change', e2 => {
-          e2.stopPropagation();
-          selectedType = e2.target.value;
-          if (bodyTxt || selectedType) el.classList.add('filled');
-          const upd = {}; upd[prefix + 'Type'] = selectedType; save(upd);
-          render();
-        });
-        badge.replaceWith(sel);
-        sel.focus();
-      });
-
-      const ta = makeTa(bodyTxt, 'Positieve versterker / consequentie', v => {
-        bodyTxt = v;
-        if (bodyTxt || selectedType) el.classList.add('filled');
-        const upd = {}; upd[prefix + 'Txt'] = v; save(upd);
-      });
-
-      row.append(badge, ta);
-      body.appendChild(row);
+      const badge=document.createElement('span');
+      badge.title='Klik om type te wijzigen';
+      badge.style.cssText=`font-family:'Courier New',monospace;font-weight:700;font-size:12px;color:${BLU};flex-shrink:0;cursor:pointer;`;
+      badge.textContent=t.label;
+      badge.addEventListener('click',e=>{e.stopPropagation();const sel=makePosSel();sel.addEventListener('change',e2=>{e2.stopPropagation();selectedType=e2.target.value;const upd2={};upd2[prefix+'Type']=selectedType;save(upd2);upd();render();});badge.replaceWith(sel);sel.focus();});
+      const ta=makeTa(bodyTxt,'positieve versterker / consequentie',v=>{bodyTxt=v;const upd2={};upd2[prefix+'Txt']=v;save(upd2);upd();});
+      ta.style.cssText+=`text-align:center;color:${TXT};`;
+      body.append(badge,ta);
     }
   }
 
-  render();
+  upd(); render();
   return el;
 }
 
 
-/* ── FNC node: meerdere items, elk met type-prefix + omschrijving ── */
-function makeFncNode(items, save, accentColor) {
-  accentColor = accentColor || '#9B7B7B';
+/* ── FNC box (BA-stijl, inline kleuren) ── */
+function makeFncNode(x, y, w, items, save, N_BG, N_BD, GRN, LGRN, TXT) {
   const el = document.createElement('div');
-  el.className = 'fa-node';
-  if (items.some(i => i.txt || i.type)) el.classList.add('filled');
+  el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;background:${N_BG};border:1.5px solid ${N_BD};border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
 
   const lbl = document.createElement('div');
-  lbl.className = 'fa-node-label';
-  lbl.textContent = 'FNC:';
+  lbl.textContent='FNC';
+  lbl.style.cssText=`font-size:10px;font-weight:800;color:${N_BD};margin-bottom:3px;letter-spacing:.04em;flex-shrink:0;`;
   el.appendChild(lbl);
 
   const list = document.createElement('div');
-  list.style.cssText = 'display:flex;flex-direction:column;gap:2px;width:100%';
+  list.style.cssText='display:flex;flex-direction:column;gap:3px;width:100%';
   el.appendChild(list);
 
-  function saveItems() {
-    if (items.some(i => i.txt || i.type)) el.classList.add('filled');
-    save({ srNegItems: items.map(i => ({ type: i.type, txt: i.txt })) });
+  function updFnc() {
+    const filled = items.some(i=>i.txt||i.type);
+    el.style.background  = filled ? LGRN : N_BG;
+    el.style.borderColor = filled ? GRN  : N_BD;
+    lbl.style.color      = filled ? GRN  : N_BD;
   }
 
-  function makeCompactSel(currentVal, onChange) {
-    const sel = document.createElement('select');
-    sel.style.cssText = `
-      font-family:'Courier New',monospace; font-size:11px; font-weight:700;
-      padding:1px 1px; border-radius:4px; border:1.5px solid #FCA5A5;
-      background:#fff; color:#DC2626; cursor:pointer; width:35px;
-      -webkit-appearance:auto; appearance:auto;
-    `;
-    const emptyOpt = document.createElement('option');
-    emptyOpt.value = ''; emptyOpt.textContent = '—';
-    sel.appendChild(emptyOpt);
-    SR_NEG_TYPES.forEach(tp => {
-      const opt = document.createElement('option');
-      opt.value = tp.val; opt.textContent = tp.label;
-      sel.appendChild(opt);
-    });
-    sel.addEventListener('change', e => { e.stopPropagation(); onChange(e.target.value); });
-    sel.addEventListener('click', e => e.stopPropagation());
+  function saveItems() { updFnc(); save({srNegItems:items.map(i=>({type:i.type,txt:i.txt}))}); }
+
+  function makeCompactSel(onChange) {
+    const sel=document.createElement('select');
+    sel.style.cssText=`font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:1px;border-radius:4px;border:1.5px solid ${GRN};background:#fff;color:${GRN};cursor:pointer;width:40px;-webkit-appearance:auto;appearance:auto;`;
+    const emptyOpt=document.createElement('option');emptyOpt.value='';emptyOpt.textContent='—';sel.appendChild(emptyOpt);
+    SR_NEG_TYPES.forEach(tp=>{const opt=document.createElement('option');opt.value=tp.val;opt.textContent=tp.label;sel.appendChild(opt);});
+    sel.addEventListener('change',e=>{e.stopPropagation();onChange(e.target.value);});
+    sel.addEventListener('click',e=>e.stopPropagation());
     return sel;
   }
 
   function renderItems() {
-    list.innerHTML = '';
-    items.forEach((item, idx) => {
-      const itemWrap = document.createElement('div');
-      itemWrap.className = 'fnc-item';
-      itemWrap.style.cssText = 'display:flex;align-items:flex-start;gap:4px;width:100%;position:relative';
-
-      const t = SR_NEG_TYPES.find(x => x.val === item.type);
-
-      /* Verwijder knop — alleen zichtbaar op hover via CSS */
-      const del = document.createElement('button');
-      del.textContent = '×';
-      del.className = 'fnc-del';
-      del.title = 'Verwijder';
-      del.style.cssText = `
-        background:none;border:none;color:#DC2626;font-size:14px;cursor:pointer;
-        padding:0 1px;line-height:1;flex-shrink:0;margin-left:auto;align-self:flex-start;padding-top:2px;
-      `;
-      del.addEventListener('click', e => {
-        e.stopPropagation();
-        if (items.length > 1) { items.splice(idx, 1); }
-        else { items[0] = { type: '', txt: '' }; }
-        saveItems(); renderItems();
-      });
-
+    list.innerHTML='';
+    items.forEach((item,idx)=>{
+      const itemWrap=document.createElement('div');
+      itemWrap.style.cssText='display:flex;align-items:flex-start;gap:4px;width:100%;';
+      const t=SR_NEG_TYPES.find(x=>x.val===item.type);
+      const del=document.createElement('button');
+      del.textContent='×';
+      del.style.cssText=`background:none;border:none;color:${GRN};font-size:13px;cursor:pointer;padding:0 1px;line-height:1;flex-shrink:0;opacity:.5;`;
+      del.addEventListener('mouseenter',()=>del.style.opacity='1');
+      del.addEventListener('mouseleave',()=>del.style.opacity='.5');
+      del.addEventListener('click',e=>{e.stopPropagation();if(items.length>1){items.splice(idx,1);}else{items[0]={type:'',txt:''};} saveItems();renderItems();});
       if (!item.type) {
-        /* ── Nog geen type: compact dropdown inline + textarea ── */
-        const sel = makeCompactSel('', val => {
-          item.type = val;
-          item.txt = ta.value;
-          saveItems(); renderItems();
-        });
-
-        const ta = makeTa(item.txt, 'tikken om in te vullen…', v => {
-          item.txt = v; saveItems();
-        });
-
-        itemWrap.append(sel, ta, del);
-        list.appendChild(itemWrap);
-
+        const sel=makeCompactSel(val=>{item.type=val;item.txt=ta.value;saveItems();renderItems();});
+        const ta=makeTa(item.txt,'consequentie',v=>{item.txt=v;saveItems();});
+        ta.style.color=TXT;
+        itemWrap.append(sel,ta,del);
       } else {
-        /* ── Type gekozen: rode badge vóór inline textarea ── */
-        const row = document.createElement('div');
-        row.style.cssText = 'display:flex;align-items:baseline;gap:4px;flex:1;min-width:0';
-
-        /* Badge — klikken vervangt door compacte select op dezelfde plek */
-        const badge = document.createElement('span');
-        badge.title = 'Klik om type te wijzigen';
-        badge.style.cssText = `
-          font-family:'Courier New',monospace; font-weight:700; font-size:12px;
-          color:#DC2626; flex-shrink:0; cursor:pointer; line-height:1.35;
-        `;
-        badge.textContent = t.label;
-        badge.addEventListener('click', e => {
-          e.stopPropagation();
-          const sel = makeCompactSel(item.type, val => {
-            item.type = val;
-            saveItems(); renderItems();
-          });
-          badge.replaceWith(sel);
-          sel.focus();
-        });
-
-        const ta = makeTa(item.txt, 'tikken om in te vullen…', v => {
-          item.txt = v; saveItems();
-        });
-
-        row.append(badge, ta);
-        itemWrap.append(row, del);
-        list.appendChild(itemWrap);
+        const row=document.createElement('div');
+        row.style.cssText='display:flex;align-items:baseline;gap:4px;flex:1;min-width:0';
+        const badge=document.createElement('span');
+        badge.title='Klik om type te wijzigen';
+        badge.style.cssText=`font-family:'Courier New',monospace;font-weight:700;font-size:12px;color:${GRN};flex-shrink:0;cursor:pointer;`;
+        badge.textContent=t.label;
+        badge.addEventListener('click',e=>{e.stopPropagation();const sel=makeCompactSel(val=>{item.type=val;saveItems();renderItems();});badge.replaceWith(sel);sel.focus();});
+        const ta=makeTa(item.txt,'consequentie',v=>{item.txt=v;saveItems();});
+        ta.style.color=TXT;
+        row.append(badge,ta);
+        itemWrap.append(row,del);
       }
+      list.appendChild(itemWrap);
     });
-
-    /* Voeg toe knop */
-    const addBtn = document.createElement('button');
-    addBtn.textContent = '+ voeg toe';
-    addBtn.className = 'fa-edit-hint';
-    addBtn.style.cssText = `
-      background:none;border:1px dashed ${accentColor};border-radius:4px;
-      color:${accentColor};font-size:11px;cursor:pointer;padding:2px 6px;
-      margin-top:2px;align-self:flex-start;
-    `;
-    addBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      items.push({ type: '', txt: '' });
-      saveItems();
-      renderItems();
-    });
+    const addBtn=document.createElement('button');
+    addBtn.textContent='+ voeg toe';
+    addBtn.className='no-print';
+    addBtn.style.cssText=`background:none;border:1px dashed ${GRN};border-radius:4px;color:${GRN};font-size:11px;cursor:pointer;padding:2px 6px;margin-top:2px;opacity:.7;`;
+    addBtn.addEventListener('click',e=>{e.stopPropagation();items.push({type:'',txt:''});saveItems();renderItems();});
     list.appendChild(addBtn);
   }
 
-  renderItems();
+  updFnc(); renderItems();
   return el;
 }
 
