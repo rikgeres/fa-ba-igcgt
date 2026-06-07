@@ -1504,6 +1504,7 @@ function buildBACanvas(container, d, save, redraw) {
   const OS_W = 120;
   const EX_W = 152, EX_H = 82;
   const ZW_W = 130, ZW_H = 120;
+  const BV_W = 140, BV_H = 80, BV_GAP = 10;
 
   const csX = d.showOs ? OS_W + 22 : 10;
   const ovX = csX + CS_W + 75;
@@ -1518,8 +1519,20 @@ function buildBACanvas(container, d, save, redraw) {
 
   const isKernGebArc = (d.centralSubtype === 'kerngebeurtenis-archief');
   const hasTop = (nZw > 0) || (isArc && nEx > 0) || (isKernGebArc && nEx > 0);
+
+  // Bewijs-ovaaltjes: hoeveel ruimte nodig boven de kastlijn (TOP_Y+35)?
+  const bewijzen = d.bewijsOvals || [];
+  const nBv = bewijzen.length;
+  const bvTotalH = nBv * BV_H + Math.max(0, nBv - 1) * BV_GAP;
+  // archCabCY_base = TOP_Y(16) + 35 = 51 (midden kastafbeelding)
+  const archCabCY_base = 51;
+  const hasBv = d.centralSubtype === 'kernthema' && nZw > 0 && nBv > 0;
+  // Hoeveel moet bvTopY omhoog tov de bovenkant van de canvas? (min TOP_Y + 8 marge)
+  const bvTopY_base = archCabCY_base - bvTotalH / 2;
+  const bvExtraTop = hasBv ? Math.max(0, Math.round(16 + 8 - bvTopY_base)) : 0;
+
   // Bij accolade zonder zweefs: kleine ruimte voor de accolade; met zweefs: volle ruimte
-  const TOP_H  = hasTop ? 135 : (showAccolade ? 20 : 0);
+  const TOP_H  = hasTop ? 135 + bvExtraTop : (showAccolade ? 20 : 0);
 
   const exTotalW = nEx > 0 ? nEx * EX_W + (nEx-1)*12 : 0;
   const exStartX = nEx > 0 ? Math.max(csX + CS_W + 10, Math.round(ovCX - exTotalW/2)) : ovX;
@@ -1546,11 +1559,20 @@ function buildBACanvas(container, d, save, redraw) {
   let   reprX = ovX + OV_W + 18;
   if (isArc && nEx > 0) reprX = exStartX + exTotalW + 15;
 
+  // Bewijs-ovaaltjes rechterkant (voor CW)
+  const archRightX_bv = nZw > 0 ? zwStartX + (nZw - 1) * (ZW_W + 20) + ZW_W : 0;
+  const bvRightEdge   = hasBv ? archRightX_bv + 20 + 16 + BV_W + 20 : 0;
+
+  // Bewijs-ovaaltjes onderkant (voor CH)
+  const archCabCY_actual = 16 + 35 + bvExtraTop; // TOP_Y + 35 + bvExtraTop
+  const bvTopY_actual    = Math.round(archCabCY_actual - bvTotalH / 2);
+  const bvBotEdge        = hasBv ? bvTopY_actual + bvTotalH + 16 : 0;
+
   const rightMost = d.showRepr
     ? reprX + REPR_W + 12
     : (isArc && nEx > 0 ? exStartX + exTotalW + 12 : ovX + OV_W + 20);
-  const CW = Math.max(480, rightMost);
-  const CH = crY + CR_H + 24;
+  const CW = Math.max(480, rightMost, bvRightEdge);
+  const CH = Math.max(crY + CR_H + 24, bvBotEdge);
 
   const canvas = document.createElement('div');
   canvas.className = 'ba-canvas';
@@ -1743,7 +1765,8 @@ function buildBACanvas(container, d, save, redraw) {
   zweefs.forEach((arch, i) => {
     const ax = zwStartX + i*(ZW_W+20);
     const el = document.createElement('div');
-    el.style.cssText=`position:absolute;left:${ax}px;top:${TOP_Y}px;width:${ZW_W}px;display:flex;flex-direction:column;align-items:center;text-align:center;`;
+    const zwTopY = TOP_Y + bvExtraTop; // zweef schuift mee met extra ruimte boven
+    el.style.cssText=`position:absolute;left:${ax}px;top:${zwTopY}px;width:${ZW_W}px;display:flex;flex-direction:column;align-items:center;text-align:center;`;
     const ico=mkCabinetSvg(60, 70, '#888');
     const desc=document.createElement('div');
     desc.textContent='archief met samenhangende kerngebeurtenissen m.b.t.';
@@ -1757,7 +1780,7 @@ function buildBACanvas(container, d, save, redraw) {
     // Bij accolade: geen pijl tekenen
     if (!showAccolade) {
       const archCX = ax+ZW_W/2;
-      const arrowStartY = TOP_Y + 70 + 28 + 18;
+      const arrowStartY = zwTopY + 70 + 28 + 18;
       let targetX, targetY;
       if (d.assocType === 'identiteit') {
         targetX = eqMidX;
@@ -1781,14 +1804,12 @@ function buildBACanvas(container, d, save, redraw) {
   });
 
   /* Bewijs-ovaaltjes rechts van zweefarchief bij kernthema */
-  const bewijzen = d.bewijsOvals || [];
-  const BV_W = 140, BV_H = 80, BV_GAP = 10;
   const BV_LABELS = ['bewijs 1','bewijs 2','bewijs 3'];
   if ((d.centralSubtype === 'kernthema') && nZw > 0 && bewijzen.length > 0) {
     const archRightX = zwStartX + (nZw-1)*(ZW_W+20) + ZW_W;
     const spineX   = archRightX + 20;
     const bvStartX = spineX + 16;
-    const archCabCY = TOP_Y + 35; // altijd midden kastafbeelding — vaste verbindingshoogte
+    const archCabCY = TOP_Y + 35 + bvExtraTop; // meeschuiven met extra top-ruimte
     const totalBvH  = bewijzen.length * BV_H + (bewijzen.length-1) * BV_GAP;
     const bvTopY    = Math.round(archCabCY - totalBvH/2);
     const bvCYs    = bewijzen.map((_,i) => bvTopY + i*(BV_H+BV_GAP) + BV_H/2);
