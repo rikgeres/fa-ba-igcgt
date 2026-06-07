@@ -1844,13 +1844,11 @@ function buildBACanvas(container, d, save, redraw) {
         liveFill(el, ta, LBLU, BLU, lbl);
       } else if (sub === 'kerngebeurtenis-archief') {
         /* ovaal als archief: label + titel-textarea + kastafbeelding onderaan */
-        el.style.justifyContent = 'flex-start';
-        el.style.paddingTop = `${Math.round(OV_H*.22)}px`;
-        const topSection = document.createElement('div');
-        topSection.style.cssText = 'display:flex;flex-direction:column;align-items:center;flex:1;width:100%;';
+        el.style.justifyContent = 'center';
+        el.style.gap = '4px';
         const lbl = document.createElement('div');
         lbl.textContent = 'archief met samenhangende kerngebeurtenissen m.b.t.';
-        lbl.style.cssText = `font-size:10px;font-weight:800;color:${N_BD};margin-bottom:3px;text-align:center;line-height:1.3;`;
+        lbl.style.cssText = `font-size:10px;font-weight:800;color:${N_BD};margin-bottom:3px;text-align:center;line-height:1.3;flex-shrink:0;`;
         const resetAK = document.createElement('span');
         resetAK.textContent = '↩';
         resetAK.title = 'keuze ongedaan maken';
@@ -1858,12 +1856,10 @@ function buildBACanvas(container, d, save, redraw) {
         resetAK.addEventListener('click', () => { d.centralSubtype='kerngebeurtenis'; d.centralText=''; save(); redraw(); });
         lbl.appendChild(resetAK);
         const ta = makeTa(d.centralText || '', 'titel', v => { d.centralText = v; save(); });
-        ta.style.cssText += `text-align:center;color:${TXT};font-size:13px;font-weight:600;`;
-        topSection.append(lbl, ta);
+        ta.style.cssText += `text-align:center;color:${TXT};font-size:13px;font-weight:600;flex-shrink:0;`;
         const ico = mkCabinetSvg(50, 58, '#888');
-        ico.style.marginTop = '4px';
         ico.style.flexShrink = '0';
-        el.append(topSection, ico);
+        el.append(lbl, ta, ico);
         (function(){ function upd(){ const filled=ta.value.trim().length>0; el.style.background=filled?LBLU:N_BG; el.style.borderColor=filled?BLU:N_BD; lbl.style.color=filled?BLU:N_BD; resetAK.style.color=filled?BLU:N_BD; } upd(); ta.addEventListener('input',upd); })();
       } else if (sub === 'metacognitief') {
         const lblRow = document.createElement('div');
