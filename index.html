@@ -1502,16 +1502,23 @@ function buildBACanvas(container, d, save, redraw) {
   const ovX = csX + CS_W + 75;
   const ovCX = ovX + OV_W / 2;
 
+  // Accolade: bij identiteit én CS = "ik" (hoofdletterongevoelig)
+  const showAccolade = d.assocType === 'identiteit' && /^ik$/i.test((d.cs||'').trim());
+  // Accolade-coördinaten (worden pas gebruikt als ovY bekend is, maar we berekenen hier de X-waarden)
+  const accoLeftX  = csX + CS_W/2;               // midden CS
+  const accoRightX = ovCX;                        // midden ovaal
+  const accoMidX   = Math.round((accoLeftX + accoRightX) / 2);
+
   const hasTop = (nZw > 0) || (isArc && nEx > 0);
-  const TOP_H  = hasTop ? 135 : 0;
+  const TOP_H  = hasTop ? 135 : (showAccolade ? 30 : 0);
 
   const exTotalW = nEx > 0 ? nEx * EX_W + (nEx-1)*12 : 0;
   const exStartX = nEx > 0 ? Math.max(csX + CS_W + 10, Math.round(ovCX - exTotalW/2)) : ovX;
 
   const zwTotalW = nZw > 0 ? nZw * ZW_W + (nZw-1)*20 : 0;
-  // Bij identiteit: zweefarchief boven het midden van de = (tussen CS en ovaal)
-  const eqMidX   = Math.round((csX + CS_W + ovX) / 2);
-  const zwCenterX = (d.assocType === 'identiteit') ? eqMidX : ovCX;
+  // Bij identiteit+accolade: zweefarchief boven midden accolade; anders boven =; anders boven ovaal
+  const eqMidX    = Math.round((csX + CS_W + ovX) / 2);
+  const zwCenterX = showAccolade ? accoMidX : (d.assocType === 'identiteit') ? eqMidX : ovCX;
   const zwStartX  = Math.round(zwCenterX - zwTotalW/2);
 
   const TOP_Y = 16;
@@ -1569,6 +1576,23 @@ function buildBACanvas(container, d, save, redraw) {
     poly.setAttribute('fill', GRN);
     poly.setAttribute('stroke', 'none');
     svg.appendChild(poly);
+  }
+  function svgAccolade(lx, rx, armBottomY, armTopY, notchH) {
+    // Horizontale accolade: twee armen omlaag, centrum-nok omhoog
+    const mx = Math.round((lx+rx)/2);
+    const ny = armTopY - notchH; // notch-piek (omhoog)
+    const r  = 10; // hoekstraal
+    const d  = `M${lx},${armBottomY} L${lx},${armTopY+r} Q${lx},${armTopY} ${lx+r},${armTopY} ` +
+               `L${mx-r},${armTopY} Q${mx},${armTopY} ${mx},${ny} ` +
+               `Q${mx},${armTopY} ${mx+r},${armTopY} ` +
+               `L${rx-r},${armTopY} Q${rx},${armTopY} ${rx},${armTopY+r} L${rx},${armBottomY}`;
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d', d);
+    p.setAttribute('stroke', GRN);
+    p.setAttribute('stroke-width', '2');
+    p.setAttribute('fill', 'none');
+    svg.appendChild(p);
+    return ny; // geeft de Y van de notch-piek terug
   }
   function svgArc(x1,y1,x2,y2) {
     // Boogje zweeft vrij tussen de elementen (raakt niet de randen)
@@ -1686,7 +1710,19 @@ function buildBACanvas(container, d, save, redraw) {
   }
 
   /* CS */
-  canvas.appendChild(mkBox(csX, csY, CS_W, CS_H, 'CS', 'cs', 'uitlokkende situatie', LGRN, GRN));
+  const csBox = mkBox(csX, csY, CS_W, CS_H, 'CS', 'cs', 'uitlokkende situatie', LGRN, GRN);
+  canvas.appendChild(csBox);
+  // Reactief: herteken als ik-conditie verandert
+  if (d.assocType === 'identiteit') {
+    const csTa = csBox.querySelector('textarea');
+    if (csTa) {
+      let wasIk = showAccolade;
+      csTa.addEventListener('input', () => {
+        const isIkNow = /^ik$/i.test(csTa.value.trim());
+        if (isIkNow !== wasIk) { wasIk = isIkNow; d.cs = csTa.value; redraw(); }
+      });
+    }
+  }
 
   /* Zwevende archieven boven centrale ovaal */
   zweefs.forEach((arch, i) => {
@@ -1707,7 +1743,11 @@ function buildBACanvas(container, d, save, redraw) {
     // Pijl start onder de titel (kast 70px + desc ~28px + titel ~18px)
     const arrowStartY = TOP_Y + 70 + 28 + 18;
     let targetX, targetY;
-    if (d.assocType === 'identiteit') {
+    if (showAccolade) {
+      // Pijl naar de nok van de accolade
+      targetX = accoMidX;
+      targetY = accoNotchY;
+    } else if (d.assocType === 'identiteit') {
       // Pijl naar iets boven het midden van de = (stopt vlak erboven)
       targetX = eqMidX;
       targetY = ovY + OV_H/2 - 14;
@@ -1717,9 +1757,9 @@ function buildBACanvas(container, d, save, redraw) {
       const dx = (targetX - ovCX) / (OV_W/2);
       targetY = ovY + OV_H/2 - (OV_H/2) * Math.sqrt(Math.max(0, 1 - dx*dx));
     }
-    // Bij identiteit: pijl een derde korter, aan beide kanten ingekort
+    // Bij identiteit (zonder accolade): pijl een derde korter, aan beide kanten ingekort
     let drawX1 = archCX, drawY1 = arrowStartY, drawX2 = targetX, drawY2 = targetY;
-    if (d.assocType === 'identiteit') {
+    if (d.assocType === 'identiteit' && !showAccolade) {
       drawX1 = archCX  + (targetX - archCX)  / 6;
       drawY1 = arrowStartY + (targetY - arrowStartY) / 6;
       drawX2 = targetX - (targetX - archCX)  / 6;
@@ -1949,6 +1989,14 @@ function buildBACanvas(container, d, save, redraw) {
   const csMY=csY+CS_H/2, csR=csX+CS_W, ovMY=ovY+OV_H/2;
   if      (d.assocType==='referentieel') svgArc(csR,csMY,ovX,ovMY);
   else if (d.assocType==='identiteit')   svgDbl(csR,csMY,ovX,ovMY);
+
+  /* Accolade boven CS + US/UR bij identiteit + "ik" in CS */
+  let accoNotchY = null;
+  if (showAccolade) {
+    const armBottom = ovY - 4;
+    const armTop    = ovY - 38;
+    accoNotchY = svgAccolade(accoLeftX, accoRightX, armBottom, armTop, 18);
+  }
   else if (d.assocType==='sequentieel' && d.causal) svgThickArrow(csR+4,csMY,ovX-4,ovMY);
   else if (d.assocType==='sequentieel')  svgLine(csR,csMY,ovX-2,ovMY);
   /* anders (assocType leeg): geen pijl tekenen */
