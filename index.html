@@ -1452,7 +1452,7 @@ function buildBACfgBar(bar, d, save, redraw) {
     sep()
   );
 
-  if (d.centralType === 'archief') {
+  if (d.centralType === 'archief' || d.centralSubtype === 'kerngebeurtenis-archief') {
     bar.append(addBtn('+ ovaaltje', () => {
       d.extraOvals = [...(d.extraOvals||[]), {id:uid(), text:''}];
       save(); redraw();
@@ -1508,7 +1508,8 @@ function buildBACanvas(container, d, save, redraw) {
   const accoRightX = ovCX;                        // midden ovaal
   const accoMidX   = Math.round((accoLeftX + accoRightX) / 2);
 
-  const hasTop = (nZw > 0) || (isArc && nEx > 0);
+  const isKernGebArcCheck = (d.centralSubtype === 'kerngebeurtenis-archief');
+  const hasTop = (nZw > 0) || (isArc && nEx > 0) || (isKernGebArcCheck && nEx > 0);
   // Bij accolade zonder zweefs: kleine ruimte voor de accolade; met zweefs: volle ruimte
   const TOP_H  = hasTop ? 135 : (showAccolade ? 20 : 0);
 
@@ -1786,6 +1787,54 @@ function buildBACanvas(container, d, save, redraw) {
     const exCX = ex+EX_W/2;
     svgLine(exCX, TOP_Y+EX_H, ovCX, ovY-2);
   });
+
+  /* Extra ovaaltjes boven kerngebeurtenis-archief ovaal */
+  const isKernGebArc = (d.centralSubtype === 'kerngebeurtenis-archief');
+  if (isKernGebArc && nEx > 0) {
+    const KE_W = 152, KE_H = 82;
+    const keTotalW = nEx * KE_W + (nEx-1)*12;
+    const keStartX = Math.round(ovCX - keTotalW/2);
+    const keY = TOP_Y; // boven de centrale ovaal
+
+    // Teken bracket-verbinding: stubs omlaag + horizontale balk + 1 lijn naar centrale ovaal
+    const stubBottom = keY + KE_H + 20; // Y van de horizontale balk
+    const bracketCX  = Math.round(keStartX + keTotalW/2); // midden van de balk
+
+    extras.forEach((ov, i) => {
+      const ke = keStartX + i*(KE_W+12);
+      const keCX = ke + KE_W/2;
+      const el = document.createElement('div');
+      el.style.cssText=`position:absolute;left:${ke}px;top:${keY}px;width:${KE_W}px;height:${KE_H}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 14px;box-sizing:border-box;overflow:hidden;`;
+      const lbl2=document.createElement('div'); lbl2.textContent='US/UR-repr'; lbl2.style.cssText=`font-size:8px;font-weight:800;color:${N_BD};margin-bottom:2px;flex-shrink:0;`;
+      const ta=makeTa(ov.text||'','kerngebeurtenis',v=>{d.extraOvals[i].text=v;save();}); ta.style.cssText+=`text-align:center;color:${DBLUE};font-size:10px;`;
+      ta.addEventListener('focus', () => { let v=ta.value.trim(); if(v.startsWith("'")&&v.endsWith("'")&&v.length>2) ta.value=v.slice(1,-1); });
+      ta.addEventListener('blur',  () => { let v=ta.value.trim(); if(v&&!v.startsWith("'")) v="'"+v+"'"; if(ta.value!==v) ta.value=v; d.extraOvals[i].text=v; save(); });
+      const del=document.createElement('button'); del.textContent='×'; del.className='no-print';
+      del.style.cssText='position:absolute;top:3px;right:7px;border:none;background:transparent;cursor:pointer;font-size:12px;color:#aaa;';
+      del.addEventListener('click',()=>{d.extraOvals.splice(i,1);save();redraw();});
+      el.append(lbl2,ta,del); canvas.appendChild(el);
+      liveFill(el, ta, LBLU, BLU, lbl2);
+
+      // Stub van ovaal-onderkant naar horizontale balk
+      const stubLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+      stubLine.setAttribute('x1', keCX); stubLine.setAttribute('y1', keY+KE_H);
+      stubLine.setAttribute('x2', keCX); stubLine.setAttribute('y2', stubBottom);
+      stubLine.setAttribute('stroke', GRN); stubLine.setAttribute('stroke-width','1.5');
+      svg.appendChild(stubLine);
+    });
+
+    // Horizontale balk (alleen bij meerdere ovaaltjes)
+    if (nEx > 1) {
+      const hLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+      hLine.setAttribute('x1', keStartX+KE_W/2); hLine.setAttribute('y1', stubBottom);
+      hLine.setAttribute('x2', keStartX+(nEx-1)*(KE_W+12)+KE_W/2); hLine.setAttribute('y2', stubBottom);
+      hLine.setAttribute('stroke', GRN); hLine.setAttribute('stroke-width','1.5');
+      svg.appendChild(hLine);
+    }
+
+    // Enkele lijn van midden balk naar bovenkant centrale ovaal
+    svgLine(bracketCX, stubBottom, ovCX, ovY);
+  }
 
   /* Repr bij archief-ovaal + top-rij ovaaltjes */
   if (isArc && nEx > 0 && d.showRepr) {
