@@ -1714,7 +1714,15 @@ function buildBACanvas(container, d, save, redraw) {
       const dx = (targetX - ovCX) / (OV_W/2);
       targetY = ovY + OV_H/2 - (OV_H/2) * Math.sqrt(Math.max(0, 1 - dx*dx));
     }
-    svgLine(archCX, arrowStartY, targetX, targetY);
+    // Bij identiteit: pijl een derde korter, aan beide kanten ingekort
+    let drawX1 = archCX, drawY1 = arrowStartY, drawX2 = targetX, drawY2 = targetY;
+    if (d.assocType === 'identiteit') {
+      drawX1 = archCX  + (targetX - archCX)  / 6;
+      drawY1 = arrowStartY + (targetY - arrowStartY) / 6;
+      drawX2 = targetX - (targetX - archCX)  / 6;
+      drawY2 = targetY - (targetY - arrowStartY) / 6;
+    }
+    svgLine(drawX1, drawY1, drawX2, drawY2);
   });
 
   /* Extra ovaaltjes boven archief-ovaal */
