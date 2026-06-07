@@ -1790,7 +1790,7 @@ function buildBACanvas(container, d, save, redraw) {
     const bvStartX = spineX + 16;
     const archCabCY = TOP_Y + 35; // altijd midden kastafbeelding — vaste verbindingshoogte
     const totalBvH  = bewijzen.length * BV_H + (bewijzen.length-1) * BV_GAP;
-    const bvTopY    = Math.max(TOP_Y, Math.round(archCabCY - totalBvH/2));
+    const bvTopY    = Math.round(archCabCY - totalBvH/2);
     const bvCYs    = bewijzen.map((_,i) => bvTopY + i*(BV_H+BV_GAP) + BV_H/2);
 
     // Horizontale lijn: kast → spine, ALTIJD op archCabCY (zelfde punt bij 1, 2 of 3 ovaaltjes)
