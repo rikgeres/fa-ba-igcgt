@@ -1509,7 +1509,10 @@ function buildBACanvas(container, d, save, redraw) {
   const exStartX = nEx > 0 ? Math.max(csX + CS_W + 10, Math.round(ovCX - exTotalW/2)) : ovX;
 
   const zwTotalW = nZw > 0 ? nZw * ZW_W + (nZw-1)*20 : 0;
-  const zwStartX = Math.round(ovCX - zwTotalW/2);
+  // Bij identiteit: zweefarchief boven het midden van de = (tussen CS en ovaal)
+  const eqMidX   = Math.round((csX + CS_W + ovX) / 2);
+  const zwCenterX = (d.assocType === 'identiteit') ? eqMidX : ovCX;
+  const zwStartX  = Math.round(zwCenterX - zwTotalW/2);
 
   const TOP_Y = 16;
   const ovY   = TOP_H + 22;
@@ -1698,13 +1701,20 @@ function buildBACanvas(container, d, save, redraw) {
     del.addEventListener('click',()=>{d.zweefArchieven.splice(i,1);save();redraw();});
     el.append(ico,ta,del); canvas.appendChild(el);
     const archCX = ax+ZW_W/2;
-    // Pijl start onder de titel (kast 92px + titel ~20px)
+    // Pijl start onder de titel (kast 70px + titel ~18px)
     const arrowStartY = TOP_Y + 70 + 18;
-    const spread = nZw === 1 ? 0 : (OV_W * 0.6);
-    const targetOvX = nZw === 1 ? ovCX : ovX + (OV_W - spread)/2 + i * spread/(nZw-1);
-    const dx = (targetOvX - ovCX) / (OV_W/2);
-    const targetOvY = ovY + OV_H/2 - (OV_H/2) * Math.sqrt(Math.max(0, 1 - dx*dx));
-    svgLine(archCX, arrowStartY, targetOvX, targetOvY);
+    let targetX, targetY;
+    if (d.assocType === 'identiteit') {
+      // Pijl naar midden van de = (horizontale lijn tussen CS en ovaal)
+      targetX = eqMidX;
+      targetY = ovY + OV_H/2; // = csMY
+    } else {
+      const spread = nZw === 1 ? 0 : (OV_W * 0.6);
+      targetX = nZw === 1 ? ovCX : ovX + (OV_W - spread)/2 + i * spread/(nZw-1);
+      const dx = (targetX - ovCX) / (OV_W/2);
+      targetY = ovY + OV_H/2 - (OV_H/2) * Math.sqrt(Math.max(0, 1 - dx*dx));
+    }
+    svgLine(archCX, arrowStartY, targetX, targetY);
   });
 
   /* Extra ovaaltjes boven archief-ovaal */
