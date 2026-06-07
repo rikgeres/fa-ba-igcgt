@@ -1772,8 +1772,8 @@ function buildBACanvas(container, d, save, redraw) {
     }
   });
 
-  /* Extra ovaaltjes boven archief-ovaal */
-  extras.forEach((ov, i) => {
+  /* Extra ovaaltjes boven archief-ovaal (alleen voor isArc, niet voor kerngebeurtenis-archief) */
+  if (!isKernGebArc) extras.forEach((ov, i) => {
     const ex = exStartX + i*(EX_W+12);
     const el = document.createElement('div');
     el.style.cssText=`position:absolute;left:${ex}px;top:${TOP_Y}px;width:${EX_W}px;height:${EX_H}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 14px;box-sizing:border-box;overflow:hidden;`;
