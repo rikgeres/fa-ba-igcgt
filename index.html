@@ -1460,8 +1460,9 @@ function buildBACfgBar(bar, d, save, redraw) {
   } else {
     const sub = d.centralSubtype || '';
     const isKernGeb = sub === 'kerngebeurtenis' || sub === 'kerngebeurtenis-enkel' || sub === 'kerngebeurtenis-archief';
+    const isSq = d.assocType === 'sequentieel';
     const nz = (d.zweefArchieven||[]).length;
-    if (!isKernGeb && nz < 3) {
+    if (!isKernGeb && !isSq && nz < 3) {
       bar.append(addBtn('+ zweefarchief', () => {
         d.zweefArchieven = [...(d.zweefArchieven||[]), {id:uid(), label:''}];
         save(); redraw();
