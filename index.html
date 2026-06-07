@@ -1458,8 +1458,10 @@ function buildBACfgBar(bar, d, save, redraw) {
       save(); redraw();
     }));
   } else {
+    const sub = d.centralSubtype || '';
+    const isKernGeb = sub === 'kerngebeurtenis' || sub === 'kerngebeurtenis-enkel' || sub === 'kerngebeurtenis-archief';
     const nz = (d.zweefArchieven||[]).length;
-    if (nz < 3) {
+    if (!isKernGeb && nz < 3) {
       bar.append(addBtn('+ zweefarchief', () => {
         d.zweefArchieven = [...(d.zweefArchieven||[]), {id:uid(), label:''}];
         save(); redraw();
