@@ -1672,7 +1672,7 @@ function buildBACanvas(container, d, save, redraw) {
     const el=document.createElement('div');
     el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${N_BG};border:1.5px solid ${N_BD};border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
     let lbl=null;
-    if(lblTxt){lbl=document.createElement('div');lbl.textContent=lblTxt;lbl.style.cssText=`font-size:9px;font-weight:800;color:${N_BD};margin-bottom:2px;letter-spacing:.04em;flex-shrink:0;`;el.appendChild(lbl);}
+    if(lblTxt){lbl=document.createElement('div');lbl.textContent=lblTxt;lbl.style.cssText=`font-size:10px;font-weight:800;color:${N_BD};margin-bottom:2px;letter-spacing:.04em;flex-shrink:0;`;el.appendChild(lbl);}
     const ta=makeTa(d[key]||'',ph,v=>{d[key]=v;save();}); ta.style.color=TXT; el.appendChild(ta);
     liveFill(el, ta, filledBg, filledBd, lbl);
     return el;
@@ -1681,7 +1681,7 @@ function buildBACanvas(container, d, save, redraw) {
     const el=document.createElement('div');
     el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:${Math.round(h*.17)}px ${Math.round(w*.1)}px;box-sizing:border-box;overflow:hidden;`;
     let lbl=null;
-    if(lblTxt){lbl=document.createElement('div');lbl.textContent=lblTxt;lbl.style.cssText=`font-size:8px;font-weight:800;color:${N_BD};margin-bottom:2px;flex-shrink:0;`;el.appendChild(lbl);}
+    if(lblTxt){lbl=document.createElement('div');lbl.textContent=lblTxt;lbl.style.cssText=`font-size:10px;font-weight:800;color:${N_BD};margin-bottom:2px;flex-shrink:0;`;el.appendChild(lbl);}
     const ta=makeTa(d[key]||'',ph,v=>{d[key]=v;save();}); ta.style.cssText+=`text-align:center;color:${TXT};`; el.appendChild(ta);
     liveFill(el, ta, filledBg, filledBd, lbl);
     return el;
