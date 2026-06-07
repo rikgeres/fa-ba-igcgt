@@ -1454,7 +1454,9 @@ function buildBACfgBar(bar, d, save, redraw) {
   );
 
   if (d.centralType === 'archief' || d.centralSubtype === 'kerngebeurtenis-archief') {
-    bar.append(addBtn('+ ovaaltje', () => {
+    const nExNow = (d.extraOvals||[]).length;
+    const maxEx = d.centralSubtype === 'kerngebeurtenis-archief' ? 3 : 99;
+    if (nExNow < maxEx) bar.append(addBtn('+ ovaaltje', () => {
       d.extraOvals = [...(d.extraOvals||[]), {id:uid(), text:''}];
       save(); redraw();
     }));
@@ -1898,7 +1900,8 @@ function buildBACanvas(container, d, save, redraw) {
       const el = document.createElement('div');
       el.style.cssText=`position:absolute;inset:0;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 14px;box-sizing:border-box;overflow:hidden;`;
       const lbl2=document.createElement('div'); lbl2.textContent='US/UR-repr'; lbl2.style.cssText=`font-size:8px;font-weight:800;color:${N_BD};margin-bottom:2px;flex-shrink:0;`;
-      const ta=makeTa(ov.text||'','kerngebeurtenis',v=>{d.extraOvals[i].text=v;save();}); ta.style.cssText+=`text-align:center;color:${DBLUE};font-size:10px;`;
+      const kePholder = `kerngebeurtenis ${i+1}`;
+      const ta=makeTa(ov.text||'',kePholder,v=>{d.extraOvals[i].text=v;save();}); ta.style.cssText+=`text-align:center;color:${DBLUE};font-size:10px;`;
       ta.addEventListener('focus', () => { let v=ta.value.trim(); if(v.startsWith("'")&&v.endsWith("'")&&v.length>2) ta.value=v.slice(1,-1); });
       ta.addEventListener('blur',  () => { let v=ta.value.trim(); if(v&&!v.startsWith("'")) v="'"+v+"'"; if(ta.value!==v) ta.value=v; d.extraOvals[i].text=v; save(); });
       el.append(lbl2,ta);
