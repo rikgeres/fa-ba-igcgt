@@ -1322,6 +1322,7 @@ function pgBA(c, id) {
     centralArchiefLabel: '',
     extraOvals: [],
     zweefArchieven: [],
+    bewijsOvals: [],
     showRepr: false,
     reprStimulus: '', reprResponse: '', reprBetekenis: '',
     cr: ''
@@ -1465,6 +1466,13 @@ function buildBACfgBar(bar, d, save, redraw) {
     if (!isKernGeb && !isSq && nz < 3) {
       bar.append(addBtn('+ zweefarchief', () => {
         d.zweefArchieven = [...(d.zweefArchieven||[]), {id:uid(), label:''}];
+        save(); redraw();
+      }));
+    }
+    // Bewijs-ovaaltjes: alleen bij kernthema + minimaal 1 zweefarchief
+    if (sub === 'kernthema' && nz > 0 && (d.bewijsOvals||[]).length < 3) {
+      bar.append(addBtn('+ bewijs ovaaltje', () => {
+        d.bewijsOvals = [...(d.bewijsOvals||[]), {id:uid(), text:''}];
         save(); redraw();
       }));
     }
@@ -1771,6 +1779,58 @@ function buildBACanvas(container, d, save, redraw) {
       svgLine(drawX1, drawY1, drawX2, drawY2);
     }
   });
+
+  /* Bewijs-ovaaltjes rechts van zweefarchief bij kernthema */
+  const bewijzen = d.bewijsOvals || [];
+  const BV_W = 135, BV_H = 68, BV_GAP = 10;
+  const BV_PH = ["'bewijs 1'", "'bewijs 2'", "'bewijs 3'"];
+  if ((d.centralSubtype === 'kernthema') && nZw > 0 && bewijzen.length > 0) {
+    const archRightX = zwStartX + (nZw-1)*(ZW_W+20) + ZW_W;
+    const spineX   = archRightX + 20;
+    const bvStartX = spineX + 16;
+    const archCabCY = TOP_Y + 35; // verticaal midden kastafbeelding
+    const totalBvH  = bewijzen.length * BV_H + (bewijzen.length-1) * BV_GAP;
+    const bvTopY    = Math.max(TOP_Y, Math.round(archCabCY - totalBvH/2));
+
+    const bvCYs = bewijzen.map((_,i) => bvTopY + i*(BV_H+BV_GAP) + BV_H/2);
+
+    // Verbindingslijn: kast naar spine op kast-hoogte
+    const connY = Math.round((bvCYs[0] + bvCYs[bvCYs.length-1]) / 2);
+    const hConn = document.createElementNS('http://www.w3.org/2000/svg','line');
+    setA(hConn,{x1:archRightX, y1:connY, x2:spineX, y2:connY, stroke:GRN, 'stroke-width':'1.5'});
+    svg.appendChild(hConn);
+
+    // Verticale spine
+    if (bewijzen.length > 1) {
+      const vSpine = document.createElementNS('http://www.w3.org/2000/svg','line');
+      setA(vSpine,{x1:spineX, y1:bvCYs[0], x2:spineX, y2:bvCYs[bewijzen.length-1], stroke:GRN, 'stroke-width':'1.5'});
+      svg.appendChild(vSpine);
+    }
+
+    bewijzen.forEach((bv, i) => {
+      const bvY  = bvTopY + i*(BV_H+BV_GAP);
+      const bvCY = bvY + BV_H/2;
+
+      // Horizontale stub: spine → ovaal-linkerrand
+      const hStub = document.createElementNS('http://www.w3.org/2000/svg','line');
+      setA(hStub,{x1:spineX, y1:bvCY, x2:bvStartX, y2:bvCY, stroke:GRN, 'stroke-width':'1.5'});
+      svg.appendChild(hStub);
+
+      // Ovaal
+      const el = document.createElement('div');
+      el.style.cssText=`position:absolute;left:${bvStartX}px;top:${bvY}px;width:${BV_W}px;height:${BV_H}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6px 14px;box-sizing:border-box;overflow:hidden;`;
+      const lbl3 = document.createElement('div'); lbl3.textContent='US/UR-repr'; lbl3.style.cssText=`font-size:8px;font-weight:800;color:${N_BD};margin-bottom:2px;flex-shrink:0;`;
+      const ta = makeTa(bv.text||'', BV_PH[i]||'', v=>{d.bewijsOvals[i].text=v;save();});
+      ta.style.cssText+=`text-align:center;color:${DBLUE};font-size:10px;`;
+      ta.addEventListener('focus',()=>{ let v=ta.value.trim(); if(v.startsWith("'")&&v.endsWith("'")&&v.length>2) ta.value=v.slice(1,-1); });
+      ta.addEventListener('blur', ()=>{ let v=ta.value.trim(); if(v&&!v.startsWith("'")) v="'"+v+"'"; if(ta.value!==v) ta.value=v; d.bewijsOvals[i].text=v; save(); });
+      const del = document.createElement('button'); del.textContent='×'; del.className='no-print';
+      del.style.cssText='position:absolute;top:3px;right:7px;border:none;background:transparent;cursor:pointer;font-size:12px;color:#aaa;';
+      del.addEventListener('click',()=>{d.bewijsOvals.splice(i,1);save();redraw();});
+      el.append(lbl3,ta,del); canvas.appendChild(el);
+      liveFill(el,ta,LBLU,BLU,lbl3);
+    });
+  }
 
   /* Extra ovaaltjes boven archief-ovaal (alleen voor isArc, niet voor kerngebeurtenis-archief) */
   if (!isKernGebArc) extras.forEach((ov, i) => {
@@ -2288,7 +2348,7 @@ function buildGroupBar(container, d) {
         const newId2 = uid();
         const newAnalysis = type==='FA'
           ? { id:newId2, type:'FA', title:'', client:'', date:today(), groupId:d.groupId, theme:'blauw', sd:'', r:'', fnc:'', srPosTxt:'', srPosType:'', srNegItems:[{type:'',txt:''}], notities:'' }
-          : { id:newId2, type:'BA', title:'', client:'', date:today(), groupId:d.groupId, theme:'blauw', showOs:false, os:'', cs:'', assocType:'', centralType:'usur', centralSubtype:'', centralText:'', centralArchiefLabel:'', extraOvals:[], zweefArchieven:[], showRepr:false, reprStimulus:'', reprResponse:'', reprBetekenis:'', cr:'' };
+          : { id:newId2, type:'BA', title:'', client:'', date:today(), groupId:d.groupId, theme:'blauw', showOs:false, os:'', cs:'', assocType:'', centralType:'usur', centralSubtype:'', centralText:'', centralArchiefLabel:'', extraOvals:[], zweefArchieven:[], bewijsOvals:[], showRepr:false, reprStimulus:'', reprResponse:'', reprBetekenis:'', cr:'' };
         upsert(newAnalysis);
         // Sla volgorde op in alle groepsleden
         const allData2 = load();
