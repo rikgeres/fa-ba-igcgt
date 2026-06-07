@@ -1580,10 +1580,13 @@ function buildBACanvas(container, d, save, redraw) {
     ? Math.round(ovCX + keTotalW_s / 2) + 20
     : 0;
 
+  // Zweefarchief rechterkant (voor CW)
+  const zwRightEdge = nZw > 0 ? zwStartX + zwTotalW + 20 : 0;
+
   const rightMost = d.showRepr
     ? reprX + REPR_W + 12
     : (isArc && nEx > 0 ? exStartX + exTotalW + 12 : ovX + OV_W + 20);
-  const CW = Math.max(480, rightMost, bvRightEdge, keRightEdge);
+  const CW = Math.max(480, rightMost, bvRightEdge, keRightEdge, zwRightEdge);
   const CH = Math.max(crY + CR_H + 24, bvBotEdge);
 
   const canvas = document.createElement('div');
