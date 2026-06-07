@@ -1782,53 +1782,62 @@ function buildBACanvas(container, d, save, redraw) {
 
   /* Bewijs-ovaaltjes rechts van zweefarchief bij kernthema */
   const bewijzen = d.bewijsOvals || [];
-  const BV_W = 135, BV_H = 68, BV_GAP = 10;
-  const BV_PH = ["'bewijs 1'", "'bewijs 2'", "'bewijs 3'"];
+  const BV_W = 140, BV_H = 80, BV_GAP = 10;
+  const BV_LABELS = ['bewijs 1','bewijs 2','bewijs 3'];
   if ((d.centralSubtype === 'kernthema') && nZw > 0 && bewijzen.length > 0) {
     const archRightX = zwStartX + (nZw-1)*(ZW_W+20) + ZW_W;
     const spineX   = archRightX + 20;
     const bvStartX = spineX + 16;
-    const archCabCY = TOP_Y + 35; // verticaal midden kastafbeelding
+    const archCabCY = TOP_Y + 35; // altijd midden kastafbeelding — vaste verbindingshoogte
     const totalBvH  = bewijzen.length * BV_H + (bewijzen.length-1) * BV_GAP;
     const bvTopY    = Math.max(TOP_Y, Math.round(archCabCY - totalBvH/2));
+    const bvCYs    = bewijzen.map((_,i) => bvTopY + i*(BV_H+BV_GAP) + BV_H/2);
 
-    const bvCYs = bewijzen.map((_,i) => bvTopY + i*(BV_H+BV_GAP) + BV_H/2);
-
-    // Verbindingslijn: kast naar spine op kast-hoogte
-    const connY = Math.round((bvCYs[0] + bvCYs[bvCYs.length-1]) / 2);
+    // Horizontale lijn: kast → spine, ALTIJD op archCabCY (zelfde punt bij 1, 2 of 3 ovaaltjes)
     const hConn = document.createElementNS('http://www.w3.org/2000/svg','line');
-    setA(hConn,{x1:archRightX, y1:connY, x2:spineX, y2:connY, stroke:GRN, 'stroke-width':'1.5'});
+    setA(hConn,{x1:archRightX, y1:archCabCY, x2:spineX, y2:archCabCY, stroke:GRN, 'stroke-width':'1.5'});
     svg.appendChild(hConn);
 
-    // Verticale spine
-    if (bewijzen.length > 1) {
+    // Verticale spine (altijd van eerste tot laatste ovaal-center, ook door archCabCY)
+    const spineTop = Math.min(archCabCY, bvCYs[0]);
+    const spineBot = Math.max(archCabCY, bvCYs[bewijzen.length-1]);
+    if (spineTop < spineBot) {
       const vSpine = document.createElementNS('http://www.w3.org/2000/svg','line');
-      setA(vSpine,{x1:spineX, y1:bvCYs[0], x2:spineX, y2:bvCYs[bewijzen.length-1], stroke:GRN, 'stroke-width':'1.5'});
+      setA(vSpine,{x1:spineX, y1:spineTop, x2:spineX, y2:spineBot, stroke:GRN, 'stroke-width':'1.5'});
       svg.appendChild(vSpine);
     }
 
     bewijzen.forEach((bv, i) => {
       const bvY  = bvTopY + i*(BV_H+BV_GAP);
-      const bvCY = bvY + BV_H/2;
+      const bvCY = bvCYs[i];
 
-      // Horizontale stub: spine → ovaal-linkerrand
+      // Stub: spine → ovaal-linkerrand
       const hStub = document.createElementNS('http://www.w3.org/2000/svg','line');
       setA(hStub,{x1:spineX, y1:bvCY, x2:bvStartX, y2:bvCY, stroke:GRN, 'stroke-width':'1.5'});
       svg.appendChild(hStub);
 
+      // Wrapper (geen overflow:hidden zodat × buiten ovaal uitsteekt)
+      const wrap = document.createElement('div');
+      wrap.style.cssText=`position:absolute;left:${bvStartX}px;top:${bvY}px;width:${BV_W}px;height:${BV_H}px;`;
+
       // Ovaal
       const el = document.createElement('div');
-      el.style.cssText=`position:absolute;left:${bvStartX}px;top:${bvY}px;width:${BV_W}px;height:${BV_H}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6px 14px;box-sizing:border-box;overflow:hidden;`;
-      const lbl3 = document.createElement('div'); lbl3.textContent='US/UR-repr'; lbl3.style.cssText=`font-size:8px;font-weight:800;color:${N_BD};margin-bottom:2px;flex-shrink:0;`;
-      const ta = makeTa(bv.text||'', BV_PH[i]||'', v=>{d.bewijsOvals[i].text=v;save();});
+      el.style.cssText=`position:absolute;inset:0;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4px 16px;box-sizing:border-box;overflow:hidden;`;
+      const lbl3 = document.createElement('div'); lbl3.textContent='US/UR-repr'; lbl3.style.cssText=`font-size:8px;font-weight:800;color:${N_BD};flex-shrink:0;`;
+      const bewijsLbl = document.createElement('div'); bewijsLbl.textContent=BV_LABELS[i]||''; bewijsLbl.style.cssText=`font-size:10px;font-weight:600;color:${N_BD};flex-shrink:0;`;
+      const ta = makeTa(bv.text||'','kerngebeurtenis',v=>{d.bewijsOvals[i].text=v;save();});
       ta.style.cssText+=`text-align:center;color:${DBLUE};font-size:10px;`;
-      ta.addEventListener('focus',()=>{ let v=ta.value.trim(); if(v.startsWith("'")&&v.endsWith("'")&&v.length>2) ta.value=v.slice(1,-1); });
-      ta.addEventListener('blur', ()=>{ let v=ta.value.trim(); if(v&&!v.startsWith("'")) v="'"+v+"'"; if(ta.value!==v) ta.value=v; d.bewijsOvals[i].text=v; save(); });
-      const del = document.createElement('button'); del.textContent='×'; del.className='no-print';
-      del.style.cssText='position:absolute;top:3px;right:7px;border:none;background:transparent;cursor:pointer;font-size:12px;color:#aaa;';
-      del.addEventListener('click',()=>{d.bewijsOvals.splice(i,1);save();redraw();});
-      el.append(lbl3,ta,del); canvas.appendChild(el);
+      el.append(lbl3,bewijsLbl,ta);
       liveFill(el,ta,LBLU,BLU,lbl3);
+
+      // × buiten de ovaal (rechtsboven de wrapper)
+      const del = document.createElement('button'); del.textContent='×'; del.className='no-print';
+      del.style.cssText='position:absolute;top:-6px;right:-4px;border:none;background:#eee;border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:13px;color:#999;line-height:16px;text-align:center;z-index:5;';
+      del.addEventListener('mouseenter',()=>del.style.color='var(--danger)');
+      del.addEventListener('mouseleave',()=>del.style.color='#999');
+      del.addEventListener('click',()=>{d.bewijsOvals.splice(i,1);save();redraw();});
+
+      wrap.append(el,del); canvas.appendChild(wrap);
     });
   }
 
@@ -1862,17 +1871,23 @@ function buildBACanvas(container, d, save, redraw) {
     extras.forEach((ov, i) => {
       const ke = keStartX + i*(KE_W+12);
       const keCX = ke + KE_W/2;
+      // Wrapper (geen overflow:hidden, zodat × zichtbaar buiten ovaal)
+      const wrap = document.createElement('div');
+      wrap.style.cssText=`position:absolute;left:${ke}px;top:${keY}px;width:${KE_W}px;height:${KE_H}px;`;
       const el = document.createElement('div');
-      el.style.cssText=`position:absolute;left:${ke}px;top:${keY}px;width:${KE_W}px;height:${KE_H}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 14px;box-sizing:border-box;overflow:hidden;`;
+      el.style.cssText=`position:absolute;inset:0;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 14px;box-sizing:border-box;overflow:hidden;`;
       const lbl2=document.createElement('div'); lbl2.textContent='US/UR-repr'; lbl2.style.cssText=`font-size:8px;font-weight:800;color:${N_BD};margin-bottom:2px;flex-shrink:0;`;
       const ta=makeTa(ov.text||'','kerngebeurtenis',v=>{d.extraOvals[i].text=v;save();}); ta.style.cssText+=`text-align:center;color:${DBLUE};font-size:10px;`;
       ta.addEventListener('focus', () => { let v=ta.value.trim(); if(v.startsWith("'")&&v.endsWith("'")&&v.length>2) ta.value=v.slice(1,-1); });
       ta.addEventListener('blur',  () => { let v=ta.value.trim(); if(v&&!v.startsWith("'")) v="'"+v+"'"; if(ta.value!==v) ta.value=v; d.extraOvals[i].text=v; save(); });
-      const del=document.createElement('button'); del.textContent='×'; del.className='no-print';
-      del.style.cssText='position:absolute;top:3px;right:7px;border:none;background:transparent;cursor:pointer;font-size:12px;color:#aaa;';
-      del.addEventListener('click',()=>{d.extraOvals.splice(i,1);save();redraw();});
-      el.append(lbl2,ta,del); canvas.appendChild(el);
+      el.append(lbl2,ta);
       liveFill(el, ta, LBLU, BLU, lbl2);
+      const del=document.createElement('button'); del.textContent='×'; del.className='no-print';
+      del.style.cssText='position:absolute;top:-6px;right:-4px;border:none;background:#eee;border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:13px;color:#999;line-height:16px;text-align:center;z-index:5;';
+      del.addEventListener('mouseenter',()=>del.style.color='var(--danger)');
+      del.addEventListener('mouseleave',()=>del.style.color='#999');
+      del.addEventListener('click',()=>{d.extraOvals.splice(i,1);save();redraw();});
+      wrap.append(el,del); canvas.appendChild(wrap);
 
       // Stub van ovaal-onderkant naar horizontale balk
       const stubLine = document.createElementNS('http://www.w3.org/2000/svg','line');
