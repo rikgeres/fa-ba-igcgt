@@ -2071,8 +2071,8 @@ function buildBACanvas(container, d, save, redraw) {
       } else if (sub === 'kerngebeurtenis-archief') {
         /* ovaal als archief: label + titel-textarea + kastafbeelding onderaan */
         el.style.justifyContent = 'flex-start';
-        el.style.paddingTop = '14px';
-        el.style.paddingBottom = '6px';
+        el.style.paddingTop = '16px';
+        el.style.paddingBottom = '38px'; // ruimte voor kastje onderaan
         el.style.gap = '3px';
         const lbl = document.createElement('div');
         lbl.textContent = 'archief met samenhangende kerngebeurtenissen m.b.t.';
@@ -2087,23 +2087,16 @@ function buildBACanvas(container, d, save, redraw) {
         const ta = document.createElement('textarea');
         ta.value = d.centralText || '';
         ta.placeholder = 'titel';
-        const taLineH = 11 * 1.35; // ~14.85px per regel
-        const taH = Math.round(taLineH * 2);
-        ta.style.cssText = `flex-shrink:0;width:100%;height:${taH}px;box-sizing:border-box;resize:none;border:none;outline:none;background:transparent;font:inherit;font-size:11px;color:${TXT};padding:0;margin:0;text-align:center;line-height:1.35;overflow:hidden;`;
-        // Blokkeer Enter na 2 regels
+        ta.style.cssText = `flex-shrink:0;width:100%;height:30px;box-sizing:border-box;resize:none;border:none;outline:none;background:transparent;font:inherit;font-size:11px;color:${TXT};padding:0;margin:0;text-align:center;line-height:1.35;overflow:hidden;`;
         ta.addEventListener('keydown', e => {
           if (e.key === 'Enter' && (ta.value.match(/\n/g)||[]).length >= 1) e.preventDefault();
         });
         ta.addEventListener('input', () => { d.centralText = ta.value; save(); });
         ta.addEventListener('click', e => e.stopPropagation());
-        // Kastje: vaste hoogte op basis van resterende ruimte in ovaal
-        // OV_H=120, paddingTop=14, paddingBottom=6 → 100px beschikbaar
-        // label~26 + gap3 + textarea~30 + gap3 = ~62 → rest = ~38px
-        const icoWrap = document.createElement('div');
-        icoWrap.style.cssText = 'flex-shrink:0;display:flex;align-items:center;justify-content:center;padding-left:12px;';
-        const ico = mkCabinetSvg(38, 34, '#888');
-        icoWrap.appendChild(ico);
-        el.append(lbl, ta, icoWrap);
+        // Kastje absoluut onderaan gecentreerd — kan nooit verdwijnen
+        const ico = mkCabinetSvg(44, 36, '#888');
+        ico.style.cssText += 'position:absolute;bottom:10px;left:50%;transform:translateX(-30%);';
+        el.append(lbl, ta, ico);
         (function(){ function upd(){ const filled=ta.value.trim().length>0; el.style.background=filled?LBLU:N_BG; el.style.borderColor=filled?BLU:N_BD; lbl.style.color=filled?BLU:N_BD; resetAK.style.color=filled?BLU:N_BD; } upd(); ta.addEventListener('input',upd); })();
       } else if (sub === 'metacognitief') {
         const lblRow = document.createElement('div');
