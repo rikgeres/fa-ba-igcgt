@@ -2075,7 +2075,7 @@ function buildBACanvas(container, d, save, redraw) {
         el.style.gap = '4px';
         const lbl = document.createElement('div');
         lbl.textContent = 'archief met samenhangende kerngebeurtenissen m.b.t.';
-        lbl.style.cssText = `font-size:10px;font-weight:800;color:${N_BD};margin-bottom:3px;text-align:center;line-height:1.3;flex-shrink:0;`;
+        lbl.style.cssText = `font-size:8px;font-weight:800;color:${N_BD};margin-bottom:2px;text-align:center;line-height:1.3;flex-shrink:0;`;
         const resetAK = document.createElement('span');
         resetAK.textContent = '↩';
         resetAK.title = 'keuze ongedaan maken';
@@ -2084,9 +2084,9 @@ function buildBACanvas(container, d, save, redraw) {
         lbl.appendChild(resetAK);
         const ta = makeTa(d.centralText || '', 'titel', v => { d.centralText = v; save(); });
         ta.style.cssText += `text-align:center;color:${TXT};font-size:11px;flex-shrink:0;`;
-        const ico = mkCabinetSvg(50, 58, '#888');
+        const ico = mkCabinetSvg(32, 38, '#888');
         ico.style.flexShrink = '0';
-        ico.style.marginTop = 'auto';
+        ico.style.marginTop = '2px';
         el.append(lbl, ta, ico);
         (function(){ function upd(){ const filled=ta.value.trim().length>0; el.style.background=filled?LBLU:N_BG; el.style.borderColor=filled?BLU:N_BD; lbl.style.color=filled?BLU:N_BD; resetAK.style.color=filled?BLU:N_BD; } upd(); ta.addEventListener('input',upd); })();
       } else if (sub === 'metacognitief') {
