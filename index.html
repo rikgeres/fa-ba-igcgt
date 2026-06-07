@@ -1988,7 +1988,7 @@ function buildBACanvas(container, d, save, redraw) {
         const lblRow = document.createElement('div');
         lblRow.style.cssText = 'display:flex;align-items:center;gap:4px;justify-content:center;flex-shrink:0;margin-bottom:2px;';
         const lbl = document.createElement('div');
-        lbl.textContent = 'US/UR-kernthema';
+        lbl.textContent = isIdt ? 'US/UR-repr' : 'US/UR-kernthema';
         lbl.style.cssText = `font-size:10px;font-weight:800;color:${N_BD};`;
         if (!isIdt) {
           const resetKT = document.createElement('span');
