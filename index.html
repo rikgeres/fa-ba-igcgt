@@ -1508,8 +1508,8 @@ function buildBACanvas(container, d, save, redraw) {
   const accoRightX = ovCX;                        // midden ovaal
   const accoMidX   = Math.round((accoLeftX + accoRightX) / 2);
 
-  const isKernGebArcCheck = (d.centralSubtype === 'kerngebeurtenis-archief');
-  const hasTop = (nZw > 0) || (isArc && nEx > 0) || (isKernGebArcCheck && nEx > 0);
+  const isKernGebArc = (d.centralSubtype === 'kerngebeurtenis-archief');
+  const hasTop = (nZw > 0) || (isArc && nEx > 0) || (isKernGebArc && nEx > 0);
   // Bij accolade zonder zweefs: kleine ruimte voor de accolade; met zweefs: volle ruimte
   const TOP_H  = hasTop ? 135 : (showAccolade ? 20 : 0);
 
@@ -1789,7 +1789,6 @@ function buildBACanvas(container, d, save, redraw) {
   });
 
   /* Extra ovaaltjes boven kerngebeurtenis-archief ovaal */
-  const isKernGebArc = (d.centralSubtype === 'kerngebeurtenis-archief');
   if (isKernGebArc && nEx > 0) {
     const KE_W = 152, KE_H = 82;
     const keTotalW = nEx * KE_W + (nEx-1)*12;
