@@ -813,22 +813,32 @@ function pgFA(c, id) {
   if (!d.groupId) { d.groupId = d.id; upsert(d); } // migratie
 
   let saveTimer = null;
+  const faHistory = [];
   function save(extra) {
+    faHistory.push(JSON.stringify(d));
+    if (faHistory.length > 50) faHistory.shift();
     d = { ...d, ...extra };
     upsert(d);
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => toast('Automatisch opgeslagen ✓'), 1200);
   }
+  function faUndo() {
+    if (!faHistory.length) return;
+    d = JSON.parse(faHistory.pop());
+    upsert(d);
+    redraw();
+    toast('Ongedaan gemaakt ↩');
+  }
 
   function redraw() {
     c.innerHTML = '';
-    buildFA(c, d, save);
+    buildFA(c, d, save, false, faUndo, () => faHistory.length > 0);
   }
 
   redraw();
 }
 
-function buildFA(c, d, save, _noGroup) {
+function buildFA(c, d, save, _noGroup, onUndo, hasUndo) {
   /* ── Actiebalk ── */
   const bar = document.createElement('div');
   bar.className = 'action-bar no-print';
@@ -855,11 +865,13 @@ function buildFA(c, d, save, _noGroup) {
   });
 
   const btnPreview = mkBtn('btn-ghost btn-sm', '👁 Preview', () => buildPreviewOverlay(d));
+  const btnUndo = mkBtn('btn-ghost btn-sm', '↩ Ongedaan', () => { if (onUndo) onUndo(); });
+  btnUndo.title = 'Laatste wijziging ongedaan maken';
   const btnDel = mkTrashBtn('btn btn-sm btn-ghost', 'Verwijder FA', () => {
     if (confirm('Verwijder deze FA?')) { remove(d.id); go('/'); }
   });
   btnDel.style.color = 'var(--danger)';
-  bar.append(btnPrint, btnClip, btnPreview, btnDel);
+  bar.append(btnPrint, btnClip, btnPreview, btnUndo, btnDel);
   c.appendChild(bar);
 
   /* ── Titelregel ── */
@@ -1356,11 +1368,21 @@ function pgBA(c, id) {
   if (!d) { c.innerHTML = '<p style="padding:20px">Niet gevonden.</p>'; return; }
 
   let saveTimer = null;
+  const baHistory = [];
   function save(extra) {
+    baHistory.push(JSON.stringify(d));
+    if (baHistory.length > 50) baHistory.shift();
     if (extra) d = { ...d, ...extra };
     upsert(d);
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => toast('Automatisch opgeslagen ✓'), 1200);
+  }
+  function baUndo() {
+    if (!baHistory.length) return;
+    d = JSON.parse(baHistory.pop());
+    upsert(d);
+    redraw();
+    toast('Ongedaan gemaakt ↩');
   }
 
   /* ── Actiebalk ── */
@@ -1380,11 +1402,13 @@ function pgBA(c, id) {
     });
   });
   const btnPreview = mkBtn('btn-ghost btn-sm', '👁 Preview', () => buildPreviewOverlay(d));
+  const btnUndo = mkBtn('btn-ghost btn-sm', '↩ Ongedaan', () => baUndo());
+  btnUndo.title = 'Laatste wijziging ongedaan maken';
   const btnDel = mkTrashBtn('btn btn-sm btn-ghost', 'Verwijder BA', () => {
     if (confirm('Verwijder deze BA?')) { remove(d.id); go('/'); }
   });
   btnDel.style.color = 'var(--danger)';
-  bar.append(btnPrint, btnClip, btnPreview, btnDel);
+  bar.append(btnPrint, btnClip, btnPreview, btnUndo, btnDel);
   c.appendChild(bar);
 
   /* ── Titelregel ── */
