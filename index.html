@@ -1449,10 +1449,6 @@ function buildBACfgBar(bar, d, save, redraw) {
     rad('sequentieel',  d.assocType==='sequentieel',  () => { save({assocType:'sequentieel',  centralSubtype:''}); redraw(); }),
     rad('identiteit',   d.assocType==='identiteit',   () => { save({assocType:'identiteit',   centralSubtype:''}); redraw(); }),
     ...(d.assocType==='sequentieel' ? [sep(), lbl('Pijl CS→US/UR:'), rad('voorspelt', !d.causal, () => { save({causal:false}); redraw(); }), rad('veroorzaakt (causaal)', !!d.causal, () => { save({causal:true}); redraw(); })] : []),
-    sep(),
-    lbl('Centrale ovaal:'),
-    rad('US/UR-repr',    d.centralType!=='archief',   () => { save({centralType:'usur'});      redraw(); }),
-    rad('Archief-ovaal', d.centralType==='archief',   () => { save({centralType:'archief'});   redraw(); }),
     sep()
   );
 
