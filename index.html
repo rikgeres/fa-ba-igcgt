@@ -2083,7 +2083,9 @@ function buildBACanvas(container, d, save, redraw) {
         resetAK.addEventListener('click', () => { d.centralSubtype='kerngebeurtenis'; d.centralText=''; save(); redraw(); });
         lbl.appendChild(resetAK);
         const ta = makeTa(d.centralText || '', 'titel', v => { d.centralText = v; save(); });
-        ta.style.cssText += `text-align:center;color:${TXT};font-size:11px;flex-shrink:0;max-height:42px;overflow-y:hidden;`;
+        ta.style.cssText += `text-align:center;color:${TXT};font-size:11px;flex-shrink:0;height:42px;min-height:42px;max-height:42px;overflow-y:hidden;`;
+        // Blokkeer auto-resize zodat het kastje niet omhoog schuift
+        ta.addEventListener('input', () => { ta.style.height = '42px'; }, true);
         const ico = mkCabinetSvg(32, 38, '#888');
         ico.style.cssText += 'flex-shrink:0;margin:2px auto 0;display:block;';
         el.append(lbl, ta, ico);
