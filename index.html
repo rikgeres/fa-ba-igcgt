@@ -832,13 +832,13 @@ function pgFA(c, id) {
 
   function redraw() {
     c.innerHTML = '';
-    buildFA(c, d, save, false, faUndo, () => faHistory.length > 0);
+    buildFA(c, d, save, false, faUndo, () => faHistory.length > 0, redraw);
   }
 
   redraw();
 }
 
-function buildFA(c, d, save, _noGroup, onUndo, hasUndo) {
+function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
   /* ── Actiebalk ── */
   const bar = document.createElement('div');
   bar.className = 'action-bar no-print';
@@ -878,7 +878,7 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo) {
   c.appendChild(mkTitleRow(d, save, 'FA'));
 
   /* ── Themakiezer ── */
-  c.appendChild(mkThemePicker(d, id => { save({ theme: id }); redraw(); }));
+  c.appendChild(mkThemePicker(d, id => { save({ theme: id }); if(onRedraw) onRedraw(); }));
 
   /* ══════════════════════════
      CANVAS — BA-stijl (wit, absolute posities, SVG pijlen)
@@ -935,7 +935,7 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo) {
   const sdLbl=document.createElement('div'); sdLbl.textContent='Sd'; sdLbl.style.cssText=`font-size:10px;font-weight:800;color:${N_BD_FA};margin-bottom:2px;letter-spacing:.04em;flex-shrink:0;`;
   const sdTa=makeTa(d.sd||'','context waarbinnen het probleemgedrag plaatsvindt',v=>{d.sd=v;save();});
   sdTa.style.color=TXT_FA;
-  liveFill(sdEl,sdTa,LGRN_FA,GRN_FA,sdLbl);
+  liveFillG(sdEl,sdTa,LGRN_FA,GRN_FA,N_BG_FA,N_BD_FA,sdLbl);
   sdEl.append(sdLbl,sdTa); inner.appendChild(sdEl);
 
   /* ── R box ── */
@@ -944,7 +944,7 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo) {
   const rLbl=document.createElement('div'); rLbl.textContent='R'; rLbl.style.cssText=`font-size:10px;font-weight:800;color:${N_BD_FA};margin-bottom:2px;letter-spacing:.04em;flex-shrink:0;`;
   const rTa=makeTa(d.r||'','problematisch gedrag',v=>{d.r=v;save();});
   rTa.style.color=TXT_FA;
-  liveFill(rEl,rTa,LGRN_FA,GRN_FA,rLbl);
+  liveFillG(rEl,rTa,LGRN_FA,GRN_FA,N_BG_FA,N_BD_FA,rLbl);
   rEl.append(rLbl,rTa); inner.appendChild(rEl);
 
   /* ── Sr-pos ovaal ── */
@@ -971,6 +971,18 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo) {
   c.appendChild(wrap2);
 
   if (!_noGroup) buildGroupBar(c, d);
+}
+
+/* ── Globale liveFill helper (ook gebruikt door FA) ── */
+function liveFillG(el, ta, filledBg, filledBd, emptyBg, emptyBd, lbl) {
+  function upd() {
+    const filled = ta.value.trim().length > 0;
+    el.style.background  = filled ? filledBg : emptyBg;
+    el.style.borderColor = filled ? filledBd : emptyBd;
+    if (lbl) lbl.style.color = filled ? filledBd : emptyBd;
+  }
+  upd();
+  ta.addEventListener('input', upd);
 }
 
 /* ── Gedeelde textarea-helper voor inline bewerking ── */
