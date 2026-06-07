@@ -897,10 +897,10 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
 
   const canvas = document.createElement('div');
   canvas.className = 'fa-canvas';
-  canvas.style.cssText = `position:relative;background:#fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.1);`;
+  canvas.style.cssText = `position:relative;background:#fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.1);width:${CW}px;`;
 
   const inner = document.createElement('div');
-  inner.style.cssText = `position:relative;width:${CW}px;min-height:${fncY+FNC_W/2+24}px;`;
+  inner.style.cssText = `position:relative;width:${CW}px;min-height:${fncY+120+24}px;`;
   canvas.appendChild(inner);
 
   /* SVG overlay voor pijlen en dots */
@@ -959,11 +959,17 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
   inner.appendChild(fncEl);
 
   /* Canvas hoogte aanpassen na render */
-  requestAnimationFrame(()=>{
+  function faResize() {
     const h = fncEl.offsetTop + fncEl.offsetHeight + 24;
     inner.style.minHeight = h+'px';
+    inner.style.height = h+'px';
+    canvas.style.height = h+'px';
     faSvg.setAttribute('height', h);
-  });
+  }
+  requestAnimationFrame(faResize);
+  if (window.ResizeObserver) {
+    new ResizeObserver(faResize).observe(fncEl);
+  }
 
   const wrap2 = document.createElement('div');
   wrap2.style.cssText='padding:20px 24px;overflow:auto;';
