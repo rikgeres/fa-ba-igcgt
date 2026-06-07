@@ -1705,9 +1705,9 @@ function buildBACanvas(container, d, save, redraw) {
     const arrowStartY = TOP_Y + 70 + 18;
     let targetX, targetY;
     if (d.assocType === 'identiteit') {
-      // Pijl naar midden van de = (horizontale lijn tussen CS en ovaal)
+      // Pijl naar iets boven het midden van de = (stopt vlak erboven)
       targetX = eqMidX;
-      targetY = ovY + OV_H/2; // = csMY
+      targetY = ovY + OV_H/2 - 14;
     } else {
       const spread = nZw === 1 ? 0 : (OV_W * 0.6);
       targetX = nZw === 1 ? ovCX : ovX + (OV_W - spread)/2 + i * spread/(nZw-1);
