@@ -1573,10 +1573,17 @@ function buildBACanvas(container, d, save, redraw) {
   const bvTopY_actual    = Math.round(archCabCY_actual - bvTotalH / 2);
   const bvBotEdge        = hasBv ? bvTopY_actual + bvTotalH + 16 : 0;
 
+  // Kerngebeurtenis-archief extra ovals rechterkant (voor CW)
+  const KE_W_S = 152;
+  const keTotalW_s = nEx > 0 ? nEx * KE_W_S + (nEx - 1) * 12 : 0;
+  const keRightEdge = isKernGebArc && nEx > 0
+    ? Math.round(ovCX + keTotalW_s / 2) + 20
+    : 0;
+
   const rightMost = d.showRepr
     ? reprX + REPR_W + 12
     : (isArc && nEx > 0 ? exStartX + exTotalW + 12 : ovX + OV_W + 20);
-  const CW = Math.max(480, rightMost, bvRightEdge);
+  const CW = Math.max(480, rightMost, bvRightEdge, keRightEdge);
   const CH = Math.max(crY + CR_H + 24, bvBotEdge);
 
   const canvas = document.createElement('div');
