@@ -1509,7 +1509,8 @@ function buildBACanvas(container, d, save, redraw) {
   const accoMidX   = Math.round((accoLeftX + accoRightX) / 2);
 
   const hasTop = (nZw > 0) || (isArc && nEx > 0);
-  const TOP_H  = hasTop ? 135 : (showAccolade ? 30 : 0);
+  // Bij accolade zonder zweefs: kleine ruimte voor de accolade; met zweefs: volle ruimte
+  const TOP_H  = hasTop ? 135 : (showAccolade ? 20 : 0);
 
   const exTotalW = nEx > 0 ? nEx * EX_W + (nEx-1)*12 : 0;
   const exStartX = nEx > 0 ? Math.max(csX + CS_W + 10, Math.round(ovCX - exTotalW/2)) : ovX;
@@ -1522,6 +1523,12 @@ function buildBACanvas(container, d, save, redraw) {
 
   const TOP_Y = 16;
   const ovY   = TOP_H + 22;
+
+  // Pre-compute accolade notch Y (nodig vóór de zweef-forEach)
+  const accoArmBottom = ovY - 4;
+  const accoArmTop    = ovY - 14;   // heel kort pootje
+  const accoNotchH    = 8;          // kleine nok
+  const accoNotchY    = showAccolade ? (accoArmTop - accoNotchH) : null;
   const csY   = ovY + Math.round((OV_H - CS_H) / 2);
   const crY   = ovY + OV_H + 50;
   const crX   = Math.round(ovCX - CR_W / 2);
@@ -1738,33 +1745,30 @@ function buildBACanvas(container, d, save, redraw) {
     del.style.cssText='position:absolute;top:0;right:4px;border:none;background:transparent;cursor:pointer;font-size:12px;color:#aaa;';
     del.addEventListener('click',()=>{d.zweefArchieven.splice(i,1);save();redraw();});
     el.append(ico,desc,ta,del); canvas.appendChild(el);
-    const archCX = ax+ZW_W/2;
-    // Pijl start onder de titel (kast 70px + desc ~28px + titel ~18px)
-    const arrowStartY = TOP_Y + 70 + 28 + 18;
-    let targetX, targetY;
-    if (showAccolade) {
-      // Pijl naar de nok van de accolade
-      targetX = accoMidX;
-      targetY = accoNotchY;
-    } else if (d.assocType === 'identiteit') {
-      // Pijl naar iets boven het midden van de = (stopt vlak erboven)
-      targetX = eqMidX;
-      targetY = ovY + OV_H/2 - 14;
-    } else {
-      const spread = nZw === 1 ? 0 : (OV_W * 0.6);
-      targetX = nZw === 1 ? ovCX : ovX + (OV_W - spread)/2 + i * spread/(nZw-1);
-      const dx = (targetX - ovCX) / (OV_W/2);
-      targetY = ovY + OV_H/2 - (OV_H/2) * Math.sqrt(Math.max(0, 1 - dx*dx));
+    // Bij accolade: geen pijl tekenen
+    if (!showAccolade) {
+      const archCX = ax+ZW_W/2;
+      const arrowStartY = TOP_Y + 70 + 28 + 18;
+      let targetX, targetY;
+      if (d.assocType === 'identiteit') {
+        targetX = eqMidX;
+        targetY = ovY + OV_H/2 - 14;
+      } else {
+        const spread = nZw === 1 ? 0 : (OV_W * 0.6);
+        targetX = nZw === 1 ? ovCX : ovX + (OV_W - spread)/2 + i * spread/(nZw-1);
+        const dx = (targetX - ovCX) / (OV_W/2);
+        targetY = ovY + OV_H/2 - (OV_H/2) * Math.sqrt(Math.max(0, 1 - dx*dx));
+      }
+      // Bij identiteit (zonder accolade): pijl een derde korter
+      let drawX1 = archCX, drawY1 = arrowStartY, drawX2 = targetX, drawY2 = targetY;
+      if (d.assocType === 'identiteit') {
+        drawX1 = archCX  + (targetX - archCX)  / 6;
+        drawY1 = arrowStartY + (targetY - arrowStartY) / 6;
+        drawX2 = targetX - (targetX - archCX)  / 6;
+        drawY2 = targetY - (targetY - arrowStartY) / 6;
+      }
+      svgLine(drawX1, drawY1, drawX2, drawY2);
     }
-    // Bij identiteit (zonder accolade): pijl een derde korter, aan beide kanten ingekort
-    let drawX1 = archCX, drawY1 = arrowStartY, drawX2 = targetX, drawY2 = targetY;
-    if (d.assocType === 'identiteit' && !showAccolade) {
-      drawX1 = archCX  + (targetX - archCX)  / 6;
-      drawY1 = arrowStartY + (targetY - arrowStartY) / 6;
-      drawX2 = targetX - (targetX - archCX)  / 6;
-      drawY2 = targetY - (targetY - arrowStartY) / 6;
-    }
-    svgLine(drawX1, drawY1, drawX2, drawY2);
   });
 
   /* Extra ovaaltjes boven archief-ovaal */
@@ -1990,11 +1994,8 @@ function buildBACanvas(container, d, save, redraw) {
   else if (d.assocType==='identiteit')   svgDbl(csR,csMY,ovX,ovMY);
 
   /* Accolade boven CS + US/UR bij identiteit + "ik" in CS */
-  let accoNotchY = null;
   if (showAccolade) {
-    const armBottom = ovY - 4;
-    const armTop    = ovY - 38;
-    accoNotchY = svgAccolade(accoLeftX, accoRightX, armBottom, armTop, 18);
+    svgAccolade(accoLeftX, accoRightX, accoArmBottom, accoArmTop, accoNotchH);
   }
   else if (d.assocType==='sequentieel' && d.causal) svgThickArrow(csR+4,csMY,ovX-4,ovMY);
   else if (d.assocType==='sequentieel')  svgLine(csR,csMY,ovX-2,ovMY);
