@@ -1701,7 +1701,7 @@ function buildBACanvas(container, d, save, redraw) {
     canvas.appendChild(mkBox(10, csY, OS_W, CS_H, 'OS (5)', 'os', 'context', OSL, OSB));
     [csY+CS_H/2-7, csY+CS_H/2+7].forEach(cy => {
       const c2=document.createElementNS('http://www.w3.org/2000/svg','circle');
-      setA(c2,{cx:csX-10,cy,r:'3.5',fill:'#bbb'}); svg.appendChild(c2);
+      setA(c2,{cx:Math.round((10+OS_W+csX)/2),cy,r:'3.5',fill:'#bbb'}); svg.appendChild(c2);
     });
   }
 
