@@ -1998,7 +1998,7 @@ function buildBACanvas(container, d, save, redraw) {
           lblRow.append(resetKT);
         }
         lblRow.prepend(lbl);
-        const ta = makeTa(d.centralText || '', 'zelfbeeld/ mensbeeld/ wereldbeeld', v => { d.centralText = v; save(); });
+        const ta = makeTa(d.centralText || '', isIdt ? '' : 'zelfbeeld/ mensbeeld/ wereldbeeld', v => { d.centralText = v; save(); });
         ta.style.cssText += `text-align:center;color:${TXT};font-size:13px;`;
         ta.addEventListener('focus', () => {
           let v = ta.value.trim();
