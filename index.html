@@ -203,7 +203,7 @@
       gap: 0;
     }
 
-    /* Top rij: Sd ──●●──▶ R ──▶ Sr-pos */
+    /* Top rij: Sd ──●●──▶ R ──▶ Sr-pos-repr */
     .fa-top-row {
       display: flex;
       align-items: center;
@@ -234,7 +234,7 @@
     .fa-node:hover  { box-shadow: 0 0 0 3px rgba(29,78,216,.25); }
     .fa-node.filled { background: #BFDBFE; border-color: #3B82F6; }
 
-    /* Ovaal voor Sr-pos */
+    /* Ovaal voor Sr-pos-repr */
     .fa-node-oval {
       flex: 1;
       min-height: 65px;
@@ -265,6 +265,11 @@
     .fa-node textarea::placeholder,
     .fa-node-oval textarea::placeholder {
       font-size: 9px; color: #6B8EB3; font-style: italic; line-height: 1.3;
+    }
+    /* Placeholder voor contenteditable hoofdvakken */
+    [contenteditable][data-ph]:empty::before {
+      content: attr(data-ph);
+      color: #aaa; font-style: italic; pointer-events: none;
     }
     .fa-edit-hint {
       position: absolute; bottom: 5px; right: 7px;
@@ -361,45 +366,38 @@
     .fa-print-wrap { display: none; }
 
     @media print {
-      @page { size: A4 portrait; margin: 1.2cm; }
-
-      /* Verberg alles behalve het diagram */
+      /* Verberg UI-elementen in alle modi */
       .no-print, .app-header { display: none !important; }
       .app-main { padding: 0 !important; margin: 0 !important; }
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
 
-      /* Canvas een kwart minder breed dan pagina */
+      /* ── FA print ── */
       .fa-canvas {
         box-shadow: none !important;
-        max-width: 75% !important;
-        width: auto !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
+        border: 1px solid #ccc !important;
+        border-radius: 8px !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
-
-      /* Textareas tonen als gewone tekst */
-      .fa-canvas textarea {
-        display: block !important;
-        border: none !important;
-        background: transparent !important;
-        resize: none !important;
-        overflow: visible !important;
-        height: auto !important;
-        min-height: 0 !important;
-      }
-
-      /* Verberg interactieve elementen */
       .fa-canvas select,
       .fa-canvas .fa-edit-hint,
       .fa-canvas .fnc-del { display: none !important; }
 
-      /* HT schema print — landscape A4, schema gecentreerd */
-      @page { size: A4 landscape; margin: 0; }
+      /* ── BA print ── */
+      .ba-canvas {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+        border-radius: 8px !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
 
-      /* Verberg UI-elementen, maar bewaar de keten app > main > wrap */
-      .no-print, .app-header { display: none !important; }
+      /* ── Scheidingslijn tussen gekoppelde analyses ── */
+      .group-section { border-top: none !important; margin-top: 0 !important; }
+
+      /* ── HT print ── */
       #app.ht-mode .app-main { padding: 0 !important; }
-
-      /* Wrap vult de hele pagina en centreert het schema */
       .ht-scroll-wrap {
         position: fixed !important;
         inset: 0 !important;
@@ -414,33 +412,19 @@
         justify-content: center !important;
         overflow: visible !important;
       }
-
-      /* Reset schermschaal → vaste printschaal zodat het op A4 landscape past */
-      .ht-scale-wrap {
-        transform: scale(0.76) !important;
-        transform-origin: center center !important;
-      }
-
       .ht-canvas {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
       .ht-info-btn { display: none !important; }
+    }
 
-      /* BA canvas print */
-      .ba-canvas {
-        box-shadow: none !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-      .ba-canvas textarea {
+    /* Print-schaal wrappers — aangestuurd via JS vóór window.print() */
+    .print-scale-wrap { display: contents; }
+    @media print {
+      .print-scale-wrap {
         display: block !important;
-        border: none !important;
-        background: transparent !important;
-        resize: none !important;
-        overflow: visible !important;
-        height: auto !important;
-        min-height: 0 !important;
+        transform-origin: top left !important;
       }
     }
 
@@ -601,6 +585,56 @@ function mkThemePicker(d, onPick) {
 const go = path => { location.hash = path; };
 window.addEventListener('hashchange', render);
 
+/* ── Zwevende vetgedrukt-knop ── */
+(function() {
+  const bar = document.createElement('div');
+  bar.id = 'bold-bar';
+  bar.style.cssText = 'position:fixed;z-index:99999;background:#fff;border:1px solid #ccc;border-radius:8px;padding:3px 6px;box-shadow:0 2px 10px rgba(0,0,0,.18);display:none;pointer-events:auto;';
+  const btn = document.createElement('button');
+  btn.innerHTML = '<b>V</b>';
+  btn.title = 'Vetgedrukt';
+  btn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:14px;font-weight:900;padding:2px 8px;border-radius:6px;font-family:inherit;color:#1D3557;';
+  btn.addEventListener('mouseenter', () => btn.style.background='#f0f4f8');
+  btn.addEventListener('mouseleave', () => btn.style.background='none');
+  btn.addEventListener('mousedown', e => { e.preventDefault(); document.execCommand('bold'); });
+  bar.appendChild(btn);
+  document.body.appendChild(bar);
+  document.addEventListener('selectionchange', () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.toString().trim()) { bar.style.display='none'; return; }
+    let el = sel.anchorNode;
+    if (el && el.nodeType === 3) el = el.parentElement;
+    let inCE = false;
+    while (el) { if (el.contentEditable === 'true') { inCE = true; break; } el = el.parentElement; }
+    if (!inCE) { bar.style.display='none'; return; }
+    const rect = sel.getRangeAt(0).getBoundingClientRect();
+    bar.style.display = 'block';
+    bar.style.left = Math.max(4, rect.left + rect.width/2 - 28) + 'px';
+    bar.style.top  = Math.max(4, rect.top + window.scrollY - 40) + 'px';
+  });
+  document.addEventListener('mousedown', e => { if (!bar.contains(e.target)) bar.style.display='none'; });
+})();
+
+/* ── Print helper: injecteert tijdelijk de juiste @page + schaal ── */
+function printAs(orientation, scale) {
+  const margin = orientation === 'landscape' ? '0' : '1cm';
+  const css = `
+    @page { size: A4 ${orientation}; margin: ${margin}; }
+    @media print {
+      .print-scale-wrap {
+        transform: scale(${scale}) !important;
+        transform-origin: top left !important;
+        width: ${Math.round(100/scale)}% !important;
+      }
+    }
+  `;
+  const s = document.createElement('style');
+  s.id = 'print-tmp'; s.textContent = css;
+  document.head.appendChild(s);
+  window.print();
+  setTimeout(() => { const el = document.getElementById('print-tmp'); if (el) el.remove(); }, 500);
+}
+
 function route() {
   const h = location.hash.slice(1) || '/';
   const p = h.split('/').filter(Boolean);
@@ -656,16 +690,148 @@ function render() {
 function pgHome(c) {
   // Titel/subtitel
   const hero = document.createElement('div');
-  hero.style.cssText = 'text-align:center;padding:28px 16px 20px';
+  hero.style.cssText = 'text-align:center;padding:28px 16px 20px;position:relative;';
   hero.innerHTML = `
     <h2 style="font-size:22px;font-weight:800;color:var(--txt);margin-bottom:6px">CGT Analyse Tool</h2>
     <p style="font-size:13px;color:var(--muted)">Kies een analyse om te starten of door te gaan</p>`;
+
+  // Info-knop
+  const infoBtn = document.createElement('button');
+  infoBtn.title = 'Over opslag & veiligheid';
+  infoBtn.style.cssText = 'position:absolute;top:28px;right:4px;width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;transition:border-color .15s,color .15s;';
+  infoBtn.textContent = 'i';
+  infoBtn.addEventListener('mouseenter', () => { infoBtn.style.borderColor='var(--cgt-blue)'; infoBtn.style.color='var(--cgt-blue)'; });
+  infoBtn.addEventListener('mouseleave', () => { infoBtn.style.borderColor='var(--border)'; infoBtn.style.color='var(--muted)'; });
+  infoBtn.addEventListener('click', () => openInfoModal());
+  hero.appendChild(infoBtn);
+
   c.appendChild(hero);
+
+  function openInfoModal() {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:20px;';
+
+    const modal = document.createElement('div');
+    modal.style.cssText = 'background:#fff;border-radius:16px;max-width:460px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.18);overflow:hidden;font-family:inherit;display:flex;flex-direction:column;max-height:90vh;';
+
+    // Header
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'background:var(--cgt-blue);color:#fff;padding:20px 24px 0;position:relative;flex-shrink:0;';
+    hdr.innerHTML = `<div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.75;margin-bottom:6px">CGT Analyse Tool</div>`;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '✕';
+    closeBtn.style.cssText = 'position:absolute;top:16px;right:18px;background:rgba(255,255,255,.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:background .15s;';
+    closeBtn.addEventListener('mouseenter', () => closeBtn.style.background='rgba(255,255,255,.35)');
+    closeBtn.addEventListener('mouseleave', () => closeBtn.style.background='rgba(255,255,255,.2)');
+    closeBtn.addEventListener('click', () => overlay.remove());
+    hdr.appendChild(closeBtn);
+
+    // Tabs in header
+    const tabBar = document.createElement('div');
+    tabBar.style.cssText = 'display:flex;gap:0;margin-top:4px;';
+    const TABS = ['Over deze tool', 'Opslag & veiligheid'];
+    let activeTab = 0;
+    const tabBtns = TABS.map((label, i) => {
+      const btn = document.createElement('button');
+      btn.textContent = label;
+      btn.style.cssText = `background:none;border:none;color:#fff;font-size:13px;font-weight:600;padding:10px 18px 10px;cursor:pointer;border-bottom:3px solid transparent;opacity:.65;transition:opacity .15s,border-color .15s;font-family:inherit;`;
+      btn.addEventListener('click', () => { activeTab = i; renderTab(); });
+      tabBar.appendChild(btn);
+      return btn;
+    });
+    hdr.appendChild(tabBar);
+    modal.appendChild(hdr);
+
+    // Scrollable body
+    const body = document.createElement('div');
+    body.style.cssText = 'padding:24px 24px 28px;overflow-y:auto;flex:1;';
+
+    function mkP(txt, extra='') {
+      const p = document.createElement('p');
+      p.style.cssText = `font-size:14px;line-height:1.65;color:#2a2a2a;margin:0 0 16px;${extra}`;
+      p.textContent = txt;
+      return p;
+    }
+    function mkSub(txt) {
+      const d = document.createElement('div');
+      d.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cgt-blue);margin:0 0 10px;';
+      d.textContent = txt;
+      return d;
+    }
+    function mkList(items) {
+      const ul = document.createElement('ul');
+      ul.style.cssText = 'margin:0 0 20px;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;';
+      items.forEach(txt => {
+        const li = document.createElement('li');
+        li.style.cssText = 'display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.55;color:#333;';
+        li.innerHTML = `<span style="color:var(--cgt-blue);flex-shrink:0;margin-top:1px;font-weight:700;">—</span><span>${txt}</span>`;
+        ul.appendChild(li);
+      });
+      return ul;
+    }
+    function mkTip(html) {
+      const d = document.createElement('div');
+      d.style.cssText = 'background:#F0F6FF;border-left:3px solid var(--cgt-blue);border-radius:0 8px 8px 0;padding:12px 14px;margin-bottom:18px;font-size:13px;line-height:1.6;color:#1D3557;';
+      d.innerHTML = html;
+      return d;
+    }
+    function mkWarning(html) {
+      const d = document.createElement('div');
+      d.style.cssText = 'display:flex;align-items:flex-start;gap:10px;background:#FFF8F0;border-left:3px solid #E07A1A;border-radius:0 8px 8px 0;padding:12px 14px;font-size:13px;line-height:1.55;color:#7A3D00;';
+      d.innerHTML = html;
+      return d;
+    }
+
+    function renderTab() {
+      // Update tab button styles
+      tabBtns.forEach((btn, i) => {
+        btn.style.opacity = i === activeTab ? '1' : '.65';
+        btn.style.borderBottomColor = i === activeTab ? '#fff' : 'transparent';
+      });
+      body.innerHTML = '';
+
+      if (activeTab === 0) {
+        // Over deze tool
+        body.appendChild(mkP('CGT Analyse Tool is een hulpmiddel voor CGT-opleidelingen en supervisoren bij het oefenen met het opstellen van een holistische theorie, functieanalyses en betekenisanalyses.'));
+        body.appendChild(mkP('De tool is gratis te gebruiken voor opleidingsdoeleinden. Aanbieders van betaalde cursussen of trainingen mogen de tool niet als onderdeel van hun commercieel aanbod presenteren zonder toestemming.'));
+
+        const contact = document.createElement('div');
+        contact.style.cssText = 'margin:0 0 20px;';
+        contact.innerHTML = `<span style="font-size:14px;line-height:1.65;color:#2a2a2a;">Feedback of vragen? Mail naar </span><a href="mailto:cgtanalyse@gmail.com" style="color:var(--cgt-blue);font-size:14px;text-decoration:none;border-bottom:1px solid var(--cgt-blue);">cgtanalyse@gmail.com</a>`;
+        body.appendChild(contact);
+
+        const copy = document.createElement('div');
+        copy.style.cssText = 'font-size:13px;color:var(--muted);margin-top:8px;';
+        copy.textContent = '© Rik Geres';
+        body.appendChild(copy);
+
+      } else {
+        // Opslag & veiligheid
+        body.appendChild(mkP('Alle analyses worden opgeslagen in de lokale opslag (localStorage) van je browser. Er is geen account, geen cloud en geen externe server — je gegevens verlaten je apparaat niet.'));
+        body.appendChild(mkSub('Wat dit betekent in de praktijk'));
+        body.appendChild(mkList([
+          'Je analyses blijven beschikbaar zolang je dezelfde browser op hetzelfde apparaat gebruikt.',
+          'Chrome en Safari delen je gegevens niet met elkaar.',
+          'Als je je browsergeschiedenis of cookies wist, verdwijnen ook je opgeslagen analyses.',
+          'Je analyses zijn niet beschikbaar op een ander apparaat.',
+        ]));
+        body.appendChild(mkTip('<strong>Wil je je werk bewaren?</strong> Gebruik de Print-knop om een PDF op te slaan op je apparaat. Dat is jouw persoonlijke back-up. Via de Kopieer-knop kun je de inhoud als afbeelding kopiëren en plakken in bijvoorbeeld Word of Pages.'));
+        body.appendChild(mkWarning('<span style="font-size:16px;flex-shrink:0;margin-right:10px;margin-top:1px;">⚠️</span><span>Vul geen direct herleidbare patiëntgegevens in.</span>'));
+      }
+    }
+
+    renderTab();
+    modal.appendChild(body);
+    overlay.appendChild(modal);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+  }
 
   // Drie analyse-kaarten
   const tools = [
     { key:'FA', label:'Functieanalyse', sub:'problematisch gedrag', color:'var(--cgt-blue)', icon:'🔍', path:'/fa/new' },
-    { key:'BA', label:'Betekenisanalyse', sub:'problematische emotie / problematische situatie', color:'var(--cgt-blue)', icon:'💬', path:'/ba/new' },
+    { key:'BA', label:'Betekenisanalyse', sub:'problematische situatie/problematische emotie', color:'var(--cgt-blue)', icon:'💬', path:'/ba/new' },
     { key:'HT', label:'Holistische Theorie', sub:'probleemsamenhang', color:'var(--cgt-blue)', icon:'🗺', path:'/ht/new' },
   ];
   const grid = document.createElement('div');
@@ -810,7 +976,9 @@ function pgFA(c, id) {
   _pendingGroup = null;
 
   if (!d) { c.innerHTML = '<p style="padding:20px">Niet gevonden.</p>'; return; }
-  if (!d.groupId) { d.groupId = d.id; upsert(d); } // migratie
+  if (!d.groupId) { d.groupId = d.id; }
+  if (isNew) upsert(d); // sla nieuwe analyse direct op zodat preview hem vindt
+  else if (!d.groupId) upsert(d); // migratie
 
   let saveTimer = null;
   const faHistory = [];
@@ -843,7 +1011,7 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
   const bar = document.createElement('div');
   bar.className = 'action-bar no-print';
 
-  const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Print', () => window.print());
+  const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Print', () => printAs('portrait', 0.9));
 
   const btnClip = mkBtn('btn-ghost btn-sm', '📋 Kopieer', () => {
     const canvas = c.querySelector('.fa-canvas');
@@ -888,11 +1056,13 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
   const BLU_FA = th.blu, LBLU_FA = th.lblu, GRN_FA = th.grn, LGRN_FA = th.lgrn;
 
   const SD_W=145, SD_H=90, R_W=145, R_H=90, SR_W=195, SR_H=120, FNC_W=195;
+  const FNC_H_INIT = 56;              // vaste beginhootte FNC (voor pijlpositie)
   const sdX=16, mainY=24;
   const rX  = sdX + SD_W + 56;        // ruimte voor dots
   const srX = rX  + R_W  + 52;        // ruimte voor pijl
-  const midY = mainY + Math.round(SD_H/2);
-  const fncY = mainY + SR_H + 28;
+  const midY = mainY + Math.round(R_H/2);       // midden van R-vak
+  const srTop = midY - Math.round(SR_H/2);      // Sr-pos-repr gecentreerd op midY
+  const fncY = srTop + SR_H + 28;
   const CW  = srX + SR_W + 20;
 
   const canvas = document.createElement('div');
@@ -900,62 +1070,65 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
   canvas.style.cssText = `position:relative;background:#fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.1);width:${CW}px;`;
 
   const inner = document.createElement('div');
-  inner.style.cssText = `position:relative;width:${CW}px;min-height:${fncY+120+24}px;`;
+  inner.style.cssText = `position:relative;width:${CW}px;min-height:${fncY+FNC_H_INIT+24}px;`;
   canvas.appendChild(inner);
 
   /* SVG overlay voor pijlen en dots */
   const faSvg = document.createElementNS('http://www.w3.org/2000/svg','svg');
   faSvg.setAttribute('width', CW); faSvg.setAttribute('height','100%');
   faSvg.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:10;overflow:visible;';
-  faSvg.innerHTML=`<defs><marker id="fa-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${GRN_FA}"/></marker></defs>`;
+  faSvg.innerHTML=`<defs><marker id="fa-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${BLU_FA}"/></marker></defs>`;
   const faSetA=(e,o)=>{Object.entries(o).forEach(([a,v])=>e.setAttribute(a,v));return e;};
   function faSvgLine(x1,y1,x2,y2){
     faSvg.appendChild(faSetA(document.createElementNS('http://www.w3.org/2000/svg','line'),
-      {x1,y1,x2,y2,stroke:GRN_FA,'stroke-width':'1.5','marker-end':'url(#fa-arr)'}));
+      {x1,y1,x2,y2,stroke:BLU_FA,'stroke-width':'1.5','marker-end':'url(#fa-arr)'}));
   }
   inner.appendChild(faSvg);
 
   /* Twee dots tussen Sd en R */
   const dotsCX = Math.round((sdX+SD_W+rX)/2);
-  [midY-5, midY+5].forEach(cy=>{
+  [midY-9, midY+9].forEach(cy=>{
     const c2=document.createElementNS('http://www.w3.org/2000/svg','circle');
-    faSetA(c2,{cx:dotsCX,cy,r:'4',fill:GRN_FA}); faSvg.appendChild(c2);
+    faSetA(c2,{cx:dotsCX,cy,r:'4',fill:BLU_FA}); faSvg.appendChild(c2);
   });
 
-  /* Pijl R → Sr-pos (horizontaal) */
-  faSvgLine(rX+R_W+4, midY, srX-4, midY);
+  /* Pijl → Sr-pos-repr (horizontaal, naar midden van ovaal) */
+  const arrStartX = rX + R_W + 4;
+  faSvgLine(arrStartX, midY, srX - 4, midY);
 
-  /* Pijl Sr-pos → FNC (verticaal vanuit midden Sr-pos) */
-  const srCX = srX + Math.round(SR_W/2);
-  faSvgLine(srCX, mainY+SR_H+4, srCX, fncY-4);
+  /* Pijl → FNC (horizontaal, dynamisch naar midden van FNC) */
+  const fncLine = faSetA(document.createElementNS('http://www.w3.org/2000/svg','line'),
+    {x1:arrStartX, y1:fncY+28, x2:srX-4, y2:fncY+28,
+     stroke:BLU_FA,'stroke-width':'1.5','marker-end':'url(#fa-arr)'});
+  faSvg.appendChild(fncLine);
 
   /* ── Sd box ── */
   const sdEl = document.createElement('div');
   sdEl.style.cssText=`position:absolute;left:${sdX}px;top:${mainY}px;width:${SD_W}px;height:${SD_H}px;background:${N_BG_FA};border:1.5px solid ${N_BD_FA};border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
-  const sdLbl=document.createElement('div'); sdLbl.textContent='Sd'; sdLbl.style.cssText=`font-size:10px;font-weight:800;color:${N_BD_FA};margin-bottom:2px;letter-spacing:.04em;flex-shrink:0;`;
-  const sdTa=makeTa(d.sd||'','context waarbinnen het probleemgedrag plaatsvindt',v=>{d.sd=v;save();});
+  const sdLbl=document.createElement('div'); sdLbl.textContent='Sd'; sdLbl.style.cssText=`font-size:11px;font-weight:800;color:${N_BD_FA};margin-bottom:2px;letter-spacing:.04em;flex-shrink:0;`;
+  const sdTa=makeTa(d.sd||'','context waarbinnen het probleemgedrag plaatsvindt',v=>{save({sd:v});});
   sdTa.style.color=TXT_FA;
-  liveFillG(sdEl,sdTa,LGRN_FA,GRN_FA,N_BG_FA,N_BD_FA,sdLbl);
+  liveFillG(sdEl,sdTa,LBLU_FA,BLU_FA,N_BG_FA,N_BD_FA,sdLbl);
   sdEl.append(sdLbl,sdTa); inner.appendChild(sdEl);
 
   /* ── R box ── */
   const rEl = document.createElement('div');
   rEl.style.cssText=`position:absolute;left:${rX}px;top:${mainY}px;width:${R_W}px;height:${R_H}px;background:${N_BG_FA};border:1.5px solid ${N_BD_FA};border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
-  const rLbl=document.createElement('div'); rLbl.textContent='R'; rLbl.style.cssText=`font-size:10px;font-weight:800;color:${N_BD_FA};margin-bottom:2px;letter-spacing:.04em;flex-shrink:0;`;
-  const rTa=makeTa(d.r||'','problematisch gedrag',v=>{d.r=v;save();});
+  const rLbl=document.createElement('div'); rLbl.textContent='R'; rLbl.style.cssText=`font-size:11px;font-weight:800;color:${N_BD_FA};margin-bottom:2px;letter-spacing:.04em;flex-shrink:0;`;
+  const rTa=makeTa(d.r||'','problematisch gedrag',v=>{save({r:v});});
   rTa.style.color=TXT_FA;
-  liveFillG(rEl,rTa,LGRN_FA,GRN_FA,N_BG_FA,N_BD_FA,rLbl);
+  liveFillG(rEl,rTa,LBLU_FA,BLU_FA,N_BG_FA,N_BD_FA,rLbl);
   rEl.append(rLbl,rTa); inner.appendChild(rEl);
 
-  /* ── Sr-pos ovaal ── */
+  /* ── Sr-pos-repr ovaal ── */
   if (!d.srNegItems) {
     d.srNegItems = (d.srNegTxt||d.srNegType) ? [{type:d.srNegType||'',txt:d.srNegTxt||''}] : [{type:'',txt:''}];
   }
-  const srEl = makeSrNode(srX, mainY, SR_W, SR_H, d.srPosTxt, d.srPosType, SR_POS_TYPES, save, 'srPos', N_BG_FA, N_BD_FA, BLU_FA, LBLU_FA, TXT_FA);
+  const srEl = makeSrNode(srX, srTop, SR_W, SR_H, d.srPosTxt, d.srPosType, SR_POS_TYPES, save, 'srPos', N_BG_FA, N_BD_FA, BLU_FA, LBLU_FA, TXT_FA);
   inner.appendChild(srEl);
 
   /* ── FNC box ── */
-  const fncEl = makeFncNode(srX, fncY, FNC_W, d.srNegItems, save, N_BG_FA, N_BD_FA, GRN_FA, LGRN_FA, TXT_FA);
+  const fncEl = makeFncNode(srX, fncY, FNC_W, d.srNegItems, save, N_BG_FA, N_BD_FA, BLU_FA, LBLU_FA, TXT_FA);
   inner.appendChild(fncEl);
 
   /* Canvas hoogte aanpassen na render */
@@ -965,15 +1138,23 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
     inner.style.height = h+'px';
     canvas.style.height = h+'px';
     faSvg.setAttribute('height', h);
+    /* FNC-pijl dynamisch naar midden van FNC */
+    const fncMidY = fncEl.offsetTop + Math.round(fncEl.offsetHeight / 2);
+    fncLine.setAttribute('y1', fncMidY);
+    fncLine.setAttribute('y2', fncMidY);
   }
   requestAnimationFrame(faResize);
   if (window.ResizeObserver) {
     new ResizeObserver(faResize).observe(fncEl);
   }
 
+  const psw = document.createElement('div');
+  psw.className = 'print-scale-wrap';
+  psw.appendChild(canvas);
+
   const wrap2 = document.createElement('div');
   wrap2.style.cssText='padding:20px 24px;overflow:auto;';
-  wrap2.appendChild(canvas);
+  wrap2.appendChild(psw);
   c.appendChild(wrap2);
 
   if (!_noGroup) buildGroupBar(c, d);
@@ -993,25 +1174,37 @@ function liveFillG(el, ta, filledBg, filledBd, emptyBg, emptyBd, lbl) {
 
 /* ── Gedeelde textarea-helper voor inline bewerking ── */
 function makeTa(val, placeholder, onChange) {
-  const ta = document.createElement('textarea');
-  ta.value = val || '';
-  ta.placeholder = placeholder;
-  ta.style.cssText = `
-    flex:1; min-width:0; width:100%; box-sizing:border-box;
-    resize:none; border:none; outline:none; background:transparent;
-    font:inherit; font-size:11px; color:inherit; padding:0; margin:0;
-    min-height:24px; cursor:text; line-height:1.35; overflow:hidden;
-  `;
-  /* Automatisch hoogte aanpassen */
-  function autosize() {
-    ta.style.height = 'auto';
-    ta.style.height = ta.scrollHeight + 'px';
-  }
-  ta.addEventListener('input', () => { autosize(); onChange(ta.value); });
-  ta.addEventListener('click', e => e.stopPropagation());
-  requestAnimationFrame(autosize);
-  return ta;
+  const div = document.createElement('div');
+  div.contentEditable = 'true';
+  div.innerHTML = val || '';
+  div.dataset.ph = placeholder || '';
+  div.style.cssText = [
+    'flex:1;min-width:0;width:100%;box-sizing:border-box;',
+    'outline:none;background:transparent;',
+    'font:inherit;font-size:11px;color:inherit;padding:0;margin:0;',
+    'min-height:24px;cursor:text;line-height:1.35;',
+    'word-break:break-word;white-space:pre-wrap;overflow:hidden;'
+  ].join('');
+  /* value-shim voor achterwaartse compatibiliteit */
+  Object.defineProperty(div, 'value', {
+    get() { return this.textContent; },
+    set(v)  { this.innerHTML = v || ''; },
+    configurable: true
+  });
+  Object.defineProperty(div, 'placeholder', {
+    get() { return this.dataset.ph || ''; },
+    set(v)  { this.dataset.ph = v || ''; },
+    configurable: true
+  });
+  div.addEventListener('input', () => onChange(div.innerHTML));
+  div.addEventListener('click', e => e.stopPropagation());
+  div.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); document.execCommand('insertLineBreak'); }
+  });
+  return div;
 }
+/* makeCE is nu een alias van makeTa */
+const makeCE = makeTa;
 
 /* ── Inline bewerkbare knoop (Sd, R) ── */
 function makeInlineNode(labelTxt, placeholderTxt, initialVal, onSave) {
@@ -1056,18 +1249,18 @@ function makeNode(shape, labelTxt, placeholderTxt, bodyTxt, wide) {
   return el;
 }
 
-/* ── Sr-pos ovaal (BA-stijl, inline kleuren) ── */
+/* ── Sr-pos-repr ovaal (BA-stijl, inline kleuren) ── */
 function makeSrNode(x, y, w, h, bodyTxt, selectedType, types, save, prefix, N_BG, N_BD, BLU, LBLU, TXT) {
   const el = document.createElement('div');
-  el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;box-sizing:border-box;overflow:hidden;`;
+  el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:left;padding:20px 20px 20px 12px;box-sizing:border-box;overflow:hidden;`;
 
   const lbl = document.createElement('div');
-  lbl.textContent = 'Sr-pos';
-  lbl.style.cssText=`font-size:10px;font-weight:800;color:${N_BD};margin-bottom:3px;flex-shrink:0;`;
+  lbl.textContent = 'Sr-pos-repr';
+  lbl.style.cssText=`font-size:11px;font-weight:800;color:${N_BD};margin-bottom:3px;flex-shrink:0;`;
   el.appendChild(lbl);
 
   const body = document.createElement('div');
-  body.style.cssText='width:100%;display:flex;flex-direction:column;align-items:center;gap:3px;';
+  body.style.cssText='width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:3px;margin-top:14px;padding-left:10px;';
   el.appendChild(body);
 
   function upd() {
@@ -1089,22 +1282,25 @@ function makeSrNode(x, y, w, h, bodyTxt, selectedType, types, save, prefix, N_BG
   function render() {
     body.innerHTML='';
     const t = types.find(x=>x.val===selectedType);
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:baseline;gap:10px;width:100%;';
     if (!selectedType) {
       const sel=makePosSel();
       sel.addEventListener('change',e=>{e.stopPropagation();selectedType=e.target.value;bodyTxt=ta.value;const upd2={};upd2[prefix+'Type']=selectedType;save(upd2);upd();render();});
-      const ta=makeTa(bodyTxt,'positieve versterker / consequentie',v=>{bodyTxt=v;const upd2={};upd2[prefix+'Txt']=v;save(upd2);upd();});
-      ta.style.cssText+=`text-align:center;color:${TXT};`;
-      body.append(sel,ta);
+      const ta=makeTa(bodyTxt,'belangrijkste bekrachtiger',v=>{bodyTxt=v;const upd2={};upd2[prefix+'Txt']=v;save(upd2);upd();});
+      ta.style.color=TXT; ta.style.textAlign='left';
+      row.append(sel,ta);
     } else {
       const badge=document.createElement('span');
       badge.title='Klik om type te wijzigen';
       badge.style.cssText=`font-family:'Courier New',monospace;font-weight:700;font-size:12px;color:${BLU};flex-shrink:0;cursor:pointer;`;
       badge.textContent=t.label;
       badge.addEventListener('click',e=>{e.stopPropagation();const sel=makePosSel();sel.addEventListener('change',e2=>{e2.stopPropagation();selectedType=e2.target.value;const upd2={};upd2[prefix+'Type']=selectedType;save(upd2);upd();render();});badge.replaceWith(sel);sel.focus();});
-      const ta=makeTa(bodyTxt,'positieve versterker / consequentie',v=>{bodyTxt=v;const upd2={};upd2[prefix+'Txt']=v;save(upd2);upd();});
-      ta.style.cssText+=`text-align:center;color:${TXT};`;
-      body.append(badge,ta);
+      const ta=makeTa(bodyTxt,'belangrijkste bekrachtiger',v=>{bodyTxt=v;const upd2={};upd2[prefix+'Txt']=v;save(upd2);upd();});
+      ta.style.color=TXT; ta.style.textAlign='left';
+      row.append(badge,ta);
     }
+    body.appendChild(row);
   }
 
   upd(); render();
@@ -1115,11 +1311,11 @@ function makeSrNode(x, y, w, h, bodyTxt, selectedType, types, save, prefix, N_BG
 /* ── FNC box (BA-stijl, inline kleuren) ── */
 function makeFncNode(x, y, w, items, save, N_BG, N_BD, GRN, LGRN, TXT) {
   const el = document.createElement('div');
-  el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;background:${N_BG};border:1.5px solid ${N_BD};border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
+  el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;background:${N_BG};border:1.5px solid ${N_BD};border-radius:6px;padding:5px 8px 5px 18px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
 
   const lbl = document.createElement('div');
   lbl.textContent='FNC';
-  lbl.style.cssText=`font-size:10px;font-weight:800;color:${N_BD};margin-bottom:3px;letter-spacing:.04em;flex-shrink:0;`;
+  lbl.style.cssText=`font-size:11px;font-weight:800;color:${N_BD};margin-bottom:3px;letter-spacing:.04em;flex-shrink:0;`;
   el.appendChild(lbl);
 
   const list = document.createElement('div');
@@ -1159,18 +1355,18 @@ function makeFncNode(x, y, w, items, save, N_BG, N_BD, GRN, LGRN, TXT) {
       del.addEventListener('click',e=>{e.stopPropagation();if(items.length>1){items.splice(idx,1);}else{items[0]={type:'',txt:''};} saveItems();renderItems();});
       if (!item.type) {
         const sel=makeCompactSel(val=>{item.type=val;item.txt=ta.value;saveItems();renderItems();});
-        const ta=makeTa(item.txt,'consequentie',v=>{item.txt=v;saveItems();});
+        const ta=makeTa(item.txt,'feitelijke negatieve consequentie',v=>{item.txt=v;saveItems();});
         ta.style.color=TXT;
         itemWrap.append(sel,ta,del);
       } else {
         const row=document.createElement('div');
-        row.style.cssText='display:flex;align-items:baseline;gap:4px;flex:1;min-width:0';
+        row.style.cssText='display:flex;align-items:baseline;gap:10px;flex:1;min-width:0';
         const badge=document.createElement('span');
         badge.title='Klik om type te wijzigen';
         badge.style.cssText=`font-family:'Courier New',monospace;font-weight:700;font-size:12px;color:${GRN};flex-shrink:0;cursor:pointer;`;
         badge.textContent=t.label;
         badge.addEventListener('click',e=>{e.stopPropagation();const sel=makeCompactSel(val=>{item.type=val;saveItems();renderItems();});badge.replaceWith(sel);sel.focus();});
-        const ta=makeTa(item.txt,'consequentie',v=>{item.txt=v;saveItems();});
+        const ta=makeTa(item.txt,'feitelijke negatieve consequentie',v=>{item.txt=v;saveItems();});
         ta.style.color=TXT;
         row.append(badge,ta);
         itemWrap.append(row,del);
@@ -1206,7 +1402,7 @@ function mailFA(d) {
     'R (Respons / probleemgedrag):',
     d.r || '(niet ingevuld)',
     '',
-    `Sr-pos-repr (Positieve consequentie)${srPosLbl}:`,
+    `Sr-pos-repr-repr (Positieve consequentie)${srPosLbl}:`,
     d.srPosTxt || '(niet ingevuld)',
     '',
     'FNC (Feitelijke negatieve consequenties):',
@@ -1304,7 +1500,7 @@ function pgBA(c, id) {
   /* ── Actiebalk ── */
   const bar = document.createElement('div');
   bar.className = 'action-bar no-print';
-  const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Print', () => window.print());
+  const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Print', () => printAs('portrait', 0.7));
   const btnClip  = mkBtn('btn-ghost btn-sm', '📋 Kopieer', () => {
     const cnv = c.querySelector('.ba-canvas');
     if (!cnv) return;
@@ -1409,7 +1605,7 @@ function buildBACfgBar(bar, d, save, redraw) {
     const isSq = d.assocType === 'sequentieel';
     const nz = (d.zweefArchieven||[]).length;
     if (!isKernGeb && !isSq && nz < 3) {
-      bar.append(addBtn('+ zweefarchief', () => {
+      bar.append(addBtn('+ archief', () => {
         d.zweefArchieven = [...(d.zweefArchieven||[]), {id:uid(), label:''}];
         save(); redraw();
       }));
@@ -1425,7 +1621,7 @@ function buildBACfgBar(bar, d, save, redraw) {
 
   bar.append(
     sep(),
-    tog(d.showRepr ? '✓ Repr.niveaus' : '+ Repr.niveaus', d.showRepr, () => { save({showRepr:!d.showRepr}); redraw(); })
+    tog(d.showRepr ? '✓ repr.niveaus' : '+ repr.niveaus', d.showRepr, () => { save({showRepr:!d.showRepr}); redraw(); })
   );
 }
 
@@ -1613,7 +1809,8 @@ function buildBACanvas(container, d, save, redraw) {
   /* Pas kleur live toe op een element op basis van of de textarea content heeft */
   function liveFill(el, ta, filledBg, filledBd, lbl) {
     function upd() {
-      const filled = ta.value.trim().length > 0;
+      const txt = ('value' in ta) ? ta.value : ta.textContent;
+      const filled = txt.trim().length > 0;
       el.style.background   = filled ? filledBg : N_BG;
       el.style.borderColor  = filled ? filledBd : N_BD;
       if (lbl) lbl.style.color = filled ? filledBd : N_BD;
@@ -1627,7 +1824,7 @@ function buildBACanvas(container, d, save, redraw) {
     el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${N_BG};border:1.5px solid ${N_BD};border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
     let lbl=null;
     if(lblTxt){lbl=document.createElement('div');lbl.textContent=lblTxt;lbl.style.cssText=`font-size:10px;font-weight:800;color:${N_BD};margin-bottom:2px;letter-spacing:.04em;flex-shrink:0;`;el.appendChild(lbl);}
-    const ta=makeTa(d[key]||'',ph,v=>{d[key]=v;save();}); ta.style.color=TXT; el.appendChild(ta);
+    const ta=makeCE(d[key]||'',ph,v=>{d[key]=v;save();}); ta.style.cssText+=`color:${TXT};font-size:13px;`; el.appendChild(ta);
     liveFill(el, ta, filledBg, filledBd, lbl);
     return el;
   }
@@ -1636,7 +1833,7 @@ function buildBACanvas(container, d, save, redraw) {
     el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:${Math.round(h*.17)}px ${Math.round(w*.1)}px;box-sizing:border-box;overflow:hidden;`;
     let lbl=null;
     if(lblTxt){lbl=document.createElement('div');lbl.textContent=lblTxt;lbl.style.cssText=`font-size:10px;font-weight:800;color:${N_BD};margin-bottom:2px;flex-shrink:0;`;el.appendChild(lbl);}
-    const ta=makeTa(d[key]||'',ph,v=>{d[key]=v;save();}); ta.style.cssText+=`text-align:center;color:${TXT};`; el.appendChild(ta);
+    const ta=makeCE(d[key]||'',ph,v=>{d[key]=v;save();}); ta.style.cssText+=`text-align:center;color:${TXT};font-size:13px;`; el.appendChild(ta);
     liveFill(el, ta, filledBg, filledBd, lbl);
     return el;
   }
@@ -1706,12 +1903,12 @@ function buildBACanvas(container, d, save, redraw) {
   canvas.appendChild(csBox);
   // Reactief: herteken als ik-conditie verandert
   if (d.assocType === 'identiteit') {
-    const csTa = csBox.querySelector('textarea');
+    const csTa = csBox.querySelector('[contenteditable]');
     if (csTa) {
       let wasIk = showAccolade;
       csTa.addEventListener('input', () => {
         const isIkNow = /^ik$/i.test(csTa.value.trim());
-        if (isIkNow !== wasIk) { wasIk = isIkNow; d.cs = csTa.value; redraw(); }
+        if (isIkNow !== wasIk) { wasIk = isIkNow; d.cs = csTa.innerHTML||csTa.value; redraw(); }
       });
     }
   }
@@ -1727,7 +1924,7 @@ function buildBACanvas(container, d, save, redraw) {
     desc.textContent='archief met samenhangende kerngebeurtenissen m.b.t.';
     desc.style.cssText='font-size:8px;font-weight:700;color:#888;text-align:center;line-height:1.3;margin-top:3px;';
     const ta=makeTa(arch.label||'','titel',v=>{d.zweefArchieven[i].label=v;save();});
-    ta.style.cssText+='text-align:center;color:'+TXT+';font-size:11px;margin-top:1px;';
+    ta.style.cssText+='text-align:center;color:'+TXT+';font-size:13px;margin-top:1px;';
     const del=document.createElement('button'); del.textContent='×'; del.className='no-print';
     del.style.cssText='position:absolute;top:0;right:4px;border:none;background:transparent;cursor:pointer;font-size:12px;color:#aaa;';
     del.addEventListener('click',()=>{d.zweefArchieven.splice(i,1);save();redraw();});
@@ -1804,7 +2001,7 @@ function buildBACanvas(container, d, save, redraw) {
       const lbl3 = document.createElement('div'); lbl3.textContent='US/UR-repr'; lbl3.style.cssText=`font-size:8px;font-weight:800;color:${N_BD};flex-shrink:0;`;
       const bewijsLbl = document.createElement('div'); bewijsLbl.textContent=BV_LABELS[i]||''; bewijsLbl.style.cssText=`font-size:10px;font-weight:600;color:${N_BD};flex-shrink:0;`;
       const ta = makeTa(bv.text||'',`kerngebeurtenis ${i+1}`,v=>{d.bewijsOvals[i].text=v;save();});
-      ta.style.cssText+=`text-align:center;color:${DBLUE};font-size:10px;`;
+      ta.style.cssText+=`text-align:center;color:${DBLUE};font-size:13px;`;
       el.append(lbl3,bewijsLbl,ta);
       liveFill(el,ta,LBLU,BLU,lbl3);
 
@@ -1825,7 +2022,7 @@ function buildBACanvas(container, d, save, redraw) {
     const el = document.createElement('div');
     el.style.cssText=`position:absolute;left:${ex}px;top:${TOP_Y}px;width:${EX_W}px;height:${EX_H}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 14px;box-sizing:border-box;overflow:hidden;`;
     const lbl2=document.createElement('div'); lbl2.textContent='US/UR-repr'; lbl2.style.cssText=`font-size:8px;font-weight:800;color:${N_BD};margin-bottom:2px;flex-shrink:0;`;
-    const ta=makeTa(ov.text||'','kerngebeurtenis',v=>{d.extraOvals[i].text=v;save();}); ta.style.cssText+=`text-align:center;color:${DBLUE};font-size:10px;`;
+    const ta=makeTa(ov.text||'','kerngebeurtenis',v=>{d.extraOvals[i].text=v;save();}); ta.style.cssText+=`text-align:center;color:${DBLUE};font-size:13px;`;
     const del=document.createElement('button'); del.textContent='×'; del.className='no-print';
     del.style.cssText='position:absolute;top:3px;right:7px;border:none;background:transparent;cursor:pointer;font-size:12px;color:#aaa;';
     del.addEventListener('click',()=>{d.extraOvals.splice(i,1);save();redraw();});
@@ -1856,7 +2053,7 @@ function buildBACanvas(container, d, save, redraw) {
       el.style.cssText=`position:absolute;inset:0;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 14px;box-sizing:border-box;overflow:hidden;`;
       const lbl2=document.createElement('div'); lbl2.textContent='US/UR-repr'; lbl2.style.cssText=`font-size:8px;font-weight:800;color:${N_BD};margin-bottom:2px;flex-shrink:0;`;
       const kePholder = `kerngebeurtenis ${i+1}`;
-      const ta=makeTa(ov.text||'',kePholder,v=>{d.extraOvals[i].text=v;save();}); ta.style.cssText+=`text-align:center;color:${DBLUE};font-size:10px;`;
+      const ta=makeTa(ov.text||'',kePholder,v=>{d.extraOvals[i].text=v;save();}); ta.style.cssText+=`text-align:center;color:${DBLUE};font-size:13px;`;
       ta.addEventListener('focus', () => { let v=ta.value.trim(); if(v.startsWith("'")&&v.endsWith("'")&&v.length>2) ta.value=v.slice(1,-1); });
       ta.addEventListener('blur',  () => { let v=ta.value.trim(); if(v&&!v.startsWith("'")) v="'"+v+"'"; if(ta.value!==v) ta.value=v; d.extraOvals[i].text=v; save(); });
       el.append(lbl2,ta);
@@ -1909,7 +2106,7 @@ function buildBACanvas(container, d, save, redraw) {
     const titlePfx=document.createElement('span');
     titlePfx.textContent='titel:';
     titlePfx.style.cssText=`font-size:11px;font-weight:700;color:${N_BD};white-space:nowrap;flex-shrink:0;`;
-    const ta=makeTa(d.centralArchiefLabel||'','',v=>{d.centralArchiefLabel=v;save();}); ta.style.cssText+=`text-align:left;color:${TXT};font-size:11px;`;
+    const ta=makeTa(d.centralArchiefLabel||'','',v=>{d.centralArchiefLabel=v;save();}); ta.style.cssText+=`text-align:left;color:${TXT};font-size:13px;`;
     titleRow.append(titlePfx, ta);
     el.append(descLbl, titleRow); canvas.appendChild(el);
     // liveFill met callback voor zowel descLbl als titlePfx
@@ -1954,20 +2151,17 @@ function buildBACanvas(container, d, save, redraw) {
           lblRow.append(resetKT);
         }
         lblRow.prepend(lbl);
-        const ta = makeTa(d.centralText || '', isIdt ? '' : 'zelfbeeld/ mensbeeld/ wereldbeeld', v => { d.centralText = v; save(); });
+        const _ctRaw = d.centralText || '';
+        const _ctVal = (_ctRaw.startsWith('(') && _ctRaw.endsWith(')') && _ctRaw.length > 2) ? _ctRaw.slice(1,-1) : _ctRaw;
+        const ta = makeCE(_ctVal, isIdt ? '' : 'zelfbeeld/ mensbeeld/ wereldbeeld', v => { d.centralText = v; save(); });
         ta.style.cssText += `text-align:center;color:${TXT};font-size:13px;`;
-        ta.addEventListener('focus', () => {
-          let v = ta.value.trim();
-          if (v.startsWith('(') && v.endsWith(')') && v.length > 2) ta.value = v.slice(1,-1);
-        });
         ta.addEventListener('blur', () => {
-          let v = ta.value.trim();
-          if (v && !v.startsWith('(')) v = '(' + v + ')';
+          const v = ta.value.trim();
           if (ta.value !== v) ta.value = v;
           d.centralText = v; save();
         });
         el.append(lblRow, ta);
-        (function(){ function upd(){ const filled=ta.value.trim().length>0; el.style.background=filled?LBLU:N_BG; el.style.borderColor=filled?BLU:N_BD; lbl.style.color=filled?BLU:N_BD; } upd(); ta.addEventListener('input',upd); })();
+        (function(){ function upd(){ const txt=('value' in ta)?ta.value:ta.textContent; const filled=txt.trim().length>0; el.style.background=filled?LBLU:N_BG; el.style.borderColor=filled?BLU:N_BD; lbl.style.color=filled?BLU:N_BD; } upd(); ta.addEventListener('input',upd); })();
       } else if (sub === 'kerngebeurtenis') {
         /* tussenstap: keuze enkelvoudig of archief */
         const lbl = document.createElement('div');
@@ -2005,7 +2199,7 @@ function buildBACanvas(container, d, save, redraw) {
         resetKG.addEventListener('click', () => { d.centralSubtype='kerngebeurtenis'; d.centralText=''; save(); redraw(); });
         lblRow.append(lbl, resetKG);
         const ta = makeTa(d.centralText || '', 'kerngebeurtenis', v => { d.centralText = v; save(); });
-        ta.style.cssText += `text-align:center;color:${TXT};`;
+        ta.style.cssText += `text-align:center;color:${TXT};font-size:13px;`;
         el.append(lblRow, ta);
         liveFill(el, ta, LBLU, BLU, lbl);
       } else if (sub === 'kerngebeurtenis-archief') {
@@ -2027,7 +2221,7 @@ function buildBACanvas(container, d, save, redraw) {
         const ta = document.createElement('textarea');
         ta.value = d.centralText || '';
         ta.placeholder = 'titel';
-        ta.style.cssText = `flex-shrink:0;width:100%;height:30px;box-sizing:border-box;resize:none;border:none;outline:none;background:transparent;font:inherit;font-size:11px;color:${TXT};padding:0;margin:0;text-align:center;line-height:1.35;overflow:hidden;`;
+        ta.style.cssText = `flex-shrink:0;width:100%;height:30px;box-sizing:border-box;resize:none;border:none;outline:none;background:transparent;font:inherit;font-size:13px;color:${TXT};padding:0;margin:0;text-align:center;line-height:1.35;overflow:hidden;`;
         ta.addEventListener('keydown', e => {
           if (e.key === 'Enter' && (ta.value.match(/\n/g)||[]).length >= 1) e.preventDefault();
         });
@@ -2050,20 +2244,15 @@ function buildBACanvas(container, d, save, redraw) {
         resetMC.style.cssText = `font-size:10px;color:${N_BD};cursor:pointer;opacity:.6;`;
         resetMC.addEventListener('click', () => { d.centralSubtype=''; d.centralText=''; save(); redraw(); });
         lblRow.append(lbl, resetMC);
-        const ta = makeTa(d.centralText || '', "bv TEF, TAF, MTAF,...", v => { d.centralText = v; save(); });
-        ta.style.cssText += `text-align:center;color:${TXT};`;
-        ta.addEventListener('focus', () => {
-          let v = ta.value.trim();
-          if (v.startsWith("'") && v.endsWith("'") && v.length > 2) ta.value = v.slice(1,-1);
-        });
+        const _mcRaw = d.centralText || '';
+        const _mcVal = (_mcRaw.startsWith("'") && _mcRaw.endsWith("'") && _mcRaw.length > 2) ? _mcRaw.slice(1,-1) : _mcRaw;
+        const ta = makeCE(_mcVal, "bv TEF, TAF, MTAF,...", v => { d.centralText = v; save(); });
+        ta.style.cssText += `text-align:center;color:${TXT};font-size:13px;`;
         ta.addEventListener('blur', () => {
-          let v = ta.value.trim();
-          if (v && !v.startsWith("'")) v = "'" + v + "'";
-          if (ta.value !== v) ta.value = v;
-          d.centralText = v; save();
+          d.centralText = ta.innerHTML; save();
         });
         el.append(lblRow, ta);
-        (function(){ function upd(){ const filled=ta.value.trim().length>0; el.style.background=filled?LBLU:N_BG; el.style.borderColor=filled?BLU:N_BD; lbl.style.color=filled?BLU:N_BD; resetMC.style.color=filled?BLU:N_BD; } upd(); ta.addEventListener('input',upd); })();
+        (function(){ function upd(){ const txt=('value' in ta)?ta.value:ta.textContent; const filled=txt.trim().length>0; el.style.background=filled?LBLU:N_BG; el.style.borderColor=filled?BLU:N_BD; lbl.style.color=filled?BLU:N_BD; resetMC.style.color=filled?BLU:N_BD; } upd(); ta.addEventListener('input',upd); })();
       } else {
         /* geen subtype gekozen: toon klikbare keuze */
         const lbl = document.createElement('div');
@@ -2116,7 +2305,10 @@ function buildBACanvas(container, d, save, redraw) {
   svgLine(ovCX, ovY+OV_H, crX+CR_W/2, crY-2);
 
   canvas.appendChild(svg);
-  container.appendChild(canvas);
+  const baPsw = document.createElement('div');
+  baPsw.className = 'print-scale-wrap';
+  baPsw.appendChild(canvas);
+  container.appendChild(baPsw);
 }
 
 /* ─────────────────────────────────────────
@@ -2202,9 +2394,10 @@ function buildPreviewOverlay(d) {
 
   // Maak alle textareas read-only en visueel clean
   overlay.querySelectorAll('textarea').forEach(ta => {
-    ta.readOnly = true;
-    ta.style.cursor = 'default';
-    ta.style.userSelect = 'text';
+    ta.readOnly = true; ta.style.cursor = 'default'; ta.style.userSelect = 'text';
+  });
+  overlay.querySelectorAll('[contenteditable="true"]').forEach(ce => {
+    ce.contentEditable = 'false'; ce.style.cursor = 'default'; ce.style.userSelect = 'text';
   });
   // Verberg no-print elementen (knoppen, cfg-balk, etc.) — sluitknop uitgezonderd
   overlay.querySelectorAll('.no-print, .action-bar').forEach(el => el.style.display = 'none');
@@ -2225,6 +2418,7 @@ function buildGroupBar(container, d) {
   /* ── Inline schema-renderer voor één analyse ── */
   function renderInlineSchema(sibling, groupSection, fullList) {
     const sec = document.createElement('div');
+    sec.className = 'group-section';
     sec.style.cssText = 'border-top:2px solid var(--border);margin-top:4px;position:relative;';
 
     // Mini-actiebalk: type-badge + titel + prullenbak + pijltjes
@@ -2480,7 +2674,7 @@ function buildHT(c, d, save, redrawHT) {
   const bar = document.createElement('div');
   bar.className = 'action-bar no-print';
 
-  const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Print', () => window.print());
+  const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Print', () => printAs('landscape', 0.76));
 
   const btnClip = mkBtn('btn-ghost btn-sm', '📋 Kopieer', () => {
     const htCanvas = c.querySelector('.ht-canvas');
@@ -2594,7 +2788,7 @@ function buildHT(c, d, save, redrawHT) {
     el.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;border:1.5px solid ${ht.p};display:flex;flex-direction:column;overflow:hidden;z-index:0;`;
     const hdr = document.createElement('div');
     hdr.className = 'ht-card-hdr';
-    hdr.style.cssText = `position:relative;height:36px;min-height:36px;background:${ht.p};color:#fff;display:flex;align-items:center;padding:0 10px 0 10px;font-size:14px;font-weight:700;flex:0 0 auto;`;
+    hdr.style.cssText = `position:relative;height:36px;min-height:36px;background:${ht.p};color:#fff;display:flex;align-items:center;padding:0 10px 0 10px;font-size:15px;font-weight:700;flex:0 0 auto;`;
     const span = document.createElement('span');
     span.style.flex = '1';
     span.textContent = title;
@@ -2642,7 +2836,8 @@ function buildHT(c, d, save, redrawHT) {
   canvas.appendChild(svg);
 
   /* ── Popup voor bewerken van een sectie ── */
-  function openCardPopup(key, title, hBg, hTxt) {
+  function openCardPopup(key, title, hBg, hTxt, cardH) {
+    const itemGap = cardH >= 500 ? 16 : cardH >= 350 ? 10 : cardH >= 230 ? 7 : 4;
     const ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;display:flex;align-items:center;justify-content:center;';
 
@@ -2651,18 +2846,18 @@ function buildHT(c, d, save, redrawHT) {
 
     /* Header */
     const hdr = document.createElement('div');
-    hdr.style.cssText = `background:${hBg};color:${hTxt};padding:14px 18px;font-size:14px;font-weight:700;display:flex;align-items:center;`;
+    hdr.style.cssText = `background:${hBg};color:${hTxt};padding:14px 18px;font-size:15px;font-weight:700;display:flex;align-items:center;`;
     const hdrTxt = document.createElement('span'); hdrTxt.style.flex='1'; hdrTxt.textContent = title;
     const closeBtn = document.createElement('button');
     closeBtn.innerHTML = '✕';
-    closeBtn.style.cssText = `background:none;border:none;color:${hTxt};font-size:16px;cursor:pointer;opacity:.7;line-height:1;padding:0 2px;`;
+    closeBtn.style.cssText = `background:none;border:none;color:${hTxt};font-size:17px;cursor:pointer;opacity:.7;line-height:1;padding:0 2px;`;
     closeBtn.addEventListener('click', () => ov.remove());
     hdr.append(hdrTxt, closeBtn);
     box.appendChild(hdr);
 
     /* Lijst */
     const body = document.createElement('div');
-    body.style.cssText = 'flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:6px;';
+    body.style.cssText = `flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:${itemGap}px;`;
 
     function renderItems() {
       body.innerHTML = '';
@@ -2671,10 +2866,10 @@ function buildHT(c, d, save, redrawHT) {
         const row = document.createElement('div');
         row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;';
         const dot = document.createElement('span');
-        dot.textContent = '●'; dot.style.cssText = 'margin-top:10px;color:#888;font-size:9px;flex-shrink:0;';
+        dot.textContent = '●'; dot.style.cssText = 'margin-top:10px;color:#555;font-size:11px;flex-shrink:0;';
         const ta = document.createElement('textarea');
         ta.value = val; ta.rows = 1;
-        ta.style.cssText = 'flex:1;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:16px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color .15s;';
+        ta.style.cssText = 'flex:1;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:17px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color .15s;';
         ta.addEventListener('focus', () => ta.style.borderColor = hBg);
         ta.addEventListener('blur',  () => ta.style.borderColor = '#ddd');
         const resize = () => { ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; };
@@ -2703,7 +2898,7 @@ function buildHT(c, d, save, redrawHT) {
       /* + Nieuw item knop */
       const addBtn = document.createElement('button');
       addBtn.textContent = '+ item toevoegen';
-      addBtn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:12px;color:#aaa;text-align:left;padding:4px 0 4px 18px;';
+      addBtn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:13px;color:#aaa;text-align:left;padding:4px 0 4px 18px;';
       addBtn.addEventListener('mouseenter', () => addBtn.style.color=hBg);
       addBtn.addEventListener('mouseleave', () => addBtn.style.color='#aaa');
       addBtn.addEventListener('click', () => {
@@ -2728,32 +2923,55 @@ function buildHT(c, d, save, redrawHT) {
   }
 
   /* ── Preview-body: readonly samenvatting in de kaart ── */
-  function makeCardBody(key, centered, hBg) {
+  function makeCardBody(key, centered, hBg, cardH) {
     const wrap2 = document.createElement('div');
-    wrap2.style.cssText = `flex:1;overflow:hidden;padding:5px 8px;display:flex;flex-direction:column;gap:1px;cursor:pointer;${centered?'justify-content:center;':''}`;
+
+    function mkDotRow(val, lh) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:flex-start;gap:4px;';
+      const dot = document.createElement('span');
+      dot.textContent = '●';
+      dot.style.cssText = 'font-size:10px;margin-top:3px;color:#555;flex-shrink:0;line-height:1.4;';
+      const txt = document.createElement('span');
+      txt.textContent = val;
+      txt.style.cssText = `font-size:15px;font-weight:500;line-height:${lh};color:#111;word-break:break-word;flex:1;`;
+      row.append(dot, txt);
+      return row;
+    }
+
+    function mkCol(items, lh) {
+      const col = document.createElement('div');
+      col.style.cssText = 'flex:1;display:flex;flex-direction:column;justify-content:space-evenly;overflow:hidden;';
+      items.forEach(v => col.appendChild(mkDotRow(v, lh)));
+      return col;
+    }
 
     function renderPreviewInner() {
       wrap2.innerHTML = '';
-      const vals = (d.data[key]||[]).filter(v=>v.trim());
-      if (vals.length===0) {
+      const vals = (d.data[key]||[]).filter(v => v.trim());
+
+      if (vals.length === 0) {
+        wrap2.style.cssText = 'flex:1;overflow:hidden;padding:5px 8px;display:flex;align-items:center;cursor:pointer;';
         const ph = document.createElement('span');
         ph.textContent = 'Klik om toe te voegen…';
-        ph.style.cssText = 'font-size:13px;color:#ccc;font-style:italic;';
+        ph.style.cssText = 'font-size:14px;color:#ccc;font-style:italic;';
         wrap2.appendChild(ph);
-      } else {
-        vals.forEach(val => {
-          const row = document.createElement('div');
-          row.style.cssText = 'display:flex;align-items:flex-start;gap:4px;';
-          const dot = document.createElement('span');
-          dot.textContent='●'; dot.style.cssText='font-size:9px;margin-top:3px;color:#888;flex-shrink:0;line-height:1.4;';
-          const txt = document.createElement('span');
-          txt.textContent=val; txt.style.cssText='font-size:13px;line-height:1.35;color:#111;word-break:break-word;';
-          row.append(dot,txt); wrap2.appendChild(row);
-        });
+        return;
       }
+
+      /* Gevolgschade: 2-kolom grid bij meer dan 3 items — items lopen van linksboven naar rechtsboven */
+      if (key === 'gevolgen' && vals.length > 3) {
+        wrap2.style.cssText = 'flex:1;overflow:hidden;padding:4px 8px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);grid-auto-flow:column;gap:2px 8px;cursor:pointer;';
+        vals.slice(0,6).forEach(v => wrap2.appendChild(mkDotRow(v, 1.3)));
+        return;
+      }
+
+      /* Standaard: één kolom, space-evenly voor automatische verdeling */
+      const lh = cardH >= 500 ? 1.5 : cardH >= 350 ? 1.4 : 1.3;
+      wrap2.style.cssText = `flex:1;overflow:hidden;padding:5px 8px;display:flex;flex-direction:column;justify-content:space-evenly;cursor:pointer;${centered ? 'align-items:center;' : ''}`;
+      vals.forEach(v => wrap2.appendChild(mkDotRow(v, lh)));
     }
 
-    // Maak renderPreview beschikbaar voor popup
     wrap2._refresh = renderPreviewInner;
     renderPreviewInner();
     return wrap2;
@@ -2764,20 +2982,52 @@ function buildHT(c, d, save, redrawHT) {
   function renderPreview() { Object.values(cardBodyMap).forEach(fn => fn()); }
 
   /* ── Inline body (kritischeGebeurtenissen) — popup variant ── */
-  function makeInlineCardBody(key, hBg, hTxt) {
+  function makeInlineCardBody(key, hBg, hTxt, cardH) {
     const wrap2 = document.createElement('div');
-    wrap2.style.cssText = 'flex:1;overflow:hidden;padding:4px 10px;display:flex;align-items:center;cursor:pointer;';
-    const txt = document.createElement('span');
-    txt.style.cssText = 'font-size:13px;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;';
-    function upd() {
-      const v = (d.data[key]||[]).filter(s=>s.trim()).join(', ');
-      txt.textContent = v || 'Klik om toe te voegen…';
-      txt.style.color = v ? '#111' : '#ccc';
-      txt.style.fontStyle = v ? 'normal' : 'italic';
+    wrap2.style.cssText = 'flex:1;overflow:hidden;padding:3px 10px;display:flex;flex-direction:row;gap:8px;cursor:pointer;';
+
+    function mkCol(items) {
+      const col = document.createElement('div');
+      col.style.cssText = 'flex:1;display:flex;flex-direction:column;justify-content:space-evenly;overflow:hidden;';
+      items.forEach(v => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:flex-start;gap:3px;';
+        const dot = document.createElement('span');
+        dot.textContent = '●'; dot.style.cssText = 'font-size:9px;margin-top:2px;color:#555;flex-shrink:0;';
+        const txt = document.createElement('span');
+        txt.textContent = v; txt.style.cssText = 'font-size:14px;font-weight:500;line-height:1.3;color:#111;word-break:break-word;flex:1;overflow:hidden;';
+        row.append(dot, txt); col.appendChild(row);
+      });
+      return col;
     }
-    upd(); wrap2.appendChild(txt);
+
+    function upd() {
+      wrap2.innerHTML = '';
+      const vals = (d.data[key]||[]).filter(s => s.trim());
+      if (vals.length === 0) {
+        wrap2.style.cssText = 'flex:1;overflow:hidden;padding:3px 10px;display:flex;align-items:center;cursor:pointer;';
+        const ph = document.createElement('span');
+        ph.textContent = 'Klik om toe te voegen…';
+        ph.style.cssText = 'font-size:14px;color:#ccc;font-style:italic;';
+        wrap2.appendChild(ph);
+        return;
+      }
+      /* 2×2 grid — items lopen van linksboven naar rechtsboven */
+      wrap2.style.cssText = 'flex:1;overflow:hidden;padding:3px 10px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(2,1fr);grid-auto-flow:column;gap:2px 8px;cursor:pointer;';
+      vals.slice(0,4).forEach(v => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:3px;overflow:hidden;';
+        const dot = document.createElement('span');
+        dot.textContent = '●'; dot.style.cssText = 'font-size:9px;color:#555;flex-shrink:0;';
+        const txt = document.createElement('span');
+        txt.textContent = v; txt.style.cssText = 'font-size:14px;font-weight:500;line-height:1.3;color:#111;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;';
+        row.append(dot, txt); wrap2.appendChild(row);
+      });
+    }
+
+    upd();
     wrap2._refresh = upd;
-    wrap2.addEventListener('click', () => openCardPopup(key, 'Kritische gebeurtenissen', hBg, hTxt));
+    wrap2.addEventListener('click', () => openCardPopup(key, 'Kritische gebeurtenissen', hBg, hTxt, cardH));
     return wrap2;
   }
 
@@ -2804,7 +3054,7 @@ function buildHT(c, d, save, redrawHT) {
 
     const hdr = document.createElement('div');
     hdr.className = 'ht-card-hdr';
-    hdr.style.cssText = `position:relative;height:36px;min-height:36px;background:${col.hBg};color:${col.hTxt};display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:700;flex:0 0 auto;overflow:hidden;`;
+    hdr.style.cssText = `position:relative;height:36px;min-height:36px;background:${col.hBg};color:${col.hTxt};display:flex;align-items:center;padding:0 10px;font-size:15px;font-weight:700;flex:0 0 auto;overflow:hidden;`;
     const hdrSpan = document.createElement('span');
     hdrSpan.style.cssText = 'flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
     hdrSpan.textContent = title;
@@ -2820,13 +3070,13 @@ function buildHT(c, d, save, redrawHT) {
     card.appendChild(hdr);
 
     if (inline) {
-      const body2 = makeInlineCardBody(key, col.hBg, col.hTxt);
+      const body2 = makeInlineCardBody(key, col.hBg, col.hTxt, h);
       cardBodyMap[key] = body2._refresh;
       card.appendChild(body2);
     } else {
-      const body2 = makeCardBody(key, centered, col.hBg);
+      const body2 = makeCardBody(key, centered, col.hBg, h);
       cardBodyMap[key] = body2._refresh;
-      card.addEventListener('click', () => openCardPopup(key, title, col.hBg, col.hTxt));
+      card.addEventListener('click', () => openCardPopup(key, title, col.hBg, col.hTxt, h));
       card.appendChild(body2);
     }
 
