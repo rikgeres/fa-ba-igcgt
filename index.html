@@ -1861,7 +1861,7 @@ function buildBACanvas(container, d, save, redraw) {
         ta.style.cssText += `text-align:center;color:${TXT};font-size:13px;font-weight:600;`;
         topSection.append(lbl, ta);
         const ico = mkCabinetSvg(50, 58, '#888');
-        ico.style.marginTop = 'auto';
+        ico.style.marginTop = '4px';
         ico.style.flexShrink = '0';
         el.append(topSection, ico);
         (function(){ function upd(){ const filled=ta.value.trim().length>0; el.style.background=filled?LBLU:N_BG; el.style.borderColor=filled?BLU:N_BD; lbl.style.color=filled?BLU:N_BD; resetAK.style.color=filled?BLU:N_BD; } upd(); ta.addEventListener('input',upd); })();
