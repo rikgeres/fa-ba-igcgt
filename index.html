@@ -654,7 +654,6 @@ function pgHome(c) {
   const hero = document.createElement('div');
   hero.style.cssText = 'text-align:center;padding:28px 16px 20px';
   hero.innerHTML = `
-    <div style="font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--cgt-blue);margin-bottom:6px">Geïntegreerde CGT</div>
     <h2 style="font-size:22px;font-weight:800;color:var(--txt);margin-bottom:6px">CGT Analyse Tool</h2>
     <p style="font-size:13px;color:var(--muted)">Kies een analyse om te starten of door te gaan</p>`;
   c.appendChild(hero);
@@ -2173,7 +2172,7 @@ function mkTitleRow(d, save, typeLabel) {
   const inp = document.createElement('input');
   inp.type = 'text';
   inp.value = d.title || '';
-  inp.placeholder = 'naam';
+  inp.placeholder = 'titel';
   inp.style.cssText = 'flex:1;font-size:13px;font-weight:400;border:none;border-bottom:1px dashed #ccc;background:transparent;color:#1D3557;outline:none;padding:1px 0;transition:border-color .15s, border-style .15s;';
   inp.addEventListener('focus', () => { inp.style.borderBottomColor = '#4A6E8A'; inp.style.borderBottomStyle = 'solid'; inp.style.fontWeight = '600'; });
   inp.addEventListener('blur',  () => { inp.style.borderBottomColor = '#ccc';    inp.style.borderBottomStyle = 'dashed'; inp.style.fontWeight = d.title ? '600' : '400'; });
@@ -2275,7 +2274,7 @@ function buildGroupBar(container, d) {
 
     const titleInp = document.createElement('input');
     titleInp.type='text'; titleInp.value=sibling.title||'';
-    titleInp.placeholder='naam';
+    titleInp.placeholder='titel';
     titleInp.style.cssText='flex:1;font-size:13px;font-weight:600;border:none;border-bottom:1px dashed #ccc;background:transparent;color:#1D3557;outline:none;padding:1px 0;';
     titleInp.addEventListener('focus',()=>titleInp.style.borderBottomColor='var(--cgt-blue)');
     titleInp.addEventListener('blur', ()=>titleInp.style.borderBottomColor='#ccc');
