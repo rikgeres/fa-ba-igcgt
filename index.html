@@ -604,7 +604,15 @@ let _activeCE = null;
     return b;
   }
 
-  const boldBtn = mkBarBtn('<b>V</b>', 'Vetgedrukt', () => document.execCommand('bold'));
+  const boldBtn = mkBarBtn('<b>V</b>', 'Vetgedrukt', () => {
+    if (!_activeCE) return;
+    const sel = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(_activeCE);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    document.execCommand('bold');
+  });
 
   const sep = document.createElement('span');
   sep.style.cssText = 'width:1px;height:16px;background:#ddd;flex-shrink:0;';
@@ -781,7 +789,7 @@ function pgHome(c) {
     // Tabs in header
     const tabBar = document.createElement('div');
     tabBar.style.cssText = 'display:flex;gap:0;margin-top:4px;';
-    const TABS = ['Over deze tool', 'Opslag & veiligheid'];
+    const TABS = ['Opslag & veiligheid', 'Over deze tool'];
     let activeTab = 0;
     const tabBtns = TABS.map((label, i) => {
       const btn = document.createElement('button');
@@ -842,7 +850,7 @@ function pgHome(c) {
       });
       body.innerHTML = '';
 
-      if (activeTab === 0) {
+      if (activeTab === 1) {
         // Over deze tool
         body.appendChild(mkP('CGT Analyse Tool is een hulpmiddel voor CGT-opleidelingen en supervisoren bij het oefenen met het opstellen van een holistische theorie, functieanalyses en betekenisanalyses.'));
         body.appendChild(mkP('De tool is gratis te gebruiken voor opleidingsdoeleinden. Aanbieders van betaalde cursussen of trainingen mogen de tool niet als onderdeel van hun commercieel aanbod presenteren zonder toestemming.'));
@@ -854,11 +862,11 @@ function pgHome(c) {
 
         const copy = document.createElement('div');
         copy.style.cssText = 'font-size:13px;color:var(--muted);margin-top:8px;';
-        copy.textContent = '© Rik Geres';
+        copy.textContent = '© 2026 Rik Geres';
         body.appendChild(copy);
 
       } else {
-        // Opslag & veiligheid
+        // Opslag & veiligheid (tab 0)
         body.appendChild(mkP('Alle analyses worden opgeslagen in de lokale opslag (localStorage) van je browser. Er is geen account, geen cloud en geen externe server — je gegevens verlaten je apparaat niet.'));
         body.appendChild(mkSub('Wat dit betekent in de praktijk'));
         body.appendChild(mkList([
