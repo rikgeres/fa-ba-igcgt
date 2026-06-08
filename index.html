@@ -585,34 +585,85 @@ function mkThemePicker(d, onPick) {
 const go = path => { location.hash = path; };
 window.addEventListener('hashchange', render);
 
-/* ── Zwevende vetgedrukt-knop ── */
+/* ── Zwevende opmaak-toolbar (vet + lettergrootte) ── */
+const _ceFsSave = new WeakMap(); // div → font-size-slaanfunctie
+let _activeCE = null;
+
 (function() {
   const bar = document.createElement('div');
   bar.id = 'bold-bar';
-  bar.style.cssText = 'position:fixed;z-index:99999;background:#fff;border:1px solid #ccc;border-radius:8px;padding:3px 6px;box-shadow:0 2px 10px rgba(0,0,0,.18);display:none;pointer-events:auto;';
-  const btn = document.createElement('button');
-  btn.innerHTML = '<b>V</b>';
-  btn.title = 'Vetgedrukt';
-  btn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:14px;font-weight:900;padding:2px 8px;border-radius:6px;font-family:inherit;color:#1D3557;';
-  btn.addEventListener('mouseenter', () => btn.style.background='#f0f4f8');
-  btn.addEventListener('mouseleave', () => btn.style.background='none');
-  btn.addEventListener('mousedown', e => { e.preventDefault(); document.execCommand('bold'); });
-  bar.appendChild(btn);
+  bar.style.cssText = 'position:fixed;z-index:99999;background:#fff;border:1px solid #ccc;border-radius:8px;padding:3px 6px;box-shadow:0 2px 10px rgba(0,0,0,.18);display:none;pointer-events:auto;display:none;gap:2px;align-items:center;';
+
+  function mkBarBtn(label, title, onClick) {
+    const b = document.createElement('button');
+    b.innerHTML = label; b.title = title;
+    b.style.cssText = 'background:none;border:none;cursor:pointer;font-size:13px;padding:2px 7px;border-radius:6px;font-family:inherit;color:#1D3557;line-height:1.4;';
+    b.addEventListener('mouseenter', () => b.style.background='#f0f4f8');
+    b.addEventListener('mouseleave', () => b.style.background='none');
+    b.addEventListener('mousedown', e => { e.preventDefault(); onClick(); });
+    return b;
+  }
+
+  const boldBtn = mkBarBtn('<b>V</b>', 'Vetgedrukt', () => document.execCommand('bold'));
+
+  const sep = document.createElement('span');
+  sep.style.cssText = 'width:1px;height:16px;background:#ddd;flex-shrink:0;';
+
+  const aMin = mkBarBtn('A−', 'Kleiner lettertype', () => changeFontSize(-1));
+  const aPlus = mkBarBtn('A+', 'Groter lettertype', () => changeFontSize(+1));
+
+  bar.append(boldBtn, sep, aMin, aPlus);
   document.body.appendChild(bar);
+
+  function changeFontSize(delta) {
+    if (!_activeCE) return;
+    const cur = parseFloat(_activeCE.style.fontSize) || parseFloat(getComputedStyle(_activeCE).fontSize) || 13;
+    const next = Math.max(8, Math.min(22, Math.round(cur) + delta));
+    _activeCE.style.fontSize = next + 'px';
+    if (_ceFsSave.has(_activeCE)) _ceFsSave.get(_activeCE)(next + 'px');
+  }
+
+  function positionNearCE(ce) {
+    const rect = ce.getBoundingClientRect();
+    bar.style.left = Math.max(4, rect.left) + 'px';
+    bar.style.top  = Math.max(4, rect.top + window.scrollY - 38) + 'px';
+  }
+
+  function showBar() {
+    bar.style.display = 'flex';
+  }
+
+  // Toon bij focus op een contenteditable
+  document.addEventListener('focusin', e => {
+    let el = e.target;
+    if (el && el.contentEditable === 'true') {
+      _activeCE = el;
+      positionNearCE(el);
+      showBar();
+    }
+  });
+
+  // Verberg bij klik buiten toolbar én buiten CE
+  document.addEventListener('mousedown', e => {
+    if (!bar.contains(e.target) && e.target.contentEditable !== 'true') {
+      bar.style.display = 'none';
+    }
+  });
+
+  // Herpositioneer bij selectie (bold-knop)
   document.addEventListener('selectionchange', () => {
     const sel = window.getSelection();
-    if (!sel || sel.isCollapsed || !sel.toString().trim()) { bar.style.display='none'; return; }
+    if (!sel || sel.isCollapsed || !sel.toString().trim()) return;
     let el = sel.anchorNode;
     if (el && el.nodeType === 3) el = el.parentElement;
     let inCE = false;
     while (el) { if (el.contentEditable === 'true') { inCE = true; break; } el = el.parentElement; }
-    if (!inCE) { bar.style.display='none'; return; }
+    if (!inCE) return;
     const rect = sel.getRangeAt(0).getBoundingClientRect();
-    bar.style.display = 'block';
-    bar.style.left = Math.max(4, rect.left + rect.width/2 - 28) + 'px';
-    bar.style.top  = Math.max(4, rect.top + window.scrollY - 40) + 'px';
+    bar.style.left = Math.max(4, rect.left + rect.width/2 - 50) + 'px';
+    bar.style.top  = Math.max(4, rect.top + window.scrollY - 38) + 'px';
+    showBar();
   });
-  document.addEventListener('mousedown', e => { if (!bar.contains(e.target)) bar.style.display='none'; });
 })();
 
 /* ── Print helper: injecteert tijdelijk de juiste @page + schaal ── */
@@ -1107,7 +1158,8 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
   sdEl.style.cssText=`position:absolute;left:${sdX}px;top:${mainY}px;width:${SD_W}px;height:${SD_H}px;background:${N_BG_FA};border:1.5px solid ${N_BD_FA};border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
   const sdLbl=document.createElement('div'); sdLbl.textContent='Sd'; sdLbl.style.cssText=`font-size:11px;font-weight:800;color:${N_BD_FA};margin-bottom:2px;letter-spacing:.04em;flex-shrink:0;`;
   const sdTa=makeTa(d.sd||'','context waarbinnen het probleemgedrag plaatsvindt',v=>{save({sd:v});});
-  sdTa.style.color=TXT_FA;
+  sdTa.style.color=TXT_FA; if(d.sd_fs) sdTa.style.fontSize=d.sd_fs;
+  _ceFsSave.set(sdTa, fs => { save({sd_fs:fs}); });
   liveFillG(sdEl,sdTa,LBLU_FA,BLU_FA,N_BG_FA,N_BD_FA,sdLbl);
   sdEl.append(sdLbl,sdTa); inner.appendChild(sdEl);
 
@@ -1116,7 +1168,8 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
   rEl.style.cssText=`position:absolute;left:${rX}px;top:${mainY}px;width:${R_W}px;height:${R_H}px;background:${N_BG_FA};border:1.5px solid ${N_BD_FA};border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
   const rLbl=document.createElement('div'); rLbl.textContent='R'; rLbl.style.cssText=`font-size:11px;font-weight:800;color:${N_BD_FA};margin-bottom:2px;letter-spacing:.04em;flex-shrink:0;`;
   const rTa=makeTa(d.r||'','problematisch gedrag',v=>{save({r:v});});
-  rTa.style.color=TXT_FA;
+  rTa.style.color=TXT_FA; if(d.r_fs) rTa.style.fontSize=d.r_fs;
+  _ceFsSave.set(rTa, fs => { save({r_fs:fs}); });
   liveFillG(rEl,rTa,LBLU_FA,BLU_FA,N_BG_FA,N_BD_FA,rLbl);
   rEl.append(rLbl,rTa); inner.appendChild(rEl);
 
@@ -1124,11 +1177,11 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
   if (!d.srNegItems) {
     d.srNegItems = (d.srNegTxt||d.srNegType) ? [{type:d.srNegType||'',txt:d.srNegTxt||''}] : [{type:'',txt:''}];
   }
-  const srEl = makeSrNode(srX, srTop, SR_W, SR_H, d.srPosTxt, d.srPosType, SR_POS_TYPES, save, 'srPos', N_BG_FA, N_BD_FA, BLU_FA, LBLU_FA, TXT_FA);
+  const srEl = makeSrNode(srX, srTop, SR_W, SR_H, d.srPosTxt, d.srPosType, SR_POS_TYPES, save, 'srPos', N_BG_FA, N_BD_FA, BLU_FA, LBLU_FA, TXT_FA, d.srPosFontSize, fs => save({srPosFontSize:fs}));
   inner.appendChild(srEl);
 
   /* ── FNC box ── */
-  const fncEl = makeFncNode(srX, fncY, FNC_W, d.srNegItems, save, N_BG_FA, N_BD_FA, BLU_FA, LBLU_FA, TXT_FA);
+  const fncEl = makeFncNode(srX, fncY, FNC_W, d.srNegItems, save, N_BG_FA, N_BD_FA, BLU_FA, LBLU_FA, TXT_FA, d.fncFontSize, fs => save({fncFontSize:fs}));
   inner.appendChild(fncEl);
 
   /* Canvas hoogte aanpassen na render */
@@ -1250,7 +1303,7 @@ function makeNode(shape, labelTxt, placeholderTxt, bodyTxt, wide) {
 }
 
 /* ── Sr-pos-repr ovaal (BA-stijl, inline kleuren) ── */
-function makeSrNode(x, y, w, h, bodyTxt, selectedType, types, save, prefix, N_BG, N_BD, BLU, LBLU, TXT) {
+function makeSrNode(x, y, w, h, bodyTxt, selectedType, types, save, prefix, N_BG, N_BD, BLU, LBLU, TXT, initFontSize, onFontSize) {
   const el = document.createElement('div');
   el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:left;padding:20px 20px 20px 12px;box-sizing:border-box;overflow:hidden;`;
 
@@ -1288,7 +1341,8 @@ function makeSrNode(x, y, w, h, bodyTxt, selectedType, types, save, prefix, N_BG
       const sel=makePosSel();
       sel.addEventListener('change',e=>{e.stopPropagation();selectedType=e.target.value;bodyTxt=ta.value;const upd2={};upd2[prefix+'Type']=selectedType;save(upd2);upd();render();});
       const ta=makeTa(bodyTxt,'belangrijkste bekrachtiger',v=>{bodyTxt=v;const upd2={};upd2[prefix+'Txt']=v;save(upd2);upd();});
-      ta.style.color=TXT; ta.style.textAlign='left';
+      ta.style.color=TXT; ta.style.textAlign='left'; if(initFontSize) ta.style.fontSize=initFontSize;
+      if(onFontSize) _ceFsSave.set(ta, fs=>{initFontSize=fs; onFontSize(fs);});
       row.append(sel,ta);
     } else {
       const badge=document.createElement('span');
@@ -1297,7 +1351,8 @@ function makeSrNode(x, y, w, h, bodyTxt, selectedType, types, save, prefix, N_BG
       badge.textContent=t.label;
       badge.addEventListener('click',e=>{e.stopPropagation();const sel=makePosSel();sel.addEventListener('change',e2=>{e2.stopPropagation();selectedType=e2.target.value;const upd2={};upd2[prefix+'Type']=selectedType;save(upd2);upd();render();});badge.replaceWith(sel);sel.focus();});
       const ta=makeTa(bodyTxt,'belangrijkste bekrachtiger',v=>{bodyTxt=v;const upd2={};upd2[prefix+'Txt']=v;save(upd2);upd();});
-      ta.style.color=TXT; ta.style.textAlign='left';
+      ta.style.color=TXT; ta.style.textAlign='left'; if(initFontSize) ta.style.fontSize=initFontSize;
+      if(onFontSize) _ceFsSave.set(ta, fs=>{initFontSize=fs; onFontSize(fs);});
       row.append(badge,ta);
     }
     body.appendChild(row);
@@ -1309,7 +1364,7 @@ function makeSrNode(x, y, w, h, bodyTxt, selectedType, types, save, prefix, N_BG
 
 
 /* ── FNC box (BA-stijl, inline kleuren) ── */
-function makeFncNode(x, y, w, items, save, N_BG, N_BD, GRN, LGRN, TXT) {
+function makeFncNode(x, y, w, items, save, N_BG, N_BD, GRN, LGRN, TXT, initFontSize, onFontSize) {
   const el = document.createElement('div');
   el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;background:${N_BG};border:1.5px solid ${N_BD};border-radius:6px;padding:5px 8px 5px 18px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
 
@@ -1356,7 +1411,8 @@ function makeFncNode(x, y, w, items, save, N_BG, N_BD, GRN, LGRN, TXT) {
       if (!item.type) {
         const sel=makeCompactSel(val=>{item.type=val;item.txt=ta.value;saveItems();renderItems();});
         const ta=makeTa(item.txt,'feitelijke negatieve consequentie',v=>{item.txt=v;saveItems();});
-        ta.style.color=TXT;
+        ta.style.color=TXT; if(initFontSize) ta.style.fontSize=initFontSize;
+        if(onFontSize) _ceFsSave.set(ta, fs=>{initFontSize=fs; onFontSize(fs);});
         itemWrap.append(sel,ta,del);
       } else {
         const row=document.createElement('div');
@@ -1367,7 +1423,8 @@ function makeFncNode(x, y, w, items, save, N_BG, N_BD, GRN, LGRN, TXT) {
         badge.textContent=t.label;
         badge.addEventListener('click',e=>{e.stopPropagation();const sel=makeCompactSel(val=>{item.type=val;saveItems();renderItems();});badge.replaceWith(sel);sel.focus();});
         const ta=makeTa(item.txt,'feitelijke negatieve consequentie',v=>{item.txt=v;saveItems();});
-        ta.style.color=TXT;
+        ta.style.color=TXT; if(initFontSize) ta.style.fontSize=initFontSize;
+        if(onFontSize) _ceFsSave.set(ta, fs=>{initFontSize=fs; onFontSize(fs);});
         row.append(badge,ta);
         itemWrap.append(row,del);
       }
@@ -1824,7 +1881,8 @@ function buildBACanvas(container, d, save, redraw) {
     el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${N_BG};border:1.5px solid ${N_BD};border-radius:6px;padding:5px 8px;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
     let lbl=null;
     if(lblTxt){lbl=document.createElement('div');lbl.textContent=lblTxt;lbl.style.cssText=`font-size:10px;font-weight:800;color:${N_BD};margin-bottom:2px;letter-spacing:.04em;flex-shrink:0;`;el.appendChild(lbl);}
-    const ta=makeCE(d[key]||'',ph,v=>{d[key]=v;save();}); ta.style.cssText+=`color:${TXT};font-size:13px;`; el.appendChild(ta);
+    const ta=makeCE(d[key]||'',ph,v=>{d[key]=v;save();}); ta.style.cssText+=`color:${TXT};font-size:${d[key+'_fs']||'13px'};`; el.appendChild(ta);
+    _ceFsSave.set(ta, fs => { d[key+'_fs']=fs; save(); });
     liveFill(el, ta, filledBg, filledBd, lbl);
     return el;
   }
@@ -1833,7 +1891,8 @@ function buildBACanvas(container, d, save, redraw) {
     el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:${Math.round(h*.17)}px ${Math.round(w*.1)}px;box-sizing:border-box;overflow:hidden;`;
     let lbl=null;
     if(lblTxt){lbl=document.createElement('div');lbl.textContent=lblTxt;lbl.style.cssText=`font-size:10px;font-weight:800;color:${N_BD};margin-bottom:2px;flex-shrink:0;`;el.appendChild(lbl);}
-    const ta=makeCE(d[key]||'',ph,v=>{d[key]=v;save();}); ta.style.cssText+=`text-align:center;color:${TXT};font-size:13px;`; el.appendChild(ta);
+    const ta=makeCE(d[key]||'',ph,v=>{d[key]=v;save();}); ta.style.cssText+=`text-align:center;color:${TXT};font-size:${d[key+'_fs']||'13px'};`; el.appendChild(ta);
+    _ceFsSave.set(ta, fs => { d[key+'_fs']=fs; save(); });
     liveFill(el, ta, filledBg, filledBd, lbl);
     return el;
   }
@@ -1841,6 +1900,15 @@ function buildBACanvas(container, d, save, redraw) {
     const el=document.createElement('div');
     el.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${REPR_W}px;background:#fafafa;border:1.5px solid #bbb;border-radius:6px;padding:8px 10px;box-sizing:border-box;`;
     const hdr=document.createElement('div'); hdr.textContent='representatieniveaus:'; hdr.style.cssText='font-size:9px;font-weight:800;color:#888;margin-bottom:5px;'; el.appendChild(hdr);
+    const REPR_KEYS = ['reprStimulus','reprResponse','reprBetekenis'];
+    function reprFill() {
+      const filled = REPR_KEYS.some(k => (d[k]||'').trim().length > 0);
+      el.style.background  = filled ? LBLU  : '#fafafa';
+      el.style.borderColor = filled ? BLU   : '#bbb';
+      hdr.style.color      = filled ? BLU   : '#888';
+    }
+    reprFill();
+    el.addEventListener('input', reprFill);
     const sq = d.assocType === 'sequentieel';
     [['reprStimulus','stimulusaspect'],['reprResponse','responsaspect'],['reprBetekenis','betekenisaspect']].forEach(([k,lb])=>{
       const irrelevant = sq && k !== 'reprStimulus';
