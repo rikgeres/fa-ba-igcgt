@@ -2924,7 +2924,10 @@ function buildHT(c, d, save, redrawHT) {
   canvas.appendChild(svg);
 
   /* ── Popup voor bewerken van een sectie ── */
+  const MAX_ITEMS = { gevolgen: 6, kritischeGebeurtenissen: 4 };
+
   function openCardPopup(key, title, hBg, hTxt, cardH) {
+    const maxItems = MAX_ITEMS[key] || Infinity;
     const itemGap = cardH >= 500 ? 16 : cardH >= 350 ? 10 : cardH >= 230 ? 7 : 4;
     const ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;display:flex;align-items:center;justify-content:center;';
@@ -2965,6 +2968,7 @@ function buildHT(c, d, save, redrawHT) {
         ta.addEventListener('keydown', e => {
           if (e.key==='Enter') {
             e.preventDefault();
+            if (d.data[key].length >= maxItems) return;
             d.data[key].splice(i+1,0,''); save(); renderItems();
             const tas=body.querySelectorAll('textarea'); if(tas[i+1]) tas[i+1].focus();
           } else if(e.key==='Backspace' && ta.value==='' && d.data[key].length>1) {
@@ -2983,18 +2987,26 @@ function buildHT(c, d, save, redrawHT) {
         row.append(dot, ta, del);
         body.appendChild(row);
       });
-      /* + Nieuw item knop */
-      const addBtn = document.createElement('button');
-      addBtn.textContent = '+ item toevoegen';
-      addBtn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:13px;color:#aaa;text-align:left;padding:4px 0 4px 18px;';
-      addBtn.addEventListener('mouseenter', () => addBtn.style.color=hBg);
-      addBtn.addEventListener('mouseleave', () => addBtn.style.color='#aaa');
-      addBtn.addEventListener('click', () => {
-        if (!d.data[key]) d.data[key]=[];
-        d.data[key].push(''); save(); renderItems();
-        const tas=body.querySelectorAll('textarea'); if(tas.length) tas[tas.length-1].focus();
-      });
-      body.appendChild(addBtn);
+      /* + Nieuw item knop (verborgen bij max) */
+      if ((d.data[key]||[]).length < maxItems) {
+        const addBtn = document.createElement('button');
+        addBtn.textContent = '+ item toevoegen';
+        addBtn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:13px;color:#aaa;text-align:left;padding:4px 0 4px 18px;';
+        addBtn.addEventListener('mouseenter', () => addBtn.style.color=hBg);
+        addBtn.addEventListener('mouseleave', () => addBtn.style.color='#aaa');
+        addBtn.addEventListener('click', () => {
+          if (!d.data[key]) d.data[key]=[];
+          if (d.data[key].length >= maxItems) return;
+          d.data[key].push(''); save(); renderItems();
+          const tas=body.querySelectorAll('textarea'); if(tas.length) tas[tas.length-1].focus();
+        });
+        body.appendChild(addBtn);
+      } else {
+        const lim = document.createElement('div');
+        lim.textContent = `Maximum van ${maxItems} items bereikt`;
+        lim.style.cssText = 'font-size:12px;color:#aaa;padding:4px 0 4px 18px;font-style:italic;';
+        body.appendChild(lim);
+      }
     }
 
     if (!d.data[key] || d.data[key].length===0) d.data[key]=[''];
