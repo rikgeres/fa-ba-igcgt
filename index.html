@@ -1127,8 +1127,8 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
   /* ── Titelregel ── */
   c.appendChild(mkTitleRow(d, save, 'FA'));
 
-  /* ── Themakiezer ── */
-  c.appendChild(mkThemePicker(d, id => { save({ theme: id }); if(onRedraw) onRedraw(); }));
+  /* ── Themakiezer (alleen bij bovenste analyse, niet bij siblings) ── */
+  if (!_noGroup) c.appendChild(mkThemePicker(d, id => { save({ theme: id }); if(onRedraw) onRedraw(); }));
 
   /* ══════════════════════════
      CANVAS — BA-stijl (wit, absolute posities, SVG pijlen)
@@ -2538,78 +2538,28 @@ function buildGroupBar(container, d) {
   if (!d.groupId) return;
 
   /* ── Inline schema-renderer voor één analyse ── */
-  function renderInlineSchema(sibling, groupSection, fullList) {
+  function renderInlineSchema(sibling) {
+    // Siblings erven het thema van de bovenste (huidige) analyse
+    sibling.theme = d.theme;
+
     const sec = document.createElement('div');
     sec.className = 'group-section';
     sec.style.cssText = 'border-top:2px solid var(--border);margin-top:4px;position:relative;';
 
-    // Mini-actiebalk: type-badge + titel + prullenbak + pijltjes
-    const miniBar = document.createElement('div');
-    miniBar.className = 'no-print';
-    miniBar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 16px;background:#fafafa;border-bottom:1px solid var(--border);';
-
-    const typeColor = sibling.type==='FA' ? 'var(--fa)' : 'var(--bas)';
-    const typeBadge = document.createElement('span');
-    typeBadge.textContent = sibling.type;
-    typeBadge.style.cssText = `font-size:10px;font-weight:800;background:${typeColor};color:#fff;border-radius:4px;padding:2px 6px;flex-shrink:0;`;
-
-    const titleInp = document.createElement('input');
-    titleInp.type='text'; titleInp.value=sibling.title||'';
-    titleInp.placeholder='titel';
-    titleInp.style.cssText='flex:1;font-size:13px;font-weight:600;border:none;border-bottom:1px dashed #ccc;background:transparent;color:#1D3557;outline:none;padding:1px 0;';
-    titleInp.addEventListener('focus',()=>titleInp.style.borderBottomColor='var(--cgt-blue)');
-    titleInp.addEventListener('blur', ()=>titleInp.style.borderBottomColor='#ccc');
-    titleInp.addEventListener('input',()=>{ sibling.title=titleInp.value; upsert(sibling); });
-
-    // Volgorde
-    const idx = fullList.findIndex(a=>a.id===sibling.id);
-    const mkArr = (icon, disabled, fn) => {
-      const b=document.createElement('button');
-      b.innerHTML=icon; b.disabled=disabled;
-      b.className='no-print';
-      b.style.cssText=`background:none;border:none;cursor:${disabled?'default':'pointer'};color:${disabled?'#ddd':'#999'};font-size:13px;padding:2px 4px;line-height:1;`;
-      b.addEventListener('click',fn); return b;
-    };
-    const swap=(arr,a,b)=>{[arr[a],arr[b]]=[arr[b],arr[a]];};
-    const saveGroupOrder = list => {
-      const allData=load();
-      const newOrder=list.map(a=>a.id);
-      allData.forEach(a=>{ if(a.groupId===d.groupId) a.groupOrder=newOrder; });
-      dump(allData); d.groupOrder=newOrder;
-    };
-
-    const delBtn = mkTrashBtn('no-print', 'Verwijder', () => {
-      if(confirm(`Verwijder deze ${sibling.type}?`)) { remove(sibling.id); sec.remove(); render(); }
-    });
-    delBtn.style.cssText+='background:none;border:none;cursor:pointer;color:#ccc;padding:4px;display:flex;align-items:center;';
-    delBtn.addEventListener('mouseenter',()=>delBtn.style.color='var(--danger)');
-    delBtn.addEventListener('mouseleave',()=>delBtn.style.color='#ccc');
-
-    miniBar.append(
-      typeBadge, titleInp,
-      mkArr('▲', idx===0, ()=>{ const l=[...fullList]; swap(l,idx,idx-1); saveGroupOrder(l); render(); }),
-      mkArr('▼', idx===fullList.length-1, ()=>{ const l=[...fullList]; swap(l,idx,idx+1); saveGroupOrder(l); render(); }),
-      delBtn
-    );
-    sec.appendChild(miniBar);
-
-    // Schema inline renderen
+    // Schema inline renderen (geen minibar, geen themakiezer — die staat bovenaan)
     const schemaWrap = document.createElement('div');
     sec.appendChild(schemaWrap);
 
     if (sibling.type==='FA') {
       const sd = sibling;
       const saveSibling = extra => { if (extra) Object.assign(sd, extra); upsert(sd); };
-      const redrawSibling = () => { schemaWrap.innerHTML=''; buildFA(schemaWrap, sd, saveSibling, true); };
       buildFA(schemaWrap, sd, saveSibling, true);
     } else if (sibling.type==='BA') {
       const sd = sibling;
-      const themeRow2 = document.createElement('div'); schemaWrap.appendChild(themeRow2);
-      const cfgBar2   = document.createElement('div'); schemaWrap.appendChild(cfgBar2);
+      const cfgBar2    = document.createElement('div'); schemaWrap.appendChild(cfgBar2);
       const canvasWrap2 = document.createElement('div'); canvasWrap2.style.cssText='padding:20px 24px;overflow:auto;'; schemaWrap.appendChild(canvasWrap2);
       const saveSibling = extra => { if (extra) Object.assign(sd, extra); upsert(sd); };
       const redrawSibling = () => {
-        themeRow2.innerHTML=''; themeRow2.appendChild(mkThemePicker(sd, id=>{ saveSibling({theme:id}); redrawSibling(); }));
         buildBACfgBar(cfgBar2, sd, saveSibling, redrawSibling);
         canvasWrap2.innerHTML=''; buildBACanvas(canvasWrap2, sd, saveSibling, redrawSibling);
       };
@@ -2638,7 +2588,7 @@ function buildGroupBar(container, d) {
     const others = siblings.filter(s => s.id !== d.id);
 
     others.forEach(s => {
-      container.appendChild(renderInlineSchema(s, container, siblings));
+      inner.appendChild(renderInlineSchema(s));
     });
 
     /* ── + knop onderaan links ── */
