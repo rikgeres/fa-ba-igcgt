@@ -987,7 +987,7 @@ function pgHome(c) {
       if (isMulti) {
         // Primaire analyse: diegene waarvan id === groupId
         const primary = members.find(m => m.id === gid) || members[0];
-        const groupTitle = primary.groupTitle || members.map(m=>m.title).filter(Boolean).join(', ') || '';
+        const groupTitle = members.map(m=>m.title).filter(Boolean).join(', ');
         const types = [...new Set(members.map(m => m.type))].join(' + ');
         el.innerHTML = `
           <div class="badge badge-faba">FABA</div>
@@ -1179,15 +1179,7 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
   /* ── Titelregel ── */
   {
     const isGroup = !_noGroup && load().filter(a => a.groupId === d.groupId).length > 1;
-    const typeLabel = isGroup ? 'FABA' : 'FA';
-    const groupInfo = isGroup ? {
-      title: d.groupTitle || '',
-      onSave: val => {
-        load().filter(a => a.groupId === d.groupId).forEach(a => upsert({ ...a, groupTitle: val }));
-        d.groupTitle = val;
-      }
-    } : null;
-    c.appendChild(mkTitleRow(d, save, typeLabel, groupInfo));
+    c.appendChild(mkTitleRow(d, save, isGroup ? 'FABA' : 'FA'));
   }
 
   /* ── Themakiezer (alleen bij bovenste analyse, niet bij siblings) ── */
@@ -1693,15 +1685,7 @@ function pgBA(c, id) {
   /* ── Titelregel ── */
   {
     const isGroup = load().filter(a => a.groupId === d.groupId).length > 1;
-    const typeLabel = isGroup ? 'FABA' : 'BA';
-    const groupInfo = isGroup ? {
-      title: d.groupTitle || '',
-      onSave: val => {
-        load().filter(a => a.groupId === d.groupId).forEach(a => upsert({ ...a, groupTitle: val }));
-        d.groupTitle = val;
-      }
-    } : null;
-    c.appendChild(mkTitleRow(d, save, typeLabel, groupInfo));
+    c.appendChild(mkTitleRow(d, save, isGroup ? 'FABA' : 'BA'));
   }
 
   /* ── Themakiezer ── */
@@ -2508,7 +2492,7 @@ function buildBACanvas(container, d, save, redraw) {
 /* ─────────────────────────────────────────
    Titelregel — bovenaan FA en BA
 ───────────────────────────────────────── */
-function mkTitleRow(d, save, typeLabel, groupInfo) {
+function mkTitleRow(d, save, typeLabel) {
   const row = document.createElement('div');
   row.className = 'no-print';
   row.style.cssText = 'padding:10px 24px 4px;display:flex;align-items:baseline;gap:8px;';
@@ -2519,29 +2503,11 @@ function mkTitleRow(d, save, typeLabel, groupInfo) {
   badge.style.cssText = 'font-size:15px;font-weight:800;color:#4A6E8A;letter-spacing:.06em;flex-shrink:0;';
   row.appendChild(badge);
 
-  /* Groepstitel-input (alleen als groupInfo opgegeven) */
-  if (groupInfo) {
-    const gInp = document.createElement('input');
-    gInp.type = 'text';
-    gInp.value = groupInfo.title || '';
-    gInp.placeholder = 'naam FABA';
-    gInp.style.cssText = 'flex:1;font-size:13px;font-weight:400;border:none;border-bottom:1px dashed #ccc;background:transparent;color:#1D3557;outline:none;padding:1px 0;transition:border-color .15s,border-style .15s;';
-    gInp.addEventListener('focus', () => { gInp.style.borderBottomColor='#4A6E8A'; gInp.style.borderBottomStyle='solid'; gInp.style.fontWeight='600'; });
-    gInp.addEventListener('blur',  () => { gInp.style.borderBottomColor='#ccc';    gInp.style.borderBottomStyle='dashed'; gInp.style.fontWeight=gInp.value?'600':'400'; });
-    gInp.addEventListener('input', () => groupInfo.onSave(gInp.value));
-    row.appendChild(gInp);
-
-    const sep = document.createElement('span');
-    sep.textContent = '|';
-    sep.style.cssText = 'color:#ccc;flex-shrink:0;font-weight:300;';
-    row.appendChild(sep);
-  }
-
-  /* Analyse-titel-input */
+  /* Titel-input */
   const inp = document.createElement('input');
   inp.type = 'text';
   inp.value = d.title || '';
-  inp.placeholder = groupInfo ? 'titel analyse' : 'titel';
+  inp.placeholder = 'titel';
   inp.style.cssText = 'flex:1;font-size:13px;font-weight:400;border:none;border-bottom:1px dashed #ccc;background:transparent;color:#1D3557;outline:none;padding:1px 0;transition:border-color .15s, border-style .15s;';
   inp.addEventListener('focus', () => { inp.style.borderBottomColor = '#4A6E8A'; inp.style.borderBottomStyle = 'solid'; inp.style.fontWeight = '600'; });
   inp.addEventListener('blur',  () => { inp.style.borderBottomColor = '#ccc';    inp.style.borderBottomStyle = 'dashed'; inp.style.fontWeight = d.title ? '600' : '400'; });
