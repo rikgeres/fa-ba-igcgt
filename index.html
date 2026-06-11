@@ -1148,22 +1148,16 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
 
   const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Print', () => printAs('portrait', 0.9));
 
-  const btnClip = mkBtn('btn-ghost btn-sm', '📋 Kopieer / Download', () => {
+  const btnClip = mkBtn('btn-ghost btn-sm', '📋 Kopieer', () => {
     const canvas = c.querySelector('.fa-canvas') || document.querySelector('.fa-canvas');
-    if (!canvas) { toast('Kan schema niet vinden', 2000); return; }
-    toast('Bezig…', 3000);
+    if (!canvas) return;
+    toast('Bezig met kopiëren…', 1500);
     const bg = THEMES[d.theme||'blauw'].fa.bg;
-    const title = (d.title || 'analyse').replace(/[^a-z0-9]/gi,'_').toLowerCase();
     html2canvas(canvas, { backgroundColor: bg, scale: 2, useCORS: true }).then(cvs => {
       cvs.toBlob(blob => {
-        // 1. Probeer clipboard
-        if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
-          navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-            .then(() => toast('Gekopieerd naar klembord ✓'))
-            .catch(() => downloadImg(blob, title));
-        } else {
-          downloadImg(blob, title);
-        }
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+          .then(() => toast('Gekopieerd naar klembord ✓'))
+          .catch(() => toast('Kopiëren mislukt — probeer opnieuw', 3000));
       });
     });
   });
@@ -1662,20 +1656,15 @@ function pgBA(c, id) {
   const bar = document.createElement('div');
   bar.className = 'action-bar no-print';
   const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Print', () => printAs('portrait', 0.7));
-  const btnClip  = mkBtn('btn-ghost btn-sm', '📋 Kopieer / Download', () => {
+  const btnClip  = mkBtn('btn-ghost btn-sm', '📋 Kopieer', () => {
     const cnv = c.querySelector('.ba-canvas') || document.querySelector('.ba-canvas');
-    if (!cnv) { toast('Kan schema niet vinden', 2000); return; }
-    toast('Bezig…', 3000);
-    const title = (d.title || 'analyse').replace(/[^a-z0-9]/gi,'_').toLowerCase();
+    if (!cnv) return;
+    toast('Bezig met kopiëren…', 1500);
     html2canvas(cnv, { backgroundColor: '#fff', scale: 2, useCORS: true }).then(cv => {
       cv.toBlob(blob => {
-        if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
-          navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-            .then(() => toast('Gekopieerd naar klembord ✓'))
-            .catch(() => downloadImg(blob, title));
-        } else {
-          downloadImg(blob, title);
-        }
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+          .then(() => toast('Gekopieerd naar klembord ✓'))
+          .catch(() => toast('Kopiëren mislukt — probeer opnieuw', 3000));
       });
     });
   });
@@ -2825,31 +2814,23 @@ function buildHT(c, d, save, redrawHT) {
 
   const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Print', () => printAs('landscape', 0.76));
 
-  const btnClip = mkBtn('btn-ghost btn-sm', '📋 Kopieer / Download', () => {
+  const btnClip = mkBtn('btn-ghost btn-sm', '📋 Kopieer', () => {
     const htCanvas = c.querySelector('.ht-canvas');
     if (!htCanvas) return;
-    toast('Bezig…', 3000);
-    const title = (d.title || 'ht').replace(/[^a-z0-9]/gi,'_').toLowerCase();
-
-    // Reset tijdelijk de schermschaal zodat html2canvas op 1:1 vangt
+    toast('Bezig met kopiëren…', 1500);
     const sw = c.querySelector('.ht-scale-wrap');
     const prevTransform = sw ? sw.style.transform : '';
     if (sw) sw.style.transform = 'scale(1)';
-
     setTimeout(() => {
       html2canvas(htCanvas, { backgroundColor:'#ffffff', scale:2, useCORS:true,
         width: htCanvas.offsetWidth, height: htCanvas.offsetHeight }).then(cvs => {
         if (sw) sw.style.transform = prevTransform;
         cvs.toBlob(blob => {
-          if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
-            navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
-              .then(() => toast('Gekopieerd naar klembord ✓'))
-              .catch(() => downloadImg(blob, title));
-          } else {
-            downloadImg(blob, title);
-          }
+          navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
+            .then(() => toast('Gekopieerd naar klembord ✓'))
+            .catch(() => toast('Kopiëren mislukt — probeer opnieuw', 3000));
         });
-      }).catch(() => { if (sw) sw.style.transform = prevTransform; toast('Fout bij renderen', 3000); });
+      }).catch(() => { if (sw) sw.style.transform = prevTransform; });
     }, 80);
   });
 
