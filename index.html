@@ -2558,16 +2558,16 @@ function buildGroupBar(container, d) {
     sec.appendChild(schemaWrap);
 
     if (sibling.type==='FA') {
-      let sd = sibling;
-      const saveSibling = extra => { sd={...sd,...extra}; upsert(sd); };
+      const sd = sibling;
+      const saveSibling = extra => { if (extra) Object.assign(sd, extra); upsert(sd); };
       const redrawSibling = () => { schemaWrap.innerHTML=''; buildFA(schemaWrap, sd, saveSibling, true); };
       buildFA(schemaWrap, sd, saveSibling, true);
     } else if (sibling.type==='BA') {
-      let sd = sibling;
+      const sd = sibling;
       const themeRow2 = document.createElement('div'); schemaWrap.appendChild(themeRow2);
       const cfgBar2   = document.createElement('div'); schemaWrap.appendChild(cfgBar2);
       const canvasWrap2 = document.createElement('div'); canvasWrap2.style.cssText='padding:20px 24px;overflow:auto;'; schemaWrap.appendChild(canvasWrap2);
-      const saveSibling = extra => { sd={...sd,...extra}; upsert(sd); };
+      const saveSibling = extra => { if (extra) Object.assign(sd, extra); upsert(sd); };
       const redrawSibling = () => {
         themeRow2.innerHTML=''; themeRow2.appendChild(mkThemePicker(sd, id=>{ saveSibling({theme:id}); redrawSibling(); }));
         buildBACfgBar(cfgBar2, sd, saveSibling, redrawSibling);
@@ -2609,7 +2609,7 @@ function buildGroupBar(container, d) {
     const plusBtn = document.createElement('button');
     plusBtn.title = 'Voeg analyse toe';
     plusBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
-    plusBtn.style.cssText = 'width:24px;height:24px;border-radius:50%;border:1.5px solid #aaa;background:#fff;color:#888;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;display:none;';
+    plusBtn.style.cssText = 'width:24px;height:24px;border-radius:50%;border:1.5px solid #aaa;background:#fff;color:#888;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
     plusBtn.addEventListener('mouseenter',()=>{plusBtn.style.borderColor='var(--cgt-blue)';plusBtn.style.color='var(--cgt-blue)';});
     plusBtn.addEventListener('mouseleave',()=>{plusBtn.style.borderColor='#aaa';plusBtn.style.color='#888';});
 
