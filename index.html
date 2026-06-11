@@ -1150,20 +1150,29 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
   const btnClip = mkBtn('btn-ghost btn-sm', '📋 Kopieer', () => {
     const canvas = c.querySelector('.fa-canvas');
     if (!canvas) return;
-    toast('Bezig met kopiëren…', 1500);
-    html2canvas(canvas, { backgroundColor: THEMES[d.theme||'blauw'].fa.bg, scale: 2, useCORS: true }).then(cvs => {
-      cvs.toBlob(blob => {
-        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-          .then(() => toast('Gekopieerd naar klembord ✓'))
-          .catch(() => {
-            // Fallback: open in nieuw venster
-            const url = cvs.toDataURL();
-            const w = window.open();
-            w.document.write(`<img src="${url}" style="max-width:100%">`);
-            toast('Afbeelding geopend — sla op en plak handmatig', 4000);
-          });
+    toast('Bezig met kopiëren…', 2500);
+    const bg = THEMES[d.theme||'blauw'].fa.bg;
+    // Geef ClipboardItem direct een Promise mee zodat user-gesture geldig blijft (Safari/Chrome vereiste)
+    const imgPromise = html2canvas(canvas, { backgroundColor: bg, scale: 2, useCORS: true })
+      .then(cvs => new Promise(res => cvs.toBlob(res)));
+    if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
+      navigator.clipboard.write([new ClipboardItem({ 'image/png': imgPromise })])
+        .then(() => toast('Gekopieerd naar klembord ✓'))
+        .catch(() => imgPromise.then(blob => {
+          const url = URL.createObjectURL(blob);
+          const w = window.open(url);
+          if (!w) toast('Schakel pop-ups in om de afbeelding te openen', 4000);
+          else toast('Afbeelding geopend — sla op en plak handmatig', 4000);
+        }));
+    } else {
+      // Fallback voor browsers zonder ClipboardItem
+      imgPromise.then(blob => {
+        const url = URL.createObjectURL(blob);
+        const w = window.open(url);
+        if (!w) toast('Schakel pop-ups in om de afbeelding te openen', 4000);
+        else toast('Afbeelding geopend — sla op en plak handmatig', 4000);
       });
-    });
+    }
   });
 
   const btnPreview = mkBtn('btn-ghost btn-sm', '👁 Preview', () => buildPreviewOverlay(d));
@@ -1663,14 +1672,26 @@ function pgBA(c, id) {
   const btnClip  = mkBtn('btn-ghost btn-sm', '📋 Kopieer', () => {
     const cnv = c.querySelector('.ba-canvas');
     if (!cnv) return;
-    toast('Bezig met kopiëren…', 1500);
-    html2canvas(cnv, { backgroundColor: '#fff', scale: 2, useCORS: true }).then(cv => {
-      cv.toBlob(bl => {
-        navigator.clipboard.write([new ClipboardItem({ 'image/png': bl })])
-          .then(() => toast('Gekopieerd naar klembord ✓'))
-          .catch(() => { const u = cv.toDataURL(); const w = window.open(); w.document.write(`<img src="${u}" style="max-width:100%">`); });
+    toast('Bezig met kopiëren…', 2500);
+    const imgPromise2 = html2canvas(cnv, { backgroundColor: '#fff', scale: 2, useCORS: true })
+      .then(cv => new Promise(res => cv.toBlob(res)));
+    if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
+      navigator.clipboard.write([new ClipboardItem({ 'image/png': imgPromise2 })])
+        .then(() => toast('Gekopieerd naar klembord ✓'))
+        .catch(() => imgPromise2.then(blob => {
+          const url = URL.createObjectURL(blob);
+          const w = window.open(url);
+          if (!w) toast('Schakel pop-ups in om de afbeelding te openen', 4000);
+          else toast('Afbeelding geopend — sla op en plak handmatig', 4000);
+        }));
+    } else {
+      imgPromise2.then(blob => {
+        const url = URL.createObjectURL(blob);
+        const w = window.open(url);
+        if (!w) toast('Schakel pop-ups in om de afbeelding te openen', 4000);
+        else toast('Afbeelding geopend — sla op en plak handmatig', 4000);
       });
-    });
+    }
   });
   const btnPreview = mkBtn('btn-ghost btn-sm', '👁 Preview', () => buildPreviewOverlay(d));
   const btnUndo = mkBtn('btn-ghost btn-sm', '↩ Ongedaan', () => baUndo());
