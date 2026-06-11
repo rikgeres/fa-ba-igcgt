@@ -511,9 +511,11 @@
 <div class="toast" id="toast"></div>
 
 <script>
-/* ══════════════════════════════════════════
-   OPSLAG
-══════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   OPSLAG & DATA
+   localStorage-sleutel, CRUD-helpers (load/dump/upsert/remove),
+   uid-generator en datumhulp.
+══════════════════════════════════════════════════════════════ */
 const KEY   = 'igcgt_v3';
 const load  = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; } };
 const dump  = d  => localStorage.setItem(KEY, JSON.stringify(d));
@@ -531,9 +533,11 @@ const today  = () => new Date().toISOString().slice(0,10);
 /* Groepering: pending groupId bij aanmaken via + knop */
 let _pendingGroup = null;
 
-/* ─────────────────────────────────────────
-   Kleurthema's
-───────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════
+   THEMA'S & KLEUREN
+   Beschikbare kleurthema's (blauw, groen, paars, oranje, rood).
+   mkThemePicker bouwt de kiezer-UI.
+══════════════════════════════════════════════════════════════ */
 const THEMES = {
   blauw: { label:'Blauw',  swatch:'#2A76A2',
     ba:{ blu:'#2A76A2', lblu:'#DDEAF7', grn:'#2A76A2', lgrn:'#EBF5FB', osl:'#E8F4FA', osb:'#7AAEC4' },
@@ -586,9 +590,14 @@ function mkThemePicker(d, onPick) {
   return row;
 }
 
-/* ══════════════════════════════════════════
-   ROUTER
-══════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   ROUTER & NAVIGATIE
+   Hash-gebaseerde routing (go, route, render).
+   Zwevende opmaak-toolbar (vet + lettergrootte) voor alle
+   contenteditable velden in FA en BA.
+   Print-helper printAs() voor correct A4-formaat per sectie.
+══════════════════════════════════════════════════════════════ */
+/* ── Router ── */
 const go = path => { location.hash = path; };
 window.addEventListener('hashchange', render);
 
@@ -714,24 +723,13 @@ function route() {
   return { seg: p[0] || 'home', p1: p[1] };
 }
 
-/* ══════════════════════════════════════════
-   TOAST
-══════════════════════════════════════════ */
-const toast = (msg, ms=2000) => {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), ms);
-};
-
-/* ══════════════════════════════════════════
-   HTML ESCAPING
-══════════════════════════════════════════ */
-const esc   = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const escBr = s => esc(s).replace(/\n/g,'<br>');
-
-/* ══════════════════════════════════════════
-   RENDER
-══════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   ALGEMENE HULPFUNCTIES
+   toast()   — korte statusmelding onderaan het scherm
+   esc/escBr — HTML-escaping voor veilige tekstweergave
+   render()  — centrale render-dispatcher op basis van hash
+   mkBtn / mkTrashBtn / addFab — UI-bouwstenen voor knoppen
+══════════════════════════════════════════════════════════════ */
 function render() {
   const { seg, p1 } = route();
   const main = document.getElementById('main');
@@ -1008,9 +1006,15 @@ function openExpand(labelTxt, helpTxt, currentVal, onSave) {
   ov.querySelector('#exp-save').onclick = () => { onSave(ta.value.trim()); close(); };
 }
 
-/* ══════════════════════════════════════════
-   FA — VISUEEL DIAGRAM (bewerken + bekijken in één)
-══════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   FA — FUNCTIEANALYSE
+   pgFA()       — pagina-opbouw (laden/aanmaken analyse)
+   buildFA()    — canvas met Sd, R, Sr-pos-repr en FNC
+   makeSrNode() — ovaalvorm voor Sr-pos-repr (met consequent-kiezer)
+   makeFncNode()— rechthoek voor feitelijke negatieve consequentie
+   mailFA()     — klembord-export als platte tekst
+   SR_POS/NEG_TYPES — versterkings- en straftypen met labels
+══════════════════════════════════════════════════════════════ */
 
 const SR_POS_TYPES = [
   { val:'+s+', label:'+S+', color:'#16A34A', title:'Positieve versterker: positief stimulus toegevoegd' },
@@ -1252,7 +1256,14 @@ function liveFillG(el, ta, filledBg, filledBd, emptyBg, emptyBd, lbl) {
   ta.addEventListener('input', upd);
 }
 
-/* ── Gedeelde textarea-helper voor inline bewerking ── */
+/* ══════════════════════════════════════════════════════════════
+   GEDEELDE INVOER- & VULHULPFUNCTIES
+   Gebruikt door zowel FA als BA.
+   makeTa / makeCE  — contenteditable div met value-shim en bold-ondersteuning
+   liveFill         — kleurt een vak in zodra het ingevuld is
+   makeInlineNode / makeNode — generieke knoop-bouwers (preview/schema)
+   mkTitleRow       — titelregel bovenaan elke analyse
+══════════════════════════════════════════════════════════════ */
 function makeTa(val, placeholder, onChange) {
   const div = document.createElement('div');
   div.contentEditable = 'true';
@@ -1505,7 +1516,15 @@ function mailFA(d) {
    BA — BETEKENISANALYSE  v2
 ══════════════════════════════════════════ */
 
-/* Data model v2:
+/* ══════════════════════════════════════════════════════════════
+   BA — BETEKENISANALYSE
+   pgBA()           — pagina-opbouw (laden/aanmaken analyse)
+   buildBACfgBar()  — configuratiebalk (subtype, opties)
+   buildBACanvas()  — canvas met CS, US/UR, CR, ovaaltjes en archieven
+   buildPreviewOverlay() — read-only voorvertoning van het schema
+   mkTitleRow()     — gedeelde titelregel (ook FA)
+
+   Data model v2:
    centralType : 'usur' | 'kernthema' | 'archief'
      'usur'     – gewone US/UR-repr ovaal
      'kernthema'– ovaal met "van een kernthema" label
@@ -1514,7 +1533,7 @@ function mailFA(d) {
    centralArchiefLabel– label in archief-ovaal
    extraOvals  [{id,text}] – boven de archief-ovaal (type 2b bewijzen)
    zweefArchieven [{id,label}] – zwevende archieven bóven de centrale ovaal (max 3)
-*/
+══════════════════════════════════════════════════════════════ */
 function pgBA(c, id) {
   const isNew = id === 'new';
 
@@ -2504,9 +2523,12 @@ function buildPreviewOverlay(d) {
   document.body.appendChild(overlay);
 }
 
-/* ─────────────────────────────────────────
-   Groepbalk — gerelateerde FA's en BA's
-───────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════
+   GROEPSBALK — GEKOPPELDE ANALYSES
+   buildGroupBar() toont gekoppelde FA's en BA's onder de huidige
+   analyse. Via de + knop kun je een nieuwe FA of BA koppelen.
+   Analyses delen een groupId en kunnen worden herordend.
+══════════════════════════════════════════════════════════════ */
 function buildGroupBar(container, d) {
   if (!d.groupId) return;
 
@@ -2667,9 +2689,17 @@ function buildGroupBar(container, d) {
   render();
 }
 
-/* ══════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    HT — HOLISTISCHE THEORIE
-══════════════════════════════════════════ */
+   pgHT()              — pagina-opbouw (laden/aanmaken analyse)
+   buildHT()           — canvas met alle kaarten op vaste posities
+   makeCardBody()      — preview-inhoud per kaart (bulletpunten)
+   makeInlineCardBody()— preview voor kritische gebeurtenissen (2×2 grid)
+   openCardPopup()     — bewerkpopup per kaart
+   openHtInfo()        — info-modal per kaarttype
+   openHtFullscreen()  — volledig scherm preview van het schema
+   HT_INFO             — informatieteksten per kaarttype
+══════════════════════════════════════════════════════════════ */
 function pgHT(c, id) {
   const isNew = id === 'new';
   const emptyData = () => ({
@@ -3255,9 +3285,12 @@ function openHtFullscreen(schemaEl) {
   });
 }
 
-/* ══════════════════════════════════════════
-   HULPFUNCTIES
-══════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   UI-BOUWSTENEN
+   addFab()      — zwevende + knop rechtsonder
+   mkBtn()       — standaard knop met klasse en klikhandler
+   mkTrashBtn()  — prullenbak-knop met bevestigingsdialoog
+══════════════════════════════════════════════════════════════ */
 function addFab(fn) {
   const b = document.createElement('button');
   b.className = 'fab no-print'; b.textContent = '+'; b.title = 'Nieuwe analyse';
