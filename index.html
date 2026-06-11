@@ -1148,8 +1148,8 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
   const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Print', () => printAs('portrait', 0.9));
 
   const btnClip = mkBtn('btn-ghost btn-sm', '📋 Kopieer / Download', () => {
-    const canvas = c.querySelector('.fa-canvas');
-    if (!canvas) return;
+    const canvas = c.querySelector('.fa-canvas') || document.querySelector('.fa-canvas');
+    if (!canvas) { toast('Kan schema niet vinden', 2000); return; }
     toast('Bezig…', 3000);
     const bg = THEMES[d.theme||'blauw'].fa.bg;
     const title = (d.title || 'analyse').replace(/[^a-z0-9]/gi,'_').toLowerCase();
@@ -1662,8 +1662,8 @@ function pgBA(c, id) {
   bar.className = 'action-bar no-print';
   const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Print', () => printAs('portrait', 0.7));
   const btnClip  = mkBtn('btn-ghost btn-sm', '📋 Kopieer / Download', () => {
-    const cnv = c.querySelector('.ba-canvas');
-    if (!cnv) return;
+    const cnv = c.querySelector('.ba-canvas') || document.querySelector('.ba-canvas');
+    if (!cnv) { toast('Kan schema niet vinden', 2000); return; }
     toast('Bezig…', 3000);
     const title = (d.title || 'analyse').replace(/[^a-z0-9]/gi,'_').toLowerCase();
     html2canvas(cnv, { backgroundColor: '#fff', scale: 2, useCORS: true }).then(cv => {
@@ -2824,33 +2824,31 @@ function buildHT(c, d, save, redrawHT) {
 
   const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Print', () => printAs('landscape', 0.76));
 
-  const btnClip = mkBtn('btn-ghost btn-sm', '📋 Kopieer', () => {
+  const btnClip = mkBtn('btn-ghost btn-sm', '📋 Kopieer / Download', () => {
     const htCanvas = c.querySelector('.ht-canvas');
     if (!htCanvas) return;
-    toast('Bezig met kopiëren…', 2000);
+    toast('Bezig…', 3000);
+    const title = (d.title || 'ht').replace(/[^a-z0-9]/gi,'_').toLowerCase();
 
     // Reset tijdelijk de schermschaal zodat html2canvas op 1:1 vangt
     const sw = c.querySelector('.ht-scale-wrap');
     const prevTransform = sw ? sw.style.transform : '';
     if (sw) sw.style.transform = 'scale(1)';
 
-    // Kleine vertraging zodat de browser de layout herberekent
     setTimeout(() => {
       html2canvas(htCanvas, { backgroundColor:'#ffffff', scale:2, useCORS:true,
         width: htCanvas.offsetWidth, height: htCanvas.offsetHeight }).then(cvs => {
-        // Herstel schermschaal
         if (sw) sw.style.transform = prevTransform;
         cvs.toBlob(blob => {
-          navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
-            .then(() => toast('Gekopieerd naar klembord ✓'))
-            .catch(() => {
-              const url = cvs.toDataURL();
-              const w = window.open();
-              w.document.write(`<img src="${url}" style="max-width:100%">`);
-              toast('Afbeelding geopend — sla op en plak handmatig', 4000);
-            });
+          if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
+            navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
+              .then(() => toast('Gekopieerd naar klembord ✓'))
+              .catch(() => downloadImg(blob, title));
+          } else {
+            downloadImg(blob, title);
+          }
         });
-      }).catch(() => { if (sw) sw.style.transform = prevTransform; });
+      }).catch(() => { if (sw) sw.style.transform = prevTransform; toast('Fout bij renderen', 3000); });
     }, 80);
   });
 
