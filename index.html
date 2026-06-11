@@ -2870,12 +2870,12 @@ function buildHT(c, d, save, redrawHT) {
   /* ── Groepskaarten (achtergrond, z=0) ── */
   function makeGroupCard(x, y, w, h, title, infoKey) {
     const el = document.createElement('div');
-    el.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;border:1.5px solid ${ht.p};display:flex;flex-direction:column;overflow:hidden;z-index:0;`;
+    el.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;border:2px solid ${ht.p};display:flex;flex-direction:column;overflow:hidden;z-index:0;`;
     const hdr = document.createElement('div');
     hdr.className = 'ht-card-hdr';
-    hdr.style.cssText = `position:relative;height:36px;min-height:36px;background:${ht.p};color:#fff;display:flex;align-items:center;padding:0 10px 0 10px;font-size:14px;font-weight:600;letter-spacing:.01em;flex:0 0 auto;`;
+    hdr.style.cssText = `position:relative;height:44px;min-height:44px;background:${ht.p};color:#fff;display:flex;align-items:center;padding:0 14px;font-size:16px;font-weight:700;letter-spacing:.01em;flex:0 0 auto;`;
     const span = document.createElement('span');
-    span.style.flex = '1';
+    span.style.cssText = 'flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;';
     span.textContent = title;
     const iBtn = document.createElement('button');
     iBtn.className = 'ht-info-btn no-print';
@@ -3016,10 +3016,10 @@ function buildHT(c, d, save, redrawHT) {
       row.style.cssText = 'display:flex;align-items:flex-start;gap:4px;';
       const dot = document.createElement('span');
       dot.textContent = '●';
-      dot.style.cssText = 'font-size:10px;margin-top:3px;color:#555;flex-shrink:0;line-height:1.4;';
+      dot.style.cssText = 'font-size:10px;margin-top:4px;color:#374151;flex-shrink:0;line-height:1.4;';
       const txt = document.createElement('span');
       txt.textContent = val;
-      txt.style.cssText = `font-size:15px;font-weight:500;line-height:${lh};color:#111;word-break:break-word;flex:1;`;
+      txt.style.cssText = `font-size:15px;font-weight:500;line-height:${lh};color:#1f2937;word-break:break-word;flex:1;`;
       row.append(dot, txt);
       return row;
     }
@@ -3036,24 +3036,24 @@ function buildHT(c, d, save, redrawHT) {
       const vals = (d.data[key]||[]).filter(v => v.trim());
 
       if (vals.length === 0) {
-        wrap2.style.cssText = 'flex:1;overflow:hidden;padding:5px 8px;display:flex;align-items:center;cursor:pointer;';
+        wrap2.style.cssText = 'flex:1;overflow:hidden;padding:8px 14px;display:flex;align-items:center;cursor:pointer;';
         const ph = document.createElement('span');
         ph.textContent = 'Klik om toe te voegen…';
-        ph.style.cssText = 'font-size:14px;color:#ccc;font-style:italic;';
+        ph.style.cssText = 'font-size:14px;color:#9ca3af;font-style:italic;';
         wrap2.appendChild(ph);
         return;
       }
 
       /* Gevolgschade: 2-kolom grid bij meer dan 3 items — items lopen van linksboven naar rechtsboven */
       if (key === 'gevolgen' && vals.length > 3) {
-        wrap2.style.cssText = 'flex:1;overflow:hidden;padding:4px 8px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);grid-auto-flow:column;gap:2px 8px;cursor:pointer;';
+        wrap2.style.cssText = 'flex:1;overflow:hidden;padding:6px 14px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);grid-auto-flow:column;gap:2px 8px;cursor:pointer;';
         vals.slice(0,6).forEach(v => wrap2.appendChild(mkDotRow(v, 1.3)));
         return;
       }
 
       /* Standaard: één kolom, space-evenly voor automatische verdeling */
       const lh = cardH >= 500 ? 1.5 : cardH >= 350 ? 1.4 : 1.3;
-      wrap2.style.cssText = `flex:1;overflow:hidden;padding:5px 8px;display:flex;flex-direction:column;justify-content:space-evenly;cursor:pointer;${centered ? 'align-items:center;' : ''}`;
+      wrap2.style.cssText = `flex:1;overflow:hidden;padding:8px 14px;display:flex;flex-direction:column;justify-content:space-evenly;cursor:pointer;${centered ? 'align-items:center;' : ''}`;
       vals.forEach(v => wrap2.appendChild(mkDotRow(v, lh)));
     }
 
@@ -3090,22 +3090,22 @@ function buildHT(c, d, save, redrawHT) {
       wrap2.innerHTML = '';
       const vals = (d.data[key]||[]).filter(s => s.trim());
       if (vals.length === 0) {
-        wrap2.style.cssText = 'flex:1;overflow:hidden;padding:3px 10px;display:flex;align-items:center;cursor:pointer;';
+        wrap2.style.cssText = 'flex:1;overflow:hidden;padding:4px 14px;display:flex;align-items:center;cursor:pointer;';
         const ph = document.createElement('span');
         ph.textContent = 'Klik om toe te voegen…';
-        ph.style.cssText = 'font-size:14px;color:#ccc;font-style:italic;';
+        ph.style.cssText = 'font-size:14px;color:#9ca3af;font-style:italic;';
         wrap2.appendChild(ph);
         return;
       }
       /* 2×2 grid — items lopen van linksboven naar rechtsboven */
-      wrap2.style.cssText = 'flex:1;overflow:hidden;padding:3px 10px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(2,1fr);grid-auto-flow:column;gap:2px 8px;cursor:pointer;';
+      wrap2.style.cssText = 'flex:1;overflow:hidden;padding:4px 14px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(2,1fr);grid-auto-flow:column;gap:2px 8px;cursor:pointer;';
       vals.slice(0,4).forEach(v => {
         const row = document.createElement('div');
         row.style.cssText = 'display:flex;align-items:center;gap:3px;overflow:hidden;';
         const dot = document.createElement('span');
-        dot.textContent = '●'; dot.style.cssText = 'font-size:9px;color:#555;flex-shrink:0;';
+        dot.textContent = '●'; dot.style.cssText = 'font-size:9px;color:#374151;flex-shrink:0;';
         const txt = document.createElement('span');
-        txt.textContent = v; txt.style.cssText = 'font-size:14px;font-weight:500;line-height:1.3;color:#111;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;';
+        txt.textContent = v; txt.style.cssText = 'font-size:14px;font-weight:500;line-height:1.3;color:#1f2937;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;';
         row.append(dot, txt); wrap2.appendChild(row);
       });
     }
@@ -3133,13 +3133,13 @@ function buildHT(c, d, save, redrawHT) {
   CARDS.forEach(({ key, title, x, y, w, h, v, border, centered, inline, z }) => {
     const col = VAR[v];
     const card = document.createElement('div');
-    card.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;border:1.5px solid ${border||col.border};display:flex;flex-direction:column;overflow:hidden;background:#fff;z-index:${z||1};cursor:pointer;`;
+    card.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;border:2px solid ${border||col.border};display:flex;flex-direction:column;overflow:hidden;background:#fff;z-index:${z||1};cursor:pointer;`;
     card.addEventListener('mouseenter', () => card.style.filter='brightness(.97)');
     card.addEventListener('mouseleave', () => card.style.filter='');
 
     const hdr = document.createElement('div');
     hdr.className = 'ht-card-hdr';
-    hdr.style.cssText = `position:relative;height:36px;min-height:36px;background:${col.hBg};color:${col.hTxt};display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:600;letter-spacing:.01em;flex:0 0 auto;overflow:hidden;`;
+    hdr.style.cssText = `position:relative;height:44px;min-height:44px;background:${col.hBg};color:${col.hTxt};display:flex;align-items:center;padding:0 14px;font-size:16px;font-weight:700;letter-spacing:.01em;flex:0 0 auto;overflow:hidden;`;
     const hdrSpan = document.createElement('span');
     hdrSpan.style.cssText = 'flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
     hdrSpan.textContent = title;
