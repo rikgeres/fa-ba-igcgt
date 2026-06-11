@@ -2679,10 +2679,12 @@ function buildGroupBar(container, d) {
           ? { id:newId2, type:'FA', title:'', client:'', date:today(), groupId:d.groupId, theme:'blauw', sd:'', r:'', fnc:'', srPosTxt:'', srPosType:'', srNegItems:[{type:'',txt:''}], notities:'' }
           : { id:newId2, type:'BA', title:'', client:'', date:today(), groupId:d.groupId, theme:'blauw', showOs:false, os:'', cs:'', assocType:'', centralType:'usur', centralSubtype:'', centralText:'', centralArchiefLabel:'', extraOvals:[], zweefArchieven:[], bewijsOvals:[], showRepr:false, reprStimulus:'', reprResponse:'', reprBetekenis:'', cr:'' };
         upsert(newAnalysis);
-        // Sla volgorde op in alle groepsleden
+        // Sla volgorde op: bestaande volgorde bewaren, nieuwe analyse achteraan
         const allData2 = load();
         const groupMembers = allData2.filter(a=>a.groupId===d.groupId);
-        const newOrder2 = groupMembers.map(a=>a.id);
+        const existingOrder = (d.groupOrder||[]).filter(id=>groupMembers.find(a=>a.id===id));
+        const rest2 = groupMembers.map(a=>a.id).filter(id=>!existingOrder.includes(id)&&id!==newId2);
+        const newOrder2 = [...existingOrder, ...rest2, newId2];
         allData2.forEach(a=>{ if(a.groupId===d.groupId) a.groupOrder=newOrder2; });
         dump(allData2);
         d.groupOrder = newOrder2;
