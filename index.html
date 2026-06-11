@@ -94,9 +94,10 @@
     .list-item .item-del:hover { color:var(--danger); background:rgba(220,38,38,.07); }
     .badge { width: 44px; height: 44px; border-radius: var(--r-sm); display: flex; align-items: center;
       justify-content: center; font-size: 11px; font-weight: 800; color: #fff; flex-shrink: 0; letter-spacing: .5px; }
-    .badge-fa  { background: var(--fa); }
-    .badge-bas { background: var(--bas); }
-    .badge-ht  { background: var(--cgt-blue); }
+    .badge-fa   { background: var(--fa); }
+    .badge-bas  { background: var(--bas); }
+    .badge-ht   { background: var(--cgt-blue); }
+    .badge-faba { background: var(--cgt-blue); font-size: 9px; letter-spacing: .3px; }
     .badge-bar { background: var(--bar); }
     .item-info { flex: 1; margin-left: 12px; min-width: 0; }
     .item-title { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -963,23 +964,68 @@ function pgHome(c) {
     c.appendChild(secHdr);
     const card = document.createElement('div');
     card.className = 'card';
+
+    // Groepeer analyses per groupId, bewaar volgorde (meest recent eerst)
+    const seenGids = new Set();
+    const gidsOrdered = [];
     all.slice().reverse().forEach(item => {
+      const gid = item.groupId || item.id;
+      if (!seenGids.has(gid)) { seenGids.add(gid); gidsOrdered.push(gid); }
+    });
+    const groupMap = {};
+    all.forEach(item => {
+      const gid = item.groupId || item.id;
+      if (!groupMap[gid]) groupMap[gid] = [];
+      groupMap[gid].push(item);
+    });
+
+    gidsOrdered.forEach(gid => {
+      const members = groupMap[gid];
+      const isMulti = members.length > 1;
       const el = document.createElement('div'); el.className = 'list-item';
-      const route = item.type === 'FA' ? 'fa' : item.type === 'BA' ? 'ba' : 'ht';
-      const meta = [item.client, item.date].filter(Boolean).join(' · ');
-      const badgeCls = item.type === 'FA' ? 'badge-fa' : item.type === 'BA' ? 'badge-bas' : 'badge-ht';
-      el.innerHTML = `
-        <div class="badge ${badgeCls}">${item.type}</div>
-        <div class="item-info">
-          <div class="item-title">${esc(item.title||'(Geen titel)')}</div>
-          <div class="item-meta">${esc(meta)}</div>
-        </div>`;
-      const delBtn = mkTrashBtn('item-del no-print', 'Verwijder', e => {
-        e.stopPropagation();
-        if (confirm(`Verwijder deze ${item.type}?`)) { remove(item.id); const m=document.getElementById('main'); m.innerHTML=''; pgHome(m); }
-      });
-      el.appendChild(delBtn);
-      el.onclick = () => go(`/${route}/${item.id}`);
+
+      if (isMulti) {
+        // Primaire analyse: diegene waarvan id === groupId
+        const primary = members.find(m => m.id === gid) || members[0];
+        const groupTitle = primary.groupTitle || members.map(m=>m.title).filter(Boolean).join(', ') || '';
+        const types = [...new Set(members.map(m => m.type))].join(' + ');
+        el.innerHTML = `
+          <div class="badge badge-faba">FABA</div>
+          <div class="item-info">
+            <div class="item-title">${esc(groupTitle || '(Geen titel)')}</div>
+            <div class="item-meta">${members.length} analyses · ${esc(types)}</div>
+          </div>`;
+        const delBtn = mkTrashBtn('item-del no-print', 'Verwijder FABA', e => {
+          e.stopPropagation();
+          if (confirm(`Verwijder deze FABA (${members.length} analyses)?`)) {
+            members.forEach(m => remove(m.id));
+            const mm=document.getElementById('main'); mm.innerHTML=''; pgHome(mm);
+          }
+        });
+        el.appendChild(delBtn);
+        el.onclick = () => {
+          const route = primary.type==='FA' ? 'fa' : primary.type==='BA' ? 'ba' : 'ht';
+          go(`/${route}/${primary.id}`);
+        };
+      } else {
+        const item = members[0];
+        const route = item.type==='FA' ? 'fa' : item.type==='BA' ? 'ba' : 'ht';
+        const meta = [item.client, item.date].filter(Boolean).join(' · ');
+        const badgeCls = item.type==='FA' ? 'badge-fa' : item.type==='BA' ? 'badge-bas' : 'badge-ht';
+        el.innerHTML = `
+          <div class="badge ${badgeCls}">${item.type}</div>
+          <div class="item-info">
+            <div class="item-title">${esc(item.title||'(Geen titel)')}</div>
+            <div class="item-meta">${esc(meta)}</div>
+          </div>`;
+        const delBtn = mkTrashBtn('item-del no-print', 'Verwijder', e => {
+          e.stopPropagation();
+          if (confirm(`Verwijder deze ${item.type}?`)) { remove(item.id); const m=document.getElementById('main'); m.innerHTML=''; pgHome(m); }
+        });
+        el.appendChild(delBtn);
+        el.onclick = () => go(`/${route}/${item.id}`);
+      }
+
       card.appendChild(el);
     });
     c.appendChild(card);
@@ -1131,7 +1177,18 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
   c.appendChild(bar);
 
   /* ── Titelregel ── */
-  c.appendChild(mkTitleRow(d, save, 'FA'));
+  {
+    const isGroup = !_noGroup && load().filter(a => a.groupId === d.groupId).length > 1;
+    const typeLabel = isGroup ? 'FABA' : 'FA';
+    const groupInfo = isGroup ? {
+      title: d.groupTitle || '',
+      onSave: val => {
+        load().filter(a => a.groupId === d.groupId).forEach(a => upsert({ ...a, groupTitle: val }));
+        d.groupTitle = val;
+      }
+    } : null;
+    c.appendChild(mkTitleRow(d, save, typeLabel, groupInfo));
+  }
 
   /* ── Themakiezer (alleen bij bovenste analyse, niet bij siblings) ── */
   if (!_noGroup) c.appendChild(mkThemePicker(d, id => { save({ theme: id }); if(onRedraw) onRedraw(); }));
@@ -1634,7 +1691,18 @@ function pgBA(c, id) {
   c.appendChild(bar);
 
   /* ── Titelregel ── */
-  c.appendChild(mkTitleRow(d, save, 'BA'));
+  {
+    const isGroup = load().filter(a => a.groupId === d.groupId).length > 1;
+    const typeLabel = isGroup ? 'FABA' : 'BA';
+    const groupInfo = isGroup ? {
+      title: d.groupTitle || '',
+      onSave: val => {
+        load().filter(a => a.groupId === d.groupId).forEach(a => upsert({ ...a, groupTitle: val }));
+        d.groupTitle = val;
+      }
+    } : null;
+    c.appendChild(mkTitleRow(d, save, typeLabel, groupInfo));
+  }
 
   /* ── Themakiezer ── */
   const themeRow = document.createElement('div');
@@ -2440,22 +2508,40 @@ function buildBACanvas(container, d, save, redraw) {
 /* ─────────────────────────────────────────
    Titelregel — bovenaan FA en BA
 ───────────────────────────────────────── */
-function mkTitleRow(d, save, typeLabel) {
+function mkTitleRow(d, save, typeLabel, groupInfo) {
   const row = document.createElement('div');
   row.className = 'no-print';
   row.style.cssText = 'padding:10px 24px 4px;display:flex;align-items:baseline;gap:8px;';
 
-  /* Type-label ("FA", "BA", "HT") — duidelijk */
+  /* Type-label ("FA", "BA", "FABA", "HT") */
   const badge = document.createElement('span');
   badge.textContent = typeLabel;
   badge.style.cssText = 'font-size:15px;font-weight:800;color:#4A6E8A;letter-spacing:.06em;flex-shrink:0;';
   row.appendChild(badge);
 
-  /* Titel-input */
+  /* Groepstitel-input (alleen als groupInfo opgegeven) */
+  if (groupInfo) {
+    const gInp = document.createElement('input');
+    gInp.type = 'text';
+    gInp.value = groupInfo.title || '';
+    gInp.placeholder = 'naam FABA';
+    gInp.style.cssText = 'flex:1;font-size:13px;font-weight:400;border:none;border-bottom:1px dashed #ccc;background:transparent;color:#1D3557;outline:none;padding:1px 0;transition:border-color .15s,border-style .15s;';
+    gInp.addEventListener('focus', () => { gInp.style.borderBottomColor='#4A6E8A'; gInp.style.borderBottomStyle='solid'; gInp.style.fontWeight='600'; });
+    gInp.addEventListener('blur',  () => { gInp.style.borderBottomColor='#ccc';    gInp.style.borderBottomStyle='dashed'; gInp.style.fontWeight=gInp.value?'600':'400'; });
+    gInp.addEventListener('input', () => groupInfo.onSave(gInp.value));
+    row.appendChild(gInp);
+
+    const sep = document.createElement('span');
+    sep.textContent = '|';
+    sep.style.cssText = 'color:#ccc;flex-shrink:0;font-weight:300;';
+    row.appendChild(sep);
+  }
+
+  /* Analyse-titel-input */
   const inp = document.createElement('input');
   inp.type = 'text';
   inp.value = d.title || '';
-  inp.placeholder = 'titel';
+  inp.placeholder = groupInfo ? 'titel analyse' : 'titel';
   inp.style.cssText = 'flex:1;font-size:13px;font-weight:400;border:none;border-bottom:1px dashed #ccc;background:transparent;color:#1D3557;outline:none;padding:1px 0;transition:border-color .15s, border-style .15s;';
   inp.addEventListener('focus', () => { inp.style.borderBottomColor = '#4A6E8A'; inp.style.borderBottomStyle = 'solid'; inp.style.fontWeight = '600'; });
   inp.addEventListener('blur',  () => { inp.style.borderBottomColor = '#ccc';    inp.style.borderBottomStyle = 'dashed'; inp.style.fontWeight = d.title ? '600' : '400'; });
