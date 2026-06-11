@@ -2873,7 +2873,7 @@ function buildHT(c, d, save, redrawHT) {
     el.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;border:1.5px solid ${ht.p};display:flex;flex-direction:column;overflow:hidden;z-index:0;`;
     const hdr = document.createElement('div');
     hdr.className = 'ht-card-hdr';
-    hdr.style.cssText = `position:relative;height:36px;min-height:36px;background:${ht.p};color:#fff;display:flex;align-items:center;padding:0 10px 0 10px;font-size:15px;font-weight:700;flex:0 0 auto;`;
+    hdr.style.cssText = `position:relative;height:36px;min-height:36px;background:${ht.p};color:#fff;display:flex;align-items:center;padding:0 10px 0 10px;font-size:14px;font-weight:600;letter-spacing:.01em;flex:0 0 auto;`;
     const span = document.createElement('span');
     span.style.flex = '1';
     span.textContent = title;
@@ -2900,23 +2900,23 @@ function buildHT(c, d, save, redrawHT) {
   svg.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:2;';
   svg.innerHTML = `
     <defs>
-      <marker id="ht-arr-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${ht.p}"/></marker>
-      <marker id="ht-arr-k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${ht.s}"/></marker>
-      <marker id="ht-arr-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${ht.s}"/></marker>
+      <marker id="ht-arr-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${ht.p}"/></marker>
+      <marker id="ht-arr-k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${ht.s}"/></marker>
+      <marker id="ht-arr-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${ht.s}"/></marker>
     </defs>
     <!-- Aanleg → Persoonlijkheid -->
-    <path d="M280 ${177+SH}L288 ${177+SH}L288 ${752+SH}L280 ${752+SH}M288 ${460+SH}L320 ${460+SH}" stroke="${ht.p}" stroke-width="2" fill="none" marker-end="url(#ht-arr-p)"/>
+    <path d="M280 ${177+SH}L288 ${177+SH}L288 ${752+SH}L280 ${752+SH}M288 ${460+SH}L320 ${460+SH}" stroke="${ht.p}" stroke-width="3" fill="none" marker-end="url(#ht-arr-p)"/>
     <!-- Persoonlijkheid → Klachten -->
-    <path d="M720 ${177+SH}L728 ${177+SH}L728 ${752+SH}L720 ${752+SH}M728 ${460+SH}L800 ${460+SH}" stroke="${ht.p}" stroke-width="2" fill="none" marker-end="url(#ht-arr-p)"/>
+    <path d="M720 ${177+SH}L728 ${177+SH}L728 ${752+SH}L720 ${752+SH}M728 ${460+SH}L800 ${460+SH}" stroke="${ht.p}" stroke-width="3" fill="none" marker-end="url(#ht-arr-p)"/>
     <!-- Stressoren + Beschermende factoren → Klachten -->
-    <path d="M1160 ${190+SH}L1140 ${190+SH}L1140 ${505+SH}L1160 ${505+SH}M1140 ${347+SH}L1120 ${347+SH}" stroke="${ht.s}" stroke-width="2" fill="none" marker-end="url(#ht-arr-k)"/>
+    <path d="M1160 ${190+SH}L1140 ${190+SH}L1140 ${505+SH}L1160 ${505+SH}M1140 ${347+SH}L1120 ${347+SH}" stroke="${ht.s}" stroke-width="3" fill="none" marker-end="url(#ht-arr-k)"/>
     <!-- Klachten ↕ Gevolgen -->
-    <line x1="940" y1="${655+SH}" x2="940" y2="${685+SH}" stroke="${ht.p}" stroke-width="2.5" marker-end="url(#ht-arr-p)"/>
-    <line x1="980" y1="${685+SH}" x2="980" y2="${655+SH}" stroke="${ht.p}" stroke-width="2.5" marker-end="url(#ht-arr-p)"/>
+    <line x1="940" y1="${655+SH}" x2="940" y2="${685+SH}" stroke="${ht.p}" stroke-width="3" marker-end="url(#ht-arr-p)"/>
+    <line x1="980" y1="${685+SH}" x2="980" y2="${655+SH}" stroke="${ht.p}" stroke-width="3" marker-end="url(#ht-arr-p)"/>
     <!-- Gevolgen → Coping feedbackloop -->
-    <path d="M1100 ${830+SH}L1100 ${852+SH}L520 ${852+SH}L520 ${830+SH}" stroke="${ht.s}" stroke-width="2" fill="none" marker-end="url(#ht-arr-s)"/>
+    <path d="M1100 ${830+SH}L1100 ${852+SH}L520 ${852+SH}L520 ${830+SH}" stroke="${ht.s}" stroke-width="3" fill="none" marker-end="url(#ht-arr-s)"/>
     <!-- Kritische gebeurtenissen → schema -->
-    <line x1="760" y1="102" x2="760" y2="${380+SH}" stroke="${ht.s}" stroke-width="2" marker-end="url(#ht-arr-s)"/>
+    <line x1="760" y1="102" x2="760" y2="${380+SH}" stroke="${ht.s}" stroke-width="3" marker-end="url(#ht-arr-s)"/>
   `;
   canvas.appendChild(svg);
 
@@ -3139,7 +3139,7 @@ function buildHT(c, d, save, redrawHT) {
 
     const hdr = document.createElement('div');
     hdr.className = 'ht-card-hdr';
-    hdr.style.cssText = `position:relative;height:36px;min-height:36px;background:${col.hBg};color:${col.hTxt};display:flex;align-items:center;padding:0 10px;font-size:15px;font-weight:700;flex:0 0 auto;overflow:hidden;`;
+    hdr.style.cssText = `position:relative;height:36px;min-height:36px;background:${col.hBg};color:${col.hTxt};display:flex;align-items:center;padding:0 10px;font-size:14px;font-weight:600;letter-spacing:.01em;flex:0 0 auto;overflow:hidden;`;
     const hdrSpan = document.createElement('span');
     hdrSpan.style.cssText = 'flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
     hdrSpan.textContent = title;
