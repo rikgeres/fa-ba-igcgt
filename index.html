@@ -529,6 +529,8 @@ const upsert = item => {
 const remove = id => dump(load().filter(a => a.id !== id));
 const uid    = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
 const today  = () => new Date().toISOString().slice(0,10);
+const esc    = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const escBr  = s => esc(s).replace(/\n/g,'<br>');
 
 /* Groepering: pending groupId bij aanmaken via + knop */
 let _pendingGroup = null;
