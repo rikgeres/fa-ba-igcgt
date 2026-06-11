@@ -396,6 +396,10 @@
       /* ── Scheidingslijn tussen gekoppelde analyses ── */
       .group-section { border-top: none !important; margin-top: 0 !important; }
 
+      /* ── Verberg scrollbalken FA/BA ── */
+      body, .app-main, .app-main > * { overflow: hidden !important; }
+      .print-scale-wrap { overflow: visible !important; }
+
       /* ── HT print ── */
       #app.ht-mode .app-main { padding: 0 !important; }
       .ht-scroll-wrap {
@@ -411,6 +415,9 @@
         align-items: center !important;
         justify-content: center !important;
         overflow: visible !important;
+      }
+      .ht-scale-wrap {
+        transform-origin: center center !important;
       }
       .ht-canvas {
         -webkit-print-color-adjust: exact !important;
@@ -676,7 +683,8 @@ let _activeCE = null;
 
 /* ── Print helper: injecteert tijdelijk de juiste @page + schaal ── */
 function printAs(orientation, scale) {
-  const margin = orientation === 'landscape' ? '0' : '1cm';
+  const isLandscape = orientation === 'landscape';
+  const margin = isLandscape ? '0' : '1cm';
   const css = `
     @page { size: A4 ${orientation}; margin: ${margin}; }
     @media print {
@@ -685,6 +693,12 @@ function printAs(orientation, scale) {
         transform-origin: top left !important;
         width: ${Math.round(100/scale)}% !important;
       }
+      ${isLandscape ? `
+      .ht-scale-wrap {
+        transform: scale(${scale}) !important;
+        transform-origin: center center !important;
+        width: auto !important;
+      }` : ''}
     }
   `;
   const s = document.createElement('style');
