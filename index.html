@@ -1147,32 +1147,24 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
 
   const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Print', () => printAs('portrait', 0.9));
 
-  const btnClip = mkBtn('btn-ghost btn-sm', '📋 Kopieer', () => {
+  const btnClip = mkBtn('btn-ghost btn-sm', '📋 Kopieer / Download', () => {
     const canvas = c.querySelector('.fa-canvas');
     if (!canvas) return;
-    toast('Bezig met kopiëren…', 2500);
+    toast('Bezig…', 3000);
     const bg = THEMES[d.theme||'blauw'].fa.bg;
-    // Geef ClipboardItem direct een Promise mee zodat user-gesture geldig blijft (Safari/Chrome vereiste)
-    const imgPromise = html2canvas(canvas, { backgroundColor: bg, scale: 2, useCORS: true })
-      .then(cvs => new Promise(res => cvs.toBlob(res)));
-    if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
-      navigator.clipboard.write([new ClipboardItem({ 'image/png': imgPromise })])
-        .then(() => toast('Gekopieerd naar klembord ✓'))
-        .catch(() => imgPromise.then(blob => {
-          const url = URL.createObjectURL(blob);
-          const w = window.open(url);
-          if (!w) toast('Schakel pop-ups in om de afbeelding te openen', 4000);
-          else toast('Afbeelding geopend — sla op en plak handmatig', 4000);
-        }));
-    } else {
-      // Fallback voor browsers zonder ClipboardItem
-      imgPromise.then(blob => {
-        const url = URL.createObjectURL(blob);
-        const w = window.open(url);
-        if (!w) toast('Schakel pop-ups in om de afbeelding te openen', 4000);
-        else toast('Afbeelding geopend — sla op en plak handmatig', 4000);
+    const title = (d.title || 'analyse').replace(/[^a-z0-9]/gi,'_').toLowerCase();
+    html2canvas(canvas, { backgroundColor: bg, scale: 2, useCORS: true }).then(cvs => {
+      cvs.toBlob(blob => {
+        // 1. Probeer clipboard
+        if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
+          navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+            .then(() => toast('Gekopieerd naar klembord ✓'))
+            .catch(() => downloadImg(blob, title));
+        } else {
+          downloadImg(blob, title);
+        }
       });
-    }
+    });
   });
 
   const btnPreview = mkBtn('btn-ghost btn-sm', '👁 Preview', () => buildPreviewOverlay(d));
@@ -1669,29 +1661,22 @@ function pgBA(c, id) {
   const bar = document.createElement('div');
   bar.className = 'action-bar no-print';
   const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Print', () => printAs('portrait', 0.7));
-  const btnClip  = mkBtn('btn-ghost btn-sm', '📋 Kopieer', () => {
+  const btnClip  = mkBtn('btn-ghost btn-sm', '📋 Kopieer / Download', () => {
     const cnv = c.querySelector('.ba-canvas');
     if (!cnv) return;
-    toast('Bezig met kopiëren…', 2500);
-    const imgPromise2 = html2canvas(cnv, { backgroundColor: '#fff', scale: 2, useCORS: true })
-      .then(cv => new Promise(res => cv.toBlob(res)));
-    if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
-      navigator.clipboard.write([new ClipboardItem({ 'image/png': imgPromise2 })])
-        .then(() => toast('Gekopieerd naar klembord ✓'))
-        .catch(() => imgPromise2.then(blob => {
-          const url = URL.createObjectURL(blob);
-          const w = window.open(url);
-          if (!w) toast('Schakel pop-ups in om de afbeelding te openen', 4000);
-          else toast('Afbeelding geopend — sla op en plak handmatig', 4000);
-        }));
-    } else {
-      imgPromise2.then(blob => {
-        const url = URL.createObjectURL(blob);
-        const w = window.open(url);
-        if (!w) toast('Schakel pop-ups in om de afbeelding te openen', 4000);
-        else toast('Afbeelding geopend — sla op en plak handmatig', 4000);
+    toast('Bezig…', 3000);
+    const title = (d.title || 'analyse').replace(/[^a-z0-9]/gi,'_').toLowerCase();
+    html2canvas(cnv, { backgroundColor: '#fff', scale: 2, useCORS: true }).then(cv => {
+      cv.toBlob(blob => {
+        if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
+          navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+            .then(() => toast('Gekopieerd naar klembord ✓'))
+            .catch(() => downloadImg(blob, title));
+        } else {
+          downloadImg(blob, title);
+        }
       });
-    }
+    });
   });
   const btnPreview = mkBtn('btn-ghost btn-sm', '👁 Preview', () => buildPreviewOverlay(d));
   const btnUndo = mkBtn('btn-ghost btn-sm', '↩ Ongedaan', () => baUndo());
@@ -3347,6 +3332,15 @@ function addFab(fn) {
   b.onclick = fn; document.body.appendChild(b);
   const off = () => { b.remove(); window.removeEventListener('hashchange', off); };
   window.addEventListener('hashchange', off);
+}
+
+function downloadImg(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = (filename||'analyse') + '.png';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+  toast('Afbeelding gedownload ✓ — open het bestand en plak in Pages', 5000);
 }
 
 function mkBtn(cls, html, fn) {
