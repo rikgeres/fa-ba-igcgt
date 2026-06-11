@@ -1977,12 +1977,12 @@ function buildBACanvas(container, d, save, redraw) {
           // Geblokkeerd veld: klik toont melding + override-knop
           const blocked = document.createElement('div');
           blocked.style.cssText='font-size:9px;color:#ccc;cursor:pointer;padding:2px 0;';
-          blocked.textContent='— niet relevant —';
+          blocked.textContent='— mogelijk niet relevant —';
           let msgShown = false;
           blocked.addEventListener('click', () => {
             if (msgShown) return;
             msgShown = true;
-            blocked.textContent = 'Niet relevant bij sequentieel.';
+            blocked.textContent = 'Mogelijk niet relevant bij sequentieel.';
             blocked.style.color = '#e07040';
             const ovr = document.createElement('span');
             ovr.textContent = ' Toch invullen?';
