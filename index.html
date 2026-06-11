@@ -6,6 +6,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="CGT Analyse">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#4A6E8A">
   <title>CGT Analyse Tool</title>
@@ -2820,7 +2823,7 @@ function buildHT(c, d, save, redrawHT) {
 
   const canvas = document.createElement('div');
   canvas.className = 'ht-canvas';
-  canvas.style.cssText = `position:relative; width:${W}px; height:${H}px; background:#fff;`;
+  canvas.style.cssText = `position:relative; width:${W}px; height:${H}px; background:#fff; font-family:"Segoe UI","Open Sans",sans-serif;`;
 
   // Bereken schaal zodat het schema met gelijke marges rondom past
   function fitCanvas() {
@@ -2873,7 +2876,7 @@ function buildHT(c, d, save, redrawHT) {
     el.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;border:2px solid ${ht.p};display:flex;flex-direction:column;overflow:hidden;z-index:0;`;
     const hdr = document.createElement('div');
     hdr.className = 'ht-card-hdr';
-    hdr.style.cssText = `position:relative;height:44px;min-height:44px;background:${ht.p};color:#fff;display:flex;align-items:center;padding:0 14px;font-size:16px;font-weight:700;letter-spacing:.01em;flex:0 0 auto;`;
+    hdr.style.cssText = `position:relative;height:44px;min-height:44px;background:${ht.p};color:#fff;display:flex;align-items:center;padding:0 14px;font-size:16px;font-weight:600;letter-spacing:.01em;flex:0 0 auto;`;
     const span = document.createElement('span');
     span.style.cssText = 'flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;';
     span.textContent = title;
@@ -2954,7 +2957,7 @@ function buildHT(c, d, save, redrawHT) {
         dot.textContent = '●'; dot.style.cssText = 'margin-top:10px;color:#555;font-size:11px;flex-shrink:0;';
         const ta = document.createElement('textarea');
         ta.value = val; ta.rows = 1;
-        ta.style.cssText = 'flex:1;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:17px;font-family:inherit;resize:none;outline:none;overflow:hidden;transition:border-color .15s;';
+        ta.style.cssText = 'flex:1;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:16px;font-family:"Segoe UI","Open Sans",sans-serif;font-weight:400;resize:none;outline:none;overflow:hidden;transition:border-color .15s;';
         ta.addEventListener('focus', () => ta.style.borderColor = hBg);
         ta.addEventListener('blur',  () => ta.style.borderColor = '#ddd');
         const resize = () => { ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; };
@@ -3019,7 +3022,7 @@ function buildHT(c, d, save, redrawHT) {
       dot.style.cssText = 'font-size:10px;margin-top:4px;color:#374151;flex-shrink:0;line-height:1.4;';
       const txt = document.createElement('span');
       txt.textContent = val;
-      txt.style.cssText = `font-size:15px;font-weight:500;line-height:${lh};color:#1f2937;word-break:break-word;flex:1;`;
+      txt.style.cssText = `font-size:15px;font-weight:400;line-height:${lh};color:#1f2937;word-break:break-word;flex:1;`;
       row.append(dot, txt);
       return row;
     }
@@ -3105,7 +3108,7 @@ function buildHT(c, d, save, redrawHT) {
         const dot = document.createElement('span');
         dot.textContent = '●'; dot.style.cssText = 'font-size:9px;color:#374151;flex-shrink:0;';
         const txt = document.createElement('span');
-        txt.textContent = v; txt.style.cssText = 'font-size:14px;font-weight:500;line-height:1.3;color:#1f2937;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;';
+        txt.textContent = v; txt.style.cssText = 'font-size:14px;font-weight:400;line-height:1.3;color:#1f2937;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;';
         row.append(dot, txt); wrap2.appendChild(row);
       });
     }
@@ -3139,7 +3142,7 @@ function buildHT(c, d, save, redrawHT) {
 
     const hdr = document.createElement('div');
     hdr.className = 'ht-card-hdr';
-    hdr.style.cssText = `position:relative;height:44px;min-height:44px;background:${col.hBg};color:${col.hTxt};display:flex;align-items:center;padding:0 14px;font-size:16px;font-weight:700;letter-spacing:.01em;flex:0 0 auto;overflow:hidden;`;
+    hdr.style.cssText = `position:relative;height:44px;min-height:44px;background:${col.hBg};color:${col.hTxt};display:flex;align-items:center;padding:0 14px;font-size:16px;font-weight:600;letter-spacing:.01em;flex:0 0 auto;overflow:hidden;`;
     const hdrSpan = document.createElement('span');
     hdrSpan.style.cssText = 'flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
     hdrSpan.textContent = title;
