@@ -1688,9 +1688,14 @@ function buildBACfgBar(bar, d, save, redraw) {
     tog(d.showOs ? '✓ OS' : '+ OS', d.showOs, () => { save({showOs:!d.showOs}); redraw(); }),
     sep(),
     lbl('Associatie:'),
-    rad('referentieel', d.assocType==='referentieel', () => { save({assocType:'referentieel', centralSubtype: d.centralSubtype||''}); redraw(); }),
-    rad('sequentieel',  d.assocType==='sequentieel',  () => { save({assocType:'sequentieel',  centralSubtype:''}); redraw(); }),
-    rad('identiteit',   d.assocType==='identiteit',   () => { save({assocType:'identiteit',   centralSubtype:''}); redraw(); }),
+    rad('referentieel', d.assocType==='referentieel', () => {
+      // herstel opgeslagen subtype bij terugkeer naar referentieel
+      const restored = d._savedSubtype || d.centralSubtype || '';
+      save({assocType:'referentieel', centralSubtype: restored, _savedSubtype: undefined});
+      redraw();
+    }),
+    rad('sequentieel',  d.assocType==='sequentieel',  () => { save({assocType:'sequentieel',  _savedSubtype: d.centralSubtype||'', centralSubtype:''}); redraw(); }),
+    rad('identiteit',   d.assocType==='identiteit',   () => { save({assocType:'identiteit',   _savedSubtype: d.centralSubtype||'', centralSubtype:''}); redraw(); }),
     ...(d.assocType==='sequentieel' ? [sep(), lbl('Pijl CS→US/UR:'), rad('voorspelt', !d.causal, () => { save({causal:false}); redraw(); }), rad('veroorzaakt (causaal)', !!d.causal, () => { save({causal:true}); redraw(); })] : []),
     sep()
   );
