@@ -1581,6 +1581,7 @@ function pgBA(c, id) {
   }
 
   if (!d) { c.innerHTML = '<p style="padding:20px">Niet gevonden.</p>'; return; }
+  if (isNew) upsert(d); // sla nieuwe analyse direct op zodat preview hem vindt
 
   let saveTimer = null;
   const baHistory = [];
@@ -2588,7 +2589,8 @@ function buildGroupBar(container, d) {
     const others = siblings.filter(s => s.id !== d.id);
 
     others.forEach(s => {
-      inner.appendChild(renderInlineSchema(s));
+      try { inner.appendChild(renderInlineSchema(s)); }
+      catch(e) { console.error('Fout bij renderen sibling', s.id, e); }
     });
 
     /* ── + knop onderaan links ── */
