@@ -83,12 +83,53 @@ function buildOefenChat(c, d, save) {
   const inputRow = document.createElement('div');
   inputRow.style.cssText = 'display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--border);background:var(--surface);align-items:flex-end;';
   const ta = document.createElement('textarea');
-  ta.placeholder = 'Typ wat je tegen de patiënt zegt…';
+  ta.placeholder = 'Typ of spreek wat je tegen de patiënt zegt…';
   ta.rows = 1;
   ta.style.cssText = 'flex:1;resize:none;min-height:40px;max-height:120px;font-size:14px;';
   const sendBtn = mkBtn('btn-fa btn-sm', 'Verstuur', () => send());
   sendBtn.style.flexShrink = '0';
-  inputRow.append(ta, sendBtn);
+  inputRow.appendChild(ta);
+
+  /* Microfoon: spraak naar tekst via de browser (Web Speech API).
+     Knop verschijnt alleen in browsers die het ondersteunen (Chrome,
+     Edge, Safari — niet Firefox). De tekst komt in het invoerveld
+     zodat je hem kunt nalezen en corrigeren vóór het versturen. */
+  let stopRec = () => {};
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SR) {
+    const micBtn = mkBtn('btn-ghost btn-sm', '🎤', () => toggleRec());
+    micBtn.title = 'Spreek je bericht in (klik nogmaals om te stoppen)';
+    micBtn.style.flexShrink = '0';
+    let rec = null;
+    stopRec = () => { if (rec) { try { rec.stop(); } catch {} } };
+    function toggleRec() {
+      if (rec) { stopRec(); return; }
+      rec = new SR();
+      rec.lang = 'nl-NL';
+      rec.continuous = true;
+      rec.interimResults = true;
+      const baseTxt = ta.value ? ta.value.replace(/\s+$/, '') + ' ' : '';
+      rec.onresult = e => {
+        let txt = '';
+        for (const r of e.results) txt += r[0].transcript;
+        ta.value = baseTxt + txt;
+      };
+      rec.onerror = e => {
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+          toast('Geef de browser toegang tot je microfoon om te kunnen inspreken', 4000);
+        } else if (e.error !== 'aborted' && e.error !== 'no-speech') {
+          toast('Inspreken lukte niet — typ je bericht', 3000);
+        }
+      };
+      rec.onend = () => { rec = null; micBtn.classList.remove('oefen-mic-aan'); ta.focus(); };
+      micBtn.classList.add('oefen-mic-aan');
+      try { rec.start(); }
+      catch { rec = null; micBtn.classList.remove('oefen-mic-aan'); }
+    }
+    inputRow.appendChild(micBtn);
+  }
+
+  inputRow.appendChild(sendBtn);
   card.appendChild(inputRow);
   c.appendChild(card);
 
@@ -120,6 +161,7 @@ function buildOefenChat(c, d, save) {
   }
 
   async function send() {
+    stopRec();
     const txt = ta.value.trim();
     if (!txt || busy) return;
     ta.value = '';
