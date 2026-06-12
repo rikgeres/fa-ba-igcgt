@@ -161,6 +161,15 @@ function pgHome(c) {
         contact.innerHTML = `<span style="font-size:14px;line-height:1.65;color:#2a2a2a;">Feedback of vragen? Mail naar </span><a href="mailto:cgtanalyse@gmail.com" style="color:var(--cgt-blue);font-size:14px;text-decoration:none;border-bottom:1px solid var(--cgt-blue);">cgtanalyse@gmail.com</a>`;
         body.appendChild(contact);
 
+        body.appendChild(mkSub('Bronnen'));
+        body.appendChild(mkP('De schema’s in deze tool zijn gebaseerd op modellen zoals die binnen de Nederlandse cognitieve gedragstherapie breed worden gebruikt en onderwezen, onder meer beschreven in:', 'margin-bottom:10px;'));
+        body.appendChild(mkList([
+          'Orlemans, J.W.G. (1987). Modellen voor probleemkeuze en functieanalyse. In: <em>Handboek voor Gedragstherapie</em>. Van Loghum Slaterus.',
+          'Rombouts, W. &amp; Scholing, A. (2003). Ernstige angststoornissen: een model voor probleemanalyse. <em>Directieve Therapie, 23</em>(2).',
+          'VGCt Kennisnet (2018). <em>Factsheet Holistische theorie</em>. kennisnet.vgct.nl',
+          'Korrelboom, C.W. &amp; Ten Broeke, E. <em>Geïntegreerde cognitieve gedragstherapie. Handboek voor theorie en praktijk</em>. Coutinho.'
+        ]));
+
         const copy = document.createElement('div');
         copy.style.cssText = 'font-size:13px;color:var(--muted);margin-top:8px;';
         copy.textContent = '© 2026 Rik Geres';
