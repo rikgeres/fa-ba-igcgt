@@ -101,8 +101,11 @@ function printAs(orientation, scale) {
       }
       ${isLandscape ? `
       .ht-scale-wrap {
-        transform: scale(${scale}) !important;
-        transform-origin: center center !important;
+        /* zoom i.p.v. transform: verkleint óók de layout-maat, zodat het
+           1400px-schema echt binnen de A4-pagina past en flex-centrering
+           van .ht-scroll-wrap het netjes in het midden zet */
+        transform: none !important;
+        zoom: ${scale};
         width: auto !important;
       }` : ''}
     }

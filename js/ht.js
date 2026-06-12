@@ -108,7 +108,15 @@ function buildHT(c, d, save, redrawHT) {
   const bar = document.createElement('div');
   bar.className = 'action-bar no-print';
 
-  const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Print', () => printAs('landscape', 0.76));
+  const btnPrint = mkBtn('btn-ghost btn-sm', '🖨 Print', () => {
+    // Schaal adaptief: pas het schema in het afdrukbare A4-liggend gebied
+    // (~1123×794px bij 96dpi; veiligheidsmarge voor printer-randen)
+    const cnv = c.querySelector('.ht-canvas');
+    const scale = cnv
+      ? Math.min(1080 / cnv.offsetWidth, 760 / cnv.offsetHeight, 1)
+      : 0.76;
+    printAs('landscape', Math.floor(scale * 100) / 100);
+  });
 
   const btnClip = mkBtn('btn-ghost btn-sm', '📋 Kopieer', () => {
     const htCanvas = c.querySelector('.ht-canvas');
@@ -117,17 +125,25 @@ function buildHT(c, d, save, redrawHT) {
     const sw = c.querySelector('.ht-scale-wrap');
     const prevTransform = sw ? sw.style.transform : '';
     if (sw) sw.style.transform = 'scale(1)';
-    setTimeout(() => {
-      html2canvas(htCanvas, { backgroundColor:'#ffffff', scale:2, useCORS:true,
-        width: htCanvas.offsetWidth, height: htCanvas.offsetHeight }).then(cvs => {
-        if (sw) sw.style.transform = prevTransform;
-        cvs.toBlob(blob => {
-          navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
-            .then(() => toast('Gekopieerd naar klembord ✓'))
-            .catch(() => toast('Kopiëren mislukt — probeer opnieuw', 3000));
-        });
-      }).catch(() => { if (sw) sw.style.transform = prevTransform; });
-    }, 80);
+    // Blob-promise opbouwen, maar clipboard.write SYNCHROON in de klik
+    // aanroepen — anders verloopt de user-gesture als html2canvas lang
+    // duurt en weigert de browser met NotAllowedError.
+    const blobPromise = new Promise((resolve, reject) => {
+      setTimeout(() => {
+        html2canvas(htCanvas, { backgroundColor:'#ffffff', scale:2, useCORS:true,
+          width: htCanvas.offsetWidth, height: htCanvas.offsetHeight }).then(cvs => {
+          if (sw) sw.style.transform = prevTransform;
+          cvs.toBlob(blob => blob ? resolve(blob) : reject(new Error('toBlob gaf null')));
+        }).catch(err => { if (sw) sw.style.transform = prevTransform; reject(err); });
+      }, 80);
+    });
+    if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
+      navigator.clipboard.write([new ClipboardItem({ 'image/png': blobPromise })])
+        .then(() => toast('Gekopieerd naar klembord ✓'))
+        .catch(() => toast('Kopiëren mislukt — probeer opnieuw', 3000));
+    } else {
+      toast('Kopiëren wordt niet ondersteund in deze browser', 3000);
+    }
   });
 
   // Preview knop — fullscreen overlay

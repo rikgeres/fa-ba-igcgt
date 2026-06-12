@@ -130,15 +130,33 @@ FA en BA erven het thema van de bovenste (primaire) analyse. Siblings roepen `bu
 ---
 
 ## Kopieer-knop (clipboard)
+
+**KRITISCH PATROON — niet "vereenvoudigen":** `navigator.clipboard.write` moet
+SYNCHROON in de klik-handler worden aangeroepen, met een *Promise<Blob>* als
+inhoud van het ClipboardItem. Als je `clipboard.write` pas ná `html2canvas`
+aanroept (in een `.then()`/callback), verloopt de user-gesture zodra het
+renderen even duurt (koude cache, groot schema) en weigert de browser met
+NotAllowedError → "Kopiëren mislukt". Dit is twee keer fout gegaan.
+
 ```js
-html2canvas(canvas, { backgroundColor, scale: 2, useCORS: true }).then(cvs => {
-  cvs.toBlob(blob => {
-    navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-      .then(() => toast('Gekopieerd naar klembord ✓'))
-      .catch(() => toast('Kopiëren mislukt — probeer opnieuw', 3000));
-  });
-});
+const blobPromise = html2canvas(canvas, { backgroundColor, scale: 2, useCORS: true })
+  .then(cvs => new Promise((resolve, reject) =>
+    cvs.toBlob(blob => blob ? resolve(blob) : reject(new Error('toBlob gaf null')))));
+if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
+  navigator.clipboard.write([new ClipboardItem({ 'image/png': blobPromise })])  // ← synchroon!
+    .then(() => toast('Gekopieerd naar klembord ✓'))
+    .catch(() => toast('Kopiëren mislukt — probeer opnieuw', 3000));
+}
 ```
+
+## HT-print (liggend A4)
+
+De HT-printknop berekent de schaal adaptief uit de canvas-afmetingen en
+`printAs('landscape', scale)` gebruikt **`zoom`** (niet `transform: scale`) op
+`.ht-scale-wrap`: zoom verkleint óók de layout-maat, zodat het 1400px-schema
+echt binnen de pagina past en de flex-centrering van `.ht-scroll-wrap` (in de
+print-CSS in index.html) het in het midden zet. Met `transform` bleef het
+layout-blok 1400px breed en viel het schema deels naast het papier.
 
 ---
 

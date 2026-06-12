@@ -89,13 +89,18 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
     if (!canvas) return;
     toast('Bezig met kopiëren…', 1500);
     const bg = THEMES[d.theme||'blauw'].fa.bg;
-    html2canvas(canvas, { backgroundColor: bg, scale: 2, useCORS: true }).then(cvs => {
-      cvs.toBlob(blob => {
-        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-          .then(() => toast('Gekopieerd naar klembord ✓'))
-          .catch(() => toast('Kopiëren mislukt — probeer opnieuw', 3000));
-      });
-    });
+    // clipboard.write SYNCHROON in de klik aanroepen met een blob-promise —
+    // anders verloopt de user-gesture als html2canvas lang duurt (NotAllowedError)
+    const blobPromise = html2canvas(canvas, { backgroundColor: bg, scale: 2, useCORS: true })
+      .then(cvs => new Promise((resolve, reject) =>
+        cvs.toBlob(blob => blob ? resolve(blob) : reject(new Error('toBlob gaf null')))));
+    if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
+      navigator.clipboard.write([new ClipboardItem({ 'image/png': blobPromise })])
+        .then(() => toast('Gekopieerd naar klembord ✓'))
+        .catch(() => toast('Kopiëren mislukt — probeer opnieuw', 3000));
+    } else {
+      toast('Kopiëren wordt niet ondersteund in deze browser', 3000);
+    }
   });
 
   const btnPreview = mkBtn('btn-ghost btn-sm', '👁 Preview', () => buildPreviewOverlay(d));
