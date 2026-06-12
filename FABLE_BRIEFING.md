@@ -1,8 +1,13 @@
-# Briefing: CGT Analyse Tool — refactoring
+# Briefing: CGT Analyse Tool — context voor AI-sessies
+
+> **Status:** de refactoring die dit document oorspronkelijk beschreef is
+> uitgevoerd (commits `4d0003a` en `9cc801d` op `dev`, juni 2026). De app is
+> opgesplitst in modules onder `js/` met een analyse-type register. De
+> architectuursectie hieronder beschrijft de actuele structuur.
 
 ## Wat is dit project?
 
-Een **single-file HTML-app** (`index.html`, ~3360 regels) voor cognitief gedragstherapeuten. De app laat gebruikers drie soorten analyses maken:
+Een **statische HTML-app** (`index.html` + modules onder `js/`, geen build-stap) voor cognitief gedragstherapeuten. De app laat gebruikers drie soorten analyses maken:
 
 - **FA** — Functieanalyse (gedragsanalyse met SD, R, Sr-pos, Sr-neg, FNC)
 - **BA** — Betekenisanalyse (schema-analyse met kernthema, archieven, bewijs, representaties)
@@ -52,7 +57,23 @@ De app draait als statisch HTML-bestand. Geen npm, geen build-stap, geen React/V
 
 ## Architectuur
 
-De app is één grote `<script>` in `index.html`. Globale scope, geen modules. Routing is hash-based (`#/fa/:id`, `#/ba/:id`, `#/ht/:id`).
+`index.html` bevat alleen HTML + CSS + script-tags. De logica staat in modules onder `js/`, geladen als klassieke scripts in deze volgorde (gedeelde globale scope, geen ES-modules):
+
+| Bestand | Inhoud |
+|---|---|
+| `js/storage.js` | localStorage CRUD (load/dump/byId/upsert/remove), uid, today, esc, escBr, toast, `_pendingGroup` |
+| `js/registry.js` | analyse-type register: `registerAnalysisType`, `getAnalysisType`, `analysisTypeByRoute`, `analysisTypeList` |
+| `js/themes.js` | THEMES, THEME_IDS, mkThemePicker |
+| `js/ui.js` | opmaak-toolbar, printAs, openExpand, makeTa/makeCE, mkTitleRow, addFab, downloadImg, mkBtn, TRASH_SVG, mkTrashBtn |
+| `js/fa.js` | pgFA, buildFA, FA-helpers + registratie van type 'FA' |
+| `js/ba.js` | pgBA, buildBACfgBar, buildBACanvas, archiefkast-assets + registratie van type 'BA' |
+| `js/ht.js` | pgHT, HT_INFO, buildHT, openHtFullscreen + registratie van type 'HT' |
+| `js/groups.js` | buildPreviewOverlay, buildGroupBar (FABA-groepsbalk) |
+| `js/router.js` | go, route, render, pgHome, startaanroep `render()` — laadt als laatste |
+
+**Nieuw analyse-type toevoegen** (bv. een AI-module): schrijf één module met een `pgXX(container, id)`-paginafunctie en sluit af met een `registerAnalysisType({...})`-aanroep; voeg de script-tag toe in `index.html` vóór `js/router.js`. Router, homepagina-tegels, recente-analyses-badges, en (bij `groupable: true` met `defaultData`/`buildInline`/`buildPreviewBlock`) ook de FABA-groepsbalk en preview-overlay pikken het type automatisch op. Zie de veldbeschrijving bovenin `js/registry.js`.
+
+Routing is hash-based (`#/fa/:id`, `#/ba/:id`, `#/ht/:id`), afgeleid van het `route`-veld in het register.
 
 ### Centrale functies
 
@@ -89,7 +110,7 @@ De app is één grote `<script>` in `index.html`. Globale scope, geen modules. R
 Bij eerdere code-opruimingen zijn meerdere functies per ongeluk verwijderd. Dit zijn de kritische helpers die overal worden aangeroepen:
 
 ```js
-// BEWAAR ALTIJD — staan nu op regels ~537-539
+// BEWAAR ALTIJD — staan in js/storage.js
 const esc   = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const escBr = s => esc(s).replace(/\n/g,'<br>');
 const toast = (msg, ms=2000) => { const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), ms); };
@@ -131,40 +152,11 @@ git checkout dev   # altijd controleren voor je begint
 
 ---
 
-## Wat ik wil dat jij doet
+## Uitgevoerde refactoring (juni 2026)
 
-De app is één bestand van ~3360 regels. Ik wil dat je de code herstructureert zodat:
-
-**1. Logische scheiding in secties/modules**
-Splits de code in duidelijk afgebakende blokken (ook als het één bestand blijft):
-- `storage.js` — load, dump, upsert, remove, uid, today
-- `ui.js` — toast, mkBtn, mkTrashBtn, mkThemePicker, mkTitleRow
-- `fa.js` — buildFA, pgFA en alles wat daarbij hoort
-- `ba.js` — buildBA, pgBA, buildBACfgBar, buildBACanvas
-- `ht.js` — buildHT, pgHT
-- `groups.js` — buildGroupBar, renderInlineSchema, preview
-- `router.js` — render(), route(), pgHome()
-
-**2. Consistent patroon per analyse-type**
-FA, BA en HT volgen nu elk een iets andere structuur. Maak ze uniform zodat een nieuw type (bijv. een AI-module) er eenvoudig naast gezet kan worden door hetzelfde patroon te volgen.
-
-**3. Een registratie-mechanisme voor analyse-types**
-In plaats van hardcoded `if (type==='FA') ... else if (type==='BA')` overal in de code, wil ik één centrale plek waar analyse-types worden geregistreerd:
-```js
-registerAnalysisType({
-  type: 'FA',
-  label: 'Functieanalyse',
-  badge: 'FA',
-  color: 'var(--fa)',
-  buildPage: pgFA,
-  buildCanvas: buildFA,
-  defaultData: () => ({...})
-})
-```
-Zo kan ik straks een AI-module toevoegen door simpelweg een nieuw type te registreren.
-
-**4. Nette data-laag**
-Alle directe `localStorage`-aanroepen moeten via de centrale storage-functies lopen. Geen enkel stuk code buiten `storage.js` mag `localStorage` direct aanraken.
+1. ✅ Code gesplitst in modules onder `js/` (zie Architectuur hierboven)
+2. ✅ Registratie-mechanisme: `js/registry.js` met `registerAnalysisType()`; FA/BA/HT registreren zichzelf; alle hardcoded type-dispatches (router-switch, homepagina-tegels en -badges, plusmenu, inline sibling-render, preview-blokken, lege schema's) lopen via het register
+3. ✅ Data-laag: alle `localStorage`-toegang loopt via `js/storage.js`
 
 ---
 
