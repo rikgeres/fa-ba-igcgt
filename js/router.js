@@ -35,7 +35,8 @@ function render() {
   if (seg === 'home') { setTitle('CGT Analyse Tool'); pgHome(main); return; }
   const t = analysisTypeByRoute(seg);
   if (t) {
-    setTitle(p1 === 'new' ? `Nieuwe ${t.type}` : t.type);
+    const base = t.pageTitle || t.type;
+    setTitle(p1 === 'new' ? `Nieuwe ${base}` : base);
     backBtn('/');
     t.buildPage(main, p1);
   } else {
