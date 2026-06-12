@@ -209,6 +209,19 @@ function mkTitleRow(d, save, typeLabel) {
   inp.addEventListener('input', () => save({ title: inp.value }));
 
   row.appendChild(inp);
+
+  /* Koppeling met een oefencasus: chip om terug te springen naar het gesprek */
+  if (d.oefenId && byId(d.oefenId)) {
+    const chip = document.createElement('button');
+    chip.textContent = '🎭 oefencasus';
+    chip.title = 'Terug naar het oefengesprek';
+    chip.style.cssText = 'flex-shrink:0;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:11px;padding:3px 10px;border-radius:12px;cursor:pointer;transition:border-color .15s,color .15s;';
+    chip.addEventListener('mouseenter', () => { chip.style.borderColor = 'var(--cgt-blue)'; chip.style.color = 'var(--cgt-blue)'; });
+    chip.addEventListener('mouseleave', () => { chip.style.borderColor = 'var(--border)'; chip.style.color = 'var(--muted)'; });
+    chip.addEventListener('click', () => go(`/oefen/${d.oefenId}`));
+    row.appendChild(chip);
+  }
+
   return row;
 }
 

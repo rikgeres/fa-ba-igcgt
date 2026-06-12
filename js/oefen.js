@@ -67,6 +67,67 @@ function pgOefen(c, id) {
 
   /* ── Chat ── */
   buildOefenChat(c, d, save);
+
+  /* ── Analyses bij deze casus ── */
+  buildOefenAnalyses(c, d);
+}
+
+/* Toont de analyses die aan deze oefensessie zijn gekoppeld (via oefenId)
+   en knoppen om er een aan te maken. De koppeling is straks ook de basis
+   voor de feedbackfunctie: gesprek + analyses horen aantoonbaar bij elkaar. */
+function buildOefenAnalyses(c, d) {
+  const wrap = document.createElement('div');
+  wrap.className = 'no-print';
+  wrap.style.cssText = 'margin-top:16px;';
+
+  const lbl = document.createElement('div');
+  lbl.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding:0 2px;';
+  lbl.textContent = 'Jouw analyses bij deze casus';
+  wrap.appendChild(lbl);
+
+  const card = document.createElement('div');
+  card.className = 'card';
+
+  const linked = load().filter(a => a.oefenId === d.id);
+  linked.forEach(item => {
+    const t = getAnalysisType(item.type) || {};
+    const el = document.createElement('div');
+    el.className = 'list-item';
+    el.innerHTML = `
+      <div class="badge ${t.badgeClass || 'badge-ht'}">${esc(item.type)}</div>
+      <div class="item-info">
+        <div class="item-title">${esc(item.title || '(Geen titel)')}</div>
+        <div class="item-meta">${esc(item.date || '')}</div>
+      </div>`;
+    el.onclick = () => go(`/${t.route}/${item.id}`);
+    card.appendChild(el);
+  });
+  if (!linked.length) {
+    const p = document.createElement('div');
+    p.style.cssText = 'padding:12px 14px;font-size:13px;color:var(--muted);font-style:italic;';
+    p.textContent = 'Nog geen analyses. Maak er een zodra je genoeg uit het gesprek hebt gehaald.';
+    card.appendChild(p);
+  }
+
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--border);';
+  analysisTypeList().filter(t => t.type !== 'OEFEN').forEach(t => {
+    const b = mkBtn('btn-ghost btn-sm', `+ ${t.label}`, () => {
+      const nid = uid();
+      upsert({
+        id: nid, type: t.type, title: '', client: '', date: today(),
+        groupId: nid, theme: 'blauw',
+        oefenId: d.id,
+        ...(t.defaultData ? t.defaultData() : {})
+      });
+      go(`/${t.route}/${nid}`);
+    });
+    btnRow.appendChild(b);
+  });
+  card.appendChild(btnRow);
+
+  wrap.appendChild(card);
+  c.appendChild(wrap);
 }
 
 function buildOefenChat(c, d, save) {

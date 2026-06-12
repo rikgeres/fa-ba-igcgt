@@ -622,5 +622,12 @@ registerAnalysisType({
   icon: '🗺',
   badgeClass: 'badge-ht',
   groupable: false, // HT maakt geen deel uit van FABA-groepen
-  buildPage: pgHT
+  buildPage: pgHT,
+  defaultData: () => ({
+    data: {
+      persoonsfactoren: [], omgevingsfactoren: [], kernovertuigingen: [],
+      leefregels: [], coping: [], klachten: [], stressoren: [],
+      beschermendeFactoren: [], gevolgen: [], kritischeGebeurtenissen: []
+    }
+  })
 });
