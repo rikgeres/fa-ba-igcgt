@@ -85,7 +85,13 @@ function pgBA(c, id) {
     toast('Bezig met kopiëren…', 1500);
     // clipboard.write SYNCHROON in de klik aanroepen met een blob-promise —
     // anders verloopt de user-gesture als html2canvas lang duurt (NotAllowedError)
-    const blobPromise = html2canvas(cnv, { backgroundColor: '#fff', scale: 2, useCORS: true })
+    const blobPromise = html2canvas(cnv, { backgroundColor: '#fff', scale: 2, useCORS: true,
+      // Verberg in de kopie dezelfde UI-elementen als bij printen,
+      // plus plaatshouder-teksten van lege invulvelden
+      onclone: doc => {
+        doc.querySelectorAll('.no-print').forEach(el => el.style.display = 'none');
+        doc.querySelectorAll('[data-ph]').forEach(el => el.removeAttribute('data-ph'));
+      } })
       .then(cv => new Promise((resolve, reject) =>
         cv.toBlob(blob => blob ? resolve(blob) : reject(new Error('toBlob gaf null')))));
     if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
@@ -523,7 +529,7 @@ function buildBACanvas(container, d, save, redraw) {
     el.style.cssText=`position:absolute;left:${ax}px;top:${zwTopY}px;width:${ZW_W}px;display:flex;flex-direction:column;align-items:center;text-align:center;`;
     const ico=mkCabinetSvg(60, 70, '#888');
     const desc=document.createElement('div');
-    desc.textContent='archief met samenhangende kerngebeurtenissen m.b.t.';
+    desc.textContent='archief';
     desc.style.cssText='font-size:8px;font-weight:700;color:#888;text-align:center;line-height:1.3;margin-top:3px;';
     const ta=makeTa(arch.label||'','titel',v=>{d.zweefArchieven[i].label=v;save();});
     ta.style.cssText+='text-align:center;color:'+TXT+';font-size:13px;margin-top:1px;';
@@ -700,7 +706,7 @@ function buildBACanvas(container, d, save, redraw) {
     el.style.cssText=`position:absolute;left:${ovX}px;top:${ovY}px;width:${OV_W}px;height:${OV_H}px;background:${N_BG};border:2px solid ${N_BD};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:${Math.round(OV_H*.18)}px ${Math.round(OV_W*.1)}px;box-sizing:border-box;overflow:hidden;`;
     // Vaste beschrijvende tekst (blijft altijd zichtbaar)
     const descLbl=document.createElement('div');
-    descLbl.textContent='archief met samenhangende US/UR-representaties';
+    descLbl.textContent='archief';
     descLbl.style.cssText=`font-size:8px;font-weight:700;color:${N_BD};margin-bottom:4px;flex-shrink:0;line-height:1.3;`;
     // Titel-rij: "titel:" + invoerveld
     const titleRow=document.createElement('div');
@@ -811,7 +817,7 @@ function buildBACanvas(container, d, save, redraw) {
         el.style.paddingBottom = '38px'; // ruimte voor kastje onderaan
         el.style.gap = '3px';
         const lbl = document.createElement('div');
-        lbl.textContent = 'archief met samenhangende kerngebeurtenissen m.b.t.';
+        lbl.textContent = 'archief';
         lbl.style.cssText = `font-size:8px;font-weight:800;color:${N_BD};margin-bottom:1px;text-align:center;line-height:1.3;flex-shrink:0;`;
         const resetAK = document.createElement('span');
         resetAK.textContent = '↩';
@@ -918,10 +924,11 @@ const CABINET_IMG_SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABYAAAAMAC
 function mkCabinetSvg(w, h, color) {
   const div = document.createElement('div');
   div.style.cssText = `flex-shrink:0;width:${w}px;height:${h}px;overflow:hidden;`;
-  const img = document.createElement('img');
-  img.src = CABINET_IMG_SRC;
-  img.style.cssText = `width:${Math.round(w*1.4)}px;height:${Math.round(h*1.4)}px;object-fit:contain;display:block;margin:-${Math.round(h*0.1)}px auto 0;position:relative;left:-16px;`;
-  div.appendChild(img);
+  // background-size:contain i.p.v. een <img> met object-fit: html2canvas
+  // (kopieerknop) ondersteunt object-fit niet en rekte de kast uit
+  const inner = document.createElement('div');
+  inner.style.cssText = `width:${Math.round(w*1.4)}px;height:${Math.round(h*1.4)}px;background-image:url("${CABINET_IMG_SRC}");background-size:contain;background-repeat:no-repeat;background-position:center;margin:-${Math.round(h*0.1)}px auto 0;position:relative;left:-16px;`;
+  div.appendChild(inner);
   return div;
 }
 

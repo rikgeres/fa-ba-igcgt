@@ -167,7 +167,7 @@ function pgHome(c) {
           'Orlemans, J.W.G. (1987). Modellen voor probleemkeuze en functieanalyse. In: <em>Handboek voor Gedragstherapie</em>. Van Loghum Slaterus.',
           'Rombouts, W. &amp; Scholing, A. (2003). Ernstige angststoornissen: een model voor probleemanalyse. <em>Directieve Therapie, 23</em>(2).',
           'VGCt Kennisnet (2018). <em>Factsheet Holistische theorie</em>. kennisnet.vgct.nl',
-          'Korrelboom, C.W. &amp; Ten Broeke, E. <em>Geïntegreerde cognitieve gedragstherapie. Handboek voor theorie en praktijk</em>. Coutinho.'
+          'Korrelboom, K., Ten Broeke, E. &amp; Van Dijk, M. (2025). <em>Geïntegreerde cognitieve gedragstherapie. Handboek voor theorie en praktijk</em> (3e druk). Coutinho.'
         ]));
 
         const copy = document.createElement('div');

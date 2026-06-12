@@ -91,7 +91,14 @@ function buildFA(c, d, save, _noGroup, onUndo, hasUndo, onRedraw) {
     const bg = THEMES[d.theme||'blauw'].fa.bg;
     // clipboard.write SYNCHROON in de klik aanroepen met een blob-promise —
     // anders verloopt de user-gesture als html2canvas lang duurt (NotAllowedError)
-    const blobPromise = html2canvas(canvas, { backgroundColor: bg, scale: 2, useCORS: true })
+    const blobPromise = html2canvas(canvas, { backgroundColor: bg, scale: 2, useCORS: true,
+      // Verberg in de kopie dezelfde UI-elementen als bij printen,
+      // plus plaatshouder-teksten van lege invulvelden
+      onclone: doc => {
+        doc.querySelectorAll('.no-print, .fa-canvas select, .fa-edit-hint, .fnc-del')
+          .forEach(el => el.style.display = 'none');
+        doc.querySelectorAll('[data-ph]').forEach(el => el.removeAttribute('data-ph'));
+      } })
       .then(cvs => new Promise((resolve, reject) =>
         cvs.toBlob(blob => blob ? resolve(blob) : reject(new Error('toBlob gaf null')))));
     if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
@@ -393,6 +400,7 @@ function makeFncNode(x, y, w, items, save, N_BG, N_BD, GRN, LGRN, TXT, initFontS
       const t=SR_NEG_TYPES.find(x=>x.val===item.type);
       const del=document.createElement('button');
       del.textContent='×';
+      del.className='fnc-del no-print';
       del.style.cssText=`background:none;border:none;color:${GRN};font-size:13px;cursor:pointer;padding:0 1px;line-height:1;flex-shrink:0;opacity:.5;`;
       del.addEventListener('mouseenter',()=>del.style.opacity='1');
       del.addEventListener('mouseleave',()=>del.style.opacity='.5');
