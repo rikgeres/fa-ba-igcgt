@@ -69,7 +69,10 @@ De app draait als statisch HTML-bestand. Geen npm, geen build-stap, geen React/V
 | `js/ba.js` | pgBA, buildBACfgBar, buildBACanvas, archiefkast-assets + registratie van type 'BA' |
 | `js/ht.js` | pgHT, HT_INFO, buildHT, openHtFullscreen + registratie van type 'HT' |
 | `js/groups.js` | buildPreviewOverlay, buildGroupBar (FABA-groepsbalk) |
+| `js/oefen.js` | pgOefen, chatvenster AI-oefenpatiënt + registratie van type 'OEFEN' |
 | `js/router.js` | go, route, render, pgHome, startaanroep `render()` — laadt als laatste |
+
+**Serverfunctie:** `api/chat.js` is een Vercel serverless function (geen npm-dependencies, kale `fetch`) die als proxy naar de Anthropic Messages API dient voor de oefenmodule. De persona's (casusopzet) staan dáár, server-side. Vereist `ANTHROPIC_API_KEY` als environment variable in Vercel; optioneel `OEFEN_CODE` (toegangscode) en `OEFEN_MODEL` (model-override, standaard `claude-opus-4-8`). De privacyconstraint blijft intact: alleen het fictieve oefengesprek passeert de server, echte cliëntanalyses nooit.
 
 **Nieuw analyse-type toevoegen** (bv. een AI-module): schrijf één module met een `pgXX(container, id)`-paginafunctie en sluit af met een `registerAnalysisType({...})`-aanroep; voeg de script-tag toe in `index.html` vóór `js/router.js`. Router, homepagina-tegels, recente-analyses-badges, en (bij `groupable: true` met `defaultData`/`buildInline`/`buildPreviewBlock`) ook de FABA-groepsbalk en preview-overlay pikken het type automatisch op. Zie de veldbeschrijving bovenin `js/registry.js`.
 
