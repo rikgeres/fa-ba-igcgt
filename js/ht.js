@@ -596,3 +596,15 @@ function openHtFullscreen(schemaEl) {
   });
 }
 
+
+/* ── Registratie in het analyse-type register ── */
+registerAnalysisType({
+  type: 'HT',
+  route: 'ht',
+  label: 'Holistische Theorie',
+  sub: 'probleemsamenhang',
+  icon: '🗺',
+  badgeClass: 'badge-ht',
+  groupable: false, // HT maakt geen deel uit van FABA-groepen
+  buildPage: pgHT
+});

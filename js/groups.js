@@ -36,16 +36,11 @@ function buildPreviewOverlay(d) {
       block.appendChild(titleDiv);
     }
 
-    // Render de canvas in een tijdelijke container
-    const tmp = document.createElement('div');
-    if (sib.type === 'FA') {
-      buildFA(tmp, sib, ()=>{}, true); // _noGroup=true voorkomt recursie
-      const canvas = tmp.querySelector('.fa-canvas');
+    // Render de canvas via het analyse-type register
+    const sibType = getAnalysisType(sib.type);
+    if (sibType && sibType.buildPreviewBlock) {
+      const canvas = sibType.buildPreviewBlock(sib);
       if (canvas) block.appendChild(canvas);
-    } else if (sib.type === 'BA') {
-      buildBACanvas(tmp, sib, ()=>{}, ()=>{});
-      const canvas = tmp.querySelector('.ba-canvas');
-      if (canvas) { canvas.style.position='relative'; block.appendChild(canvas); }
     }
 
     overlay.appendChild(block);
@@ -90,20 +85,11 @@ function buildGroupBar(container, d) {
     const schemaWrap = document.createElement('div');
     sec.appendChild(schemaWrap);
 
-    if (sibling.type==='FA') {
+    const sibType = getAnalysisType(sibling.type);
+    if (sibType && sibType.buildInline) {
       const sd = sibling;
       const saveSibling = extra => { if (extra) Object.assign(sd, extra); upsert(sd); };
-      buildFA(schemaWrap, sd, saveSibling, true);
-    } else if (sibling.type==='BA') {
-      const sd = sibling;
-      const cfgBar2    = document.createElement('div'); schemaWrap.appendChild(cfgBar2);
-      const canvasWrap2 = document.createElement('div'); canvasWrap2.style.cssText='padding:20px 24px;overflow:auto;'; schemaWrap.appendChild(canvasWrap2);
-      const saveSibling = extra => { if (extra) Object.assign(sd, extra); upsert(sd); };
-      const redrawSibling = () => {
-        buildBACfgBar(cfgBar2, sd, saveSibling, redrawSibling);
-        canvasWrap2.innerHTML=''; buildBACanvas(canvasWrap2, sd, saveSibling, redrawSibling);
-      };
-      redrawSibling();
+      sibType.buildInline(schemaWrap, sd, saveSibling);
     }
 
     return sec;
@@ -146,9 +132,9 @@ function buildGroupBar(container, d) {
 
     const menu = document.createElement('div');
     menu.style.cssText = 'display:none;position:absolute;bottom:36px;left:14px;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.13);overflow:hidden;z-index:200;min-width:160px;';
-    [['FA','Functieanalyse'],['BA','Betekenisanalyse']].forEach(([type,lbl]) => {
+    analysisTypeList().filter(t => t.groupable).forEach(t => {
       const opt = document.createElement('button');
-      opt.textContent = lbl;
+      opt.textContent = t.label;
       opt.style.cssText = 'display:block;width:100%;padding:9px 18px;border:none;background:#fff;text-align:left;cursor:pointer;font-size:13px;color:#333;white-space:nowrap;';
       opt.addEventListener('mouseenter',()=>opt.style.background='#f0f6ff');
       opt.addEventListener('mouseleave',()=>opt.style.background='#fff');
@@ -156,9 +142,11 @@ function buildGroupBar(container, d) {
         menu.style.display='none';
         // Maak nieuwe analyse aan in dezelfde groep, render inline
         const newId2 = uid();
-        const newAnalysis = type==='FA'
-          ? { id:newId2, type:'FA', title:'', client:'', date:today(), groupId:d.groupId, theme:'blauw', sd:'', r:'', fnc:'', srPosTxt:'', srPosType:'', srNegItems:[{type:'',txt:''}], notities:'' }
-          : { id:newId2, type:'BA', title:'', client:'', date:today(), groupId:d.groupId, theme:'blauw', showOs:false, os:'', cs:'', assocType:'', centralType:'usur', centralSubtype:'', centralText:'', centralArchiefLabel:'', extraOvals:[], zweefArchieven:[], bewijsOvals:[], showRepr:false, reprStimulus:'', reprResponse:'', reprBetekenis:'', cr:'' };
+        const newAnalysis = {
+          id: newId2, type: t.type, title:'', client:'', date: today(),
+          groupId: d.groupId, theme: 'blauw',
+          ...t.defaultData()
+        };
         upsert(newAnalysis);
         // Sla volgorde op: bestaande volgorde bewaren, nieuwe analyse achteraan
         const allData2 = load();

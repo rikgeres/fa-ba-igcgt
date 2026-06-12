@@ -1,9 +1,10 @@
 /* ══════════════════════════════════════════════════════════════
    ROUTER & NAVIGATIE
-   Hash-gebaseerde routing (go, route, render).
-   Zwevende opmaak-toolbar (vet + lettergrootte) voor alle
-   contenteditable velden in FA en BA.
-   Print-helper printAs() voor correct A4-formaat per sectie.
+   go()     — navigeren via location.hash
+   route()  — hash uitlezen (#/fa/:id → { seg:'fa', p1:id })
+   render() — centrale render-dispatcher: 'home' → pgHome,
+              overige segmenten via het analyse-type register
+   pgHome() — startpagina met tegels en recente analyses
 ══════════════════════════════════════════════════════════════ */
 /* ── Router ── */
 const go = path => { location.hash = path; };
@@ -15,13 +16,6 @@ function route() {
   return { seg: p[0] || 'home', p1: p[1] };
 }
 
-/* ══════════════════════════════════════════════════════════════
-   ALGEMENE HULPFUNCTIES
-   toast()   — korte statusmelding onderaan het scherm
-   esc/escBr — HTML-escaping voor veilige tekstweergave
-   render()  — centrale render-dispatcher op basis van hash
-   mkBtn / mkTrashBtn / addFab — UI-bouwstenen voor knoppen
-══════════════════════════════════════════════════════════════ */
 function render() {
   const { seg, p1 } = route();
   const main = document.getElementById('main');
@@ -38,12 +32,14 @@ function render() {
     document.getElementById('hdr-back').appendChild(b);
   };
 
-  switch (seg) {
-    case 'home':  setTitle('CGT Analyse Tool'); pgHome(main); break;
-    case 'fa':    setTitle(p1==='new'?'Nieuwe FA':'FA'); backBtn('/'); pgFA(main, p1); break;
-    case 'ba':    setTitle(p1==='new'?'Nieuwe BA':'BA'); backBtn('/'); pgBA(main, p1); break;
-    case 'ht':    setTitle(p1==='new'?'Nieuwe HT':'HT'); backBtn('/'); pgHT(main, p1); break;
-    default:      main.innerHTML = '<p style="padding:20px">Pagina niet gevonden.</p>';
+  if (seg === 'home') { setTitle('CGT Analyse Tool'); pgHome(main); return; }
+  const t = analysisTypeByRoute(seg);
+  if (t) {
+    setTitle(p1 === 'new' ? `Nieuwe ${t.type}` : t.type);
+    backBtn('/');
+    t.buildPage(main, p1);
+  } else {
+    main.innerHTML = '<p style="padding:20px">Pagina niet gevonden.</p>';
   }
 }
 
@@ -196,12 +192,11 @@ function pgHome(c) {
     document.body.appendChild(overlay);
   }
 
-  // Drie analyse-kaarten
-  const tools = [
-    { key:'FA', label:'Functieanalyse', sub:'problematisch gedrag', color:'var(--cgt-blue)', icon:'🔍', path:'/fa/new' },
-    { key:'BA', label:'Betekenisanalyse', sub:'problematische situatie/problematische emotie', color:'var(--cgt-blue)', icon:'💬', path:'/ba/new' },
-    { key:'HT', label:'Holistische Theorie', sub:'probleemsamenhang', color:'var(--cgt-blue)', icon:'🗺', path:'/ht/new' },
-  ];
+  // Analyse-kaarten — één tegel per geregistreerd analyse-type
+  const tools = analysisTypeList().map(t => ({
+    key: t.type, label: t.label, sub: t.sub,
+    color: 'var(--cgt-blue)', icon: t.icon, path: `/${t.route}/new`
+  }));
   const grid = document.createElement('div');
   grid.style.cssText = 'display:flex;flex-direction:column;gap:10px;margin-bottom:24px';
   tools.forEach(t => {
@@ -289,14 +284,14 @@ function pgHome(c) {
         });
         el.appendChild(delBtn);
         el.onclick = () => {
-          const route = primary.type==='FA' ? 'fa' : primary.type==='BA' ? 'ba' : 'ht';
+          const route = (getAnalysisType(primary.type) || {}).route || 'ht';
           go(`/${route}/${primary.id}`);
         };
       } else {
         const item = members[0];
-        const route = item.type==='FA' ? 'fa' : item.type==='BA' ? 'ba' : 'ht';
+        const route = (getAnalysisType(item.type) || {}).route || 'ht';
         const meta = [item.client, item.date].filter(Boolean).join(' · ');
-        const badgeCls = item.type==='FA' ? 'badge-fa' : item.type==='BA' ? 'badge-bas' : 'badge-ht';
+        const badgeCls = (getAnalysisType(item.type) || {}).badgeClass || 'badge-ht';
         el.innerHTML = `
           <div class="badge ${badgeCls}">${item.type}</div>
           <div class="item-info">

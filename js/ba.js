@@ -29,19 +29,7 @@ function pgBA(c, id) {
     id: _newId, type: 'BA', title: '', client: '', date: today(),
     groupId: _pendingGroup || _newId,
     theme: 'blauw',
-    showOs: false, os: '',
-    cs: '',
-    assocType: '',
-    centralType: 'usur',
-    centralSubtype: '',
-    centralText: '',
-    centralArchiefLabel: '',
-    extraOvals: [],
-    zweefArchieven: [],
-    bewijsOvals: [],
-    showRepr: false,
-    reprStimulus: '', reprResponse: '', reprBetekenis: '',
-    cr: ''
+    ...getAnalysisType('BA').defaultData()
   };
   _pendingGroup = null;
 
@@ -932,3 +920,40 @@ function mkCabinetSvg(w, h, color) {
   return div;
 }
 
+
+/* ── Registratie in het analyse-type register ── */
+registerAnalysisType({
+  type: 'BA',
+  route: 'ba',
+  label: 'Betekenisanalyse',
+  sub: 'problematische situatie/problematische emotie',
+  icon: '💬',
+  badgeClass: 'badge-bas',
+  groupable: true,
+  buildPage: pgBA,
+  defaultData: () => ({
+    showOs:false, os:'', cs:'', assocType:'',
+    centralType:'usur', centralSubtype:'', centralText:'', centralArchiefLabel:'',
+    extraOvals:[], zweefArchieven:[], bewijsOvals:[],
+    showRepr:false, reprStimulus:'', reprResponse:'', reprBetekenis:'',
+    cr:''
+  }),
+  buildInline: (container, d, onSave) => {
+    const cfgBar = document.createElement('div'); container.appendChild(cfgBar);
+    const canvasWrap = document.createElement('div');
+    canvasWrap.style.cssText = 'padding:20px 24px;overflow:auto;';
+    container.appendChild(canvasWrap);
+    const redraw = () => {
+      buildBACfgBar(cfgBar, d, onSave, redraw);
+      canvasWrap.innerHTML = ''; buildBACanvas(canvasWrap, d, onSave, redraw);
+    };
+    redraw();
+  },
+  buildPreviewBlock: d => {
+    const tmp = document.createElement('div');
+    buildBACanvas(tmp, d, ()=>{}, ()=>{});
+    const canvas = tmp.querySelector('.ba-canvas');
+    if (canvas) canvas.style.position = 'relative';
+    return canvas;
+  }
+});

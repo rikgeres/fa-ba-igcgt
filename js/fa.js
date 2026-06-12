@@ -42,10 +42,7 @@ function pgFA(c, id) {
     id: newId, type: 'FA', title:'', client:'', date: today(),
     groupId: _pendingGroup || newId,
     theme: 'blauw',
-    sd:'', r:'', fnc:'',
-    srPosTxt:'', srPosType:'',
-    srNegTxt:'', srNegType:'',
-    notities:''
+    ...getAnalysisType('FA').defaultData()
   } : byId(id);
   _pendingGroup = null;
 
@@ -461,3 +458,29 @@ function mailFA(d) {
   window.location.href = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
 }
 
+
+/* ── Registratie in het analyse-type register ── */
+registerAnalysisType({
+  type: 'FA',
+  route: 'fa',
+  label: 'Functieanalyse',
+  sub: 'problematisch gedrag',
+  icon: '🔍',
+  badgeClass: 'badge-fa',
+  groupable: true,
+  buildPage: pgFA,
+  defaultData: () => ({
+    sd:'', r:'', fnc:'',
+    srPosTxt:'', srPosType:'',
+    srNegItems:[{type:'',txt:''}],
+    notities:''
+  }),
+  buildInline: (container, d, onSave) => {
+    buildFA(container, d, onSave, true); // _noGroup=true voorkomt recursie
+  },
+  buildPreviewBlock: d => {
+    const tmp = document.createElement('div');
+    buildFA(tmp, d, ()=>{}, true);
+    return tmp.querySelector('.fa-canvas');
+  }
+});
