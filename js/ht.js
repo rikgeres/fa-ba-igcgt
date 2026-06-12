@@ -50,7 +50,7 @@ const HT_INFO = {
   persoonlijkheidGroup: { title:'Persoonlijkheid', hBg:'#2A76A2', hTxt:'#fff',
     text:'De manier waarop iemand op basis van aanleg en ervaringen naar zichzelf, anderen en de wereld is gaan kijken. Bestaat uit kernovertuigingen, leefregels en copingstrategieën.' },
   kernovertuigingen: { title:'Kernovertuigingen', hBg:'#CDDEEA', hTxt:'#2A76A2',
-    text:'Diepgewortelde, vaak onbewuste overtuigingen over zichzelf, anderen en de wereld. Bijvoorbeeld: \'Ik ben waardeloos\', \'Anderen zijn niet te vertrouwen\'.' },
+    text:'Diepgewortelde, vaak onbewuste overtuigingen over zichzelf, anderen en de wereld. Bijvoorbeeld: \'Ik schiet tekort\', \'Anderen zijn niet te vertrouwen\'.' },
   leefregels: { title:'Leefregels', hBg:'#CDDEEA', hTxt:'#2A76A2',
     text:'Voorwaardelijke aannames en regels die voortkomen uit de kernovertuigingen: \'Als ik … dan …\'. Bijvoorbeeld: \'Als ik altijd presteer, dan word ik geaccepteerd\'.' },
   coping: { title:'Copingstrategieën', hBg:'#CDDEEA', hTxt:'#2A76A2',
