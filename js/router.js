@@ -283,12 +283,12 @@ function pgHome(c) {
         const primary = members.find(m => m.id === gid) || members[0];
         const groupTitle = members.map(m=>m.title).filter(Boolean).join(', ');
         const types = [...new Set(members.map(m => m.type))].join(' + ');
-        // Badge: FA, BA, of FA&BA (nooit meervoud)
+        // Badge: FA, BA, of FA/&/BA op drie regels
         const hasFA = members.some(m => m.type === 'FA');
         const hasBA = members.some(m => m.type === 'BA');
-        const fabaLabel = (hasFA && hasBA) ? 'FA&BA' : hasFA ? 'FA' : hasBA ? 'BA' : 'FABA';
+        const fabaLabel = (hasFA && hasBA) ? 'FA\n&\nBA' : hasFA ? 'FA' : hasBA ? 'BA' : 'FABA';
         el.innerHTML = `
-          <div class="badge badge-faba">${esc(fabaLabel)}</div>
+          <div class="badge badge-faba" style="${(hasFA && hasBA) ? 'white-space:pre-line;line-height:1.1;text-align:center;' : ''}">${esc(fabaLabel)}</div>
           <div class="item-info">
             <div class="item-title">${esc(groupTitle || '(Geen titel)')}</div>
             <div class="item-meta">${members.length} analyses · ${esc(types)}</div>
