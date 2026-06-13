@@ -283,13 +283,10 @@ function pgHome(c) {
         const primary = members.find(m => m.id === gid) || members[0];
         const groupTitle = members.map(m=>m.title).filter(Boolean).join(', ');
         const types = [...new Set(members.map(m => m.type))].join(' + ');
-        // Badge toont de samenstelling: FA & BA, FA's, BA's, FA & BA's, enz.
-        const nFA = members.filter(m => m.type === 'FA').length;
-        const nBA = members.filter(m => m.type === 'BA').length;
-        const fabaParts = [];
-        if (nFA) fabaParts.push(nFA > 1 ? "FA's" : 'FA');
-        if (nBA) fabaParts.push(nBA > 1 ? "BA's" : 'BA');
-        const fabaLabel = fabaParts.join(' & ') || 'FABA';
+        // Badge: FA, BA, of FA&BA (nooit meervoud)
+        const hasFA = members.some(m => m.type === 'FA');
+        const hasBA = members.some(m => m.type === 'BA');
+        const fabaLabel = (hasFA && hasBA) ? 'FA&BA' : hasFA ? 'FA' : hasBA ? 'BA' : 'FABA';
         el.innerHTML = `
           <div class="badge badge-faba">${esc(fabaLabel)}</div>
           <div class="item-info">
