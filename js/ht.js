@@ -100,8 +100,13 @@ function buildHT(c, d, save, redrawHT) {
   // Zet HT-mode op app shell (verwijder max-width beperking)
   const appEl = document.getElementById('app');
   appEl.classList.add('ht-mode');
-  // Verwijder ht-mode als we navigeren weg
-  const offHtMode = () => { appEl.classList.remove('ht-mode'); window.removeEventListener('hashchange', offHtMode); };
+  const headerEl = document.querySelector('.app-header');
+  // Verwijder ht-mode als we navigeren weg (en herstel de kopbalk)
+  const offHtMode = () => {
+    appEl.classList.remove('ht-mode');
+    if (headerEl) { headerEl.style.width = ''; headerEl.style.margin = ''; }
+    window.removeEventListener('hashchange', offHtMode);
+  };
   window.addEventListener('hashchange', offHtMode);
 
   /* ── Actiebalk ── */
@@ -156,11 +161,19 @@ function buildHT(c, d, save, redrawHT) {
   });
   btnDel.style.color = 'var(--danger)';
   bar.append(btnPrint, btnPreview, btnClip, btnDel);
-  c.appendChild(bar);
 
-  /* ── Titelregel + themakiezer ── */
-  c.appendChild(mkTitleRow(d, save, 'HT'));
-  if (redrawHT) c.appendChild(mkThemePicker(d, id => { d.theme = id; save(); redrawHT(); }));
+  /* ── Chrome (knoppenbalk + titel + themakiezer) ──
+     Gecentreerde container die even breed is als de schemakaart, zodat
+     de knoppen uitlijnen met de linkerrand van het schema (net als FA/BA)
+     i.p.v. tegen de linkerrand van het scherm te plakken. Breedte wordt
+     in fitCanvas gelijkgezet aan die van het witte kader. */
+  const chrome = document.createElement('div');
+  chrome.className = 'ht-chrome no-print';
+  chrome.style.cssText = 'margin:0 auto;padding-top:16px;box-sizing:border-box;width:100%;';
+  chrome.appendChild(bar);
+  chrome.appendChild(mkTitleRow(d, save, 'HT'));
+  if (redrawHT) chrome.appendChild(mkThemePicker(d, id => { d.theme = id; save(); redrawHT(); }));
+  c.appendChild(chrome);
 
   /* ── Scroll wrapper + canvas ── */
   // wrap = het witte kader rondom het schema
@@ -208,6 +221,12 @@ function buildHT(c, d, save, redrawHT) {
     wrap.style.marginBottom = outerPad + 'px';
     wrap.style.marginLeft   = 'auto';
     wrap.style.marginRight  = 'auto';
+    // Knoppenbalk/titel én de blauwe kopbalk even breed als de schemakaart.
+    // Kopbalk is een flex-item van #app (flex-kolom): expliciete width nodig,
+    // want margin:0 auto laat een flex-item anders krimpen naar de inhoud.
+    const cardW = (scaledW + padL + padR) + 'px';
+    chrome.style.maxWidth = cardW;
+    if (headerEl) { headerEl.style.width = cardW; headerEl.style.margin = '0 auto'; }
   }
 
   // Pas schaal aan bij laden en bij resize
@@ -622,5 +641,12 @@ registerAnalysisType({
   icon: '🗺',
   badgeClass: 'badge-ht',
   groupable: false, // HT maakt geen deel uit van FABA-groepen
-  buildPage: pgHT
+  buildPage: pgHT,
+  defaultData: () => ({
+    data: {
+      persoonsfactoren: [], omgevingsfactoren: [], kernovertuigingen: [],
+      leefregels: [], coping: [], klachten: [], stressoren: [],
+      beschermendeFactoren: [], gevolgen: [], kritischeGebeurtenissen: []
+    }
+  })
 });

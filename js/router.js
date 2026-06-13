@@ -35,7 +35,8 @@ function render() {
   if (seg === 'home') { setTitle('CGT Analyse Tool'); pgHome(main); return; }
   const t = analysisTypeByRoute(seg);
   if (t) {
-    setTitle(p1 === 'new' ? `Nieuwe ${t.type}` : t.type);
+    const base = t.pageTitle || t.type;
+    setTitle(p1 === 'new' ? `Nieuwe ${base}` : base);
     backBtn('/');
     t.buildPage(main, p1);
   } else {
@@ -231,8 +232,12 @@ function pgHome(c) {
   c.appendChild(grid);
 
   // Recente analyses
+  // Analyses die bij een oefencasus horen staan dáár al in de lijst;
+  // verberg ze hier zolang de oefensessie bestaat. Wordt de oefensessie
+  // verwijderd, dan verschijnen ze hier weer (geen onbereikbaar werk).
   const all = load();
-  if (all.length) {
+  const visible = all.filter(a => !(a.oefenId && all.some(s => s.id === a.oefenId)));
+  if (visible.length) {
     const secHdr = document.createElement('div');
     secHdr.style.cssText = 'display:flex;align-items:center;margin-bottom:8px;';
     const secLbl = document.createElement('div');
@@ -257,12 +262,12 @@ function pgHome(c) {
     // Groepeer analyses per groupId, bewaar volgorde (meest recent eerst)
     const seenGids = new Set();
     const gidsOrdered = [];
-    all.slice().reverse().forEach(item => {
+    visible.slice().reverse().forEach(item => {
       const gid = item.groupId || item.id;
       if (!seenGids.has(gid)) { seenGids.add(gid); gidsOrdered.push(gid); }
     });
     const groupMap = {};
-    all.forEach(item => {
+    visible.forEach(item => {
       const gid = item.groupId || item.id;
       if (!groupMap[gid]) groupMap[gid] = [];
       groupMap[gid].push(item);
