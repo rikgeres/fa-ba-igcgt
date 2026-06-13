@@ -162,7 +162,14 @@ function buildOefenChat(c, d, save) {
     micBtn.title = 'Spreek je bericht in (klik nogmaals om te stoppen)';
     micBtn.style.flexShrink = '0';
     let rec = null;
-    stopRec = () => { if (rec) { try { rec.stop(); } catch {} } };
+    // discard=true: negeer resultaten die ná het stoppen nog binnenkomen
+    // (anders vult de spraakherkenning het veld opnieuw na het verzenden)
+    stopRec = discard => {
+      if (rec) {
+        if (discard) rec.onresult = null;
+        try { rec.stop(); } catch {}
+      }
+    };
     function toggleRec() {
       if (rec) { stopRec(); return; }
       rec = new SR();
@@ -222,7 +229,7 @@ function buildOefenChat(c, d, save) {
   }
 
   async function send() {
-    stopRec();
+    stopRec(true); // negeer late spraakresultaten zodat het veld leeg blijft
     const txt = ta.value.trim();
     if (!txt || busy) return;
     ta.value = '';
