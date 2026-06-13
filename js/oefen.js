@@ -290,15 +290,23 @@ async function askPatient(d, _retried) {
   return data.reply;
 }
 
-/* ── Registratie in het analyse-type register ── */
-registerAnalysisType({
-  type: 'OEFEN',
-  route: 'oefen',
-  label: 'Oefenen met een casus',
-  sub: 'gesprek met een AI-oefenpatiënt',
-  icon: '🎭',
-  badgeClass: 'badge-oefen',
-  pageTitle: 'Oefensessie',
-  groupable: false, // oefensessies maken geen deel uit van FABA-groepen
-  buildPage: pgOefen
-});
+/* ── Registratie in het analyse-type register ──
+   De oefenmodule is nog in ontwikkeling en mag (nog) niet zichtbaar zijn op
+   de productiesite. Hij registreert zich daarom NIET op cgtanalyse.nl: geen
+   tegel op de homepage en de route /oefen geeft "Pagina niet gevonden".
+   Op de Vercel-preview en localhost werkt hij wél, zodat doorontwikkelen kan.
+   Bij lancering: verwijder de OEFEN_ZICHTBAAR-check (of zet hem op true). */
+const OEFEN_ZICHTBAAR = !/(^|\.)cgtanalyse\.nl$/i.test(location.hostname);
+if (OEFEN_ZICHTBAAR) {
+  registerAnalysisType({
+    type: 'OEFEN',
+    route: 'oefen',
+    label: 'Oefenen met een casus',
+    sub: 'gesprek met een AI-oefenpatiënt',
+    icon: '🎭',
+    badgeClass: 'badge-oefen',
+    pageTitle: 'Oefensessie',
+    groupable: false, // oefensessies maken geen deel uit van FABA-groepen
+    buildPage: pgOefen
+  });
+}
