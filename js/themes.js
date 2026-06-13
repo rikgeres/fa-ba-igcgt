@@ -38,17 +38,17 @@ const THEME_IDS = Object.keys(THEMES);
 function mkThemePicker(d, onPick) {
   const row = document.createElement('div');
   row.className = 'no-print';
-  row.style.cssText = 'display:flex;align-items:center;gap:5px;padding:6px 14px;border-bottom:1px solid #eee;background:#fafafa;flex-wrap:wrap;';
-  const lbl = document.createElement('span');
-  lbl.textContent = 'Kleur:';
-  lbl.style.cssText = 'font-size:11px;color:#999;flex-shrink:0;';
-  row.appendChild(lbl);
+  row.style.cssText = 'display:flex;align-items:center;gap:4px;padding:4px 14px 4px;opacity:0.55;transition:opacity .2s;';
+  row.addEventListener('mouseenter', () => row.style.opacity = '1');
+  row.addEventListener('mouseleave', () => row.style.opacity = '0.55');
   THEME_IDS.forEach(id => {
     const t = THEMES[id];
     const btn = document.createElement('button');
     const active = (d.theme || 'blauw') === id;
     btn.title = t.label;
-    btn.style.cssText = `width:18px;height:18px;border-radius:50%;background:${t.swatch};border:${active ? '2.5px solid #333' : '2px solid transparent'};cursor:pointer;flex-shrink:0;outline:2px solid ${active ? t.swatch : 'transparent'};outline-offset:1px;`;
+    btn.style.cssText = `width:${active ? 13 : 11}px;height:${active ? 13 : 11}px;border-radius:50%;background:${t.swatch};border:${active ? '2px solid #555' : '1.5px solid transparent'};cursor:pointer;flex-shrink:0;outline:none;transition:transform .15s;`;
+    btn.addEventListener('mouseenter', () => { if ((d.theme||'blauw')!==id) btn.style.transform='scale(1.3)'; });
+    btn.addEventListener('mouseleave', () => btn.style.transform='scale(1)');
     btn.addEventListener('click', () => { onPick(id); });
     row.appendChild(btn);
   });
