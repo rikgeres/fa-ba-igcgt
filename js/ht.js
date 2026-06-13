@@ -100,8 +100,13 @@ function buildHT(c, d, save, redrawHT) {
   // Zet HT-mode op app shell (verwijder max-width beperking)
   const appEl = document.getElementById('app');
   appEl.classList.add('ht-mode');
-  // Verwijder ht-mode als we navigeren weg
-  const offHtMode = () => { appEl.classList.remove('ht-mode'); window.removeEventListener('hashchange', offHtMode); };
+  const headerEl = document.querySelector('.app-header');
+  // Verwijder ht-mode als we navigeren weg (en herstel de kopbalk)
+  const offHtMode = () => {
+    appEl.classList.remove('ht-mode');
+    if (headerEl) { headerEl.style.width = ''; headerEl.style.margin = ''; }
+    window.removeEventListener('hashchange', offHtMode);
+  };
   window.addEventListener('hashchange', offHtMode);
 
   /* ── Actiebalk ── */
@@ -216,8 +221,12 @@ function buildHT(c, d, save, redrawHT) {
     wrap.style.marginBottom = outerPad + 'px';
     wrap.style.marginLeft   = 'auto';
     wrap.style.marginRight  = 'auto';
-    // Knoppenbalk/titel even breed als de schemakaart, zodat ze uitlijnen
-    chrome.style.maxWidth = (scaledW + padL + padR) + 'px';
+    // Knoppenbalk/titel én de blauwe kopbalk even breed als de schemakaart.
+    // Kopbalk is een flex-item van #app (flex-kolom): expliciete width nodig,
+    // want margin:0 auto laat een flex-item anders krimpen naar de inhoud.
+    const cardW = (scaledW + padL + padR) + 'px';
+    chrome.style.maxWidth = cardW;
+    if (headerEl) { headerEl.style.width = cardW; headerEl.style.margin = '0 auto'; }
   }
 
   // Pas schaal aan bij laden en bij resize
