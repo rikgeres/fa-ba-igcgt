@@ -156,11 +156,19 @@ function buildHT(c, d, save, redrawHT) {
   });
   btnDel.style.color = 'var(--danger)';
   bar.append(btnPrint, btnPreview, btnClip, btnDel);
-  c.appendChild(bar);
 
-  /* ── Titelregel + themakiezer ── */
-  c.appendChild(mkTitleRow(d, save, 'HT'));
-  if (redrawHT) c.appendChild(mkThemePicker(d, id => { d.theme = id; save(); redrawHT(); }));
+  /* ── Chrome (knoppenbalk + titel + themakiezer) ──
+     Gecentreerde container die even breed is als de schemakaart, zodat
+     de knoppen uitlijnen met de linkerrand van het schema (net als FA/BA)
+     i.p.v. tegen de linkerrand van het scherm te plakken. Breedte wordt
+     in fitCanvas gelijkgezet aan die van het witte kader. */
+  const chrome = document.createElement('div');
+  chrome.className = 'ht-chrome no-print';
+  chrome.style.cssText = 'margin:0 auto;padding-top:16px;box-sizing:border-box;width:100%;';
+  chrome.appendChild(bar);
+  chrome.appendChild(mkTitleRow(d, save, 'HT'));
+  if (redrawHT) chrome.appendChild(mkThemePicker(d, id => { d.theme = id; save(); redrawHT(); }));
+  c.appendChild(chrome);
 
   /* ── Scroll wrapper + canvas ── */
   // wrap = het witte kader rondom het schema
@@ -208,6 +216,8 @@ function buildHT(c, d, save, redrawHT) {
     wrap.style.marginBottom = outerPad + 'px';
     wrap.style.marginLeft   = 'auto';
     wrap.style.marginRight  = 'auto';
+    // Knoppenbalk/titel even breed als de schemakaart, zodat ze uitlijnen
+    chrome.style.maxWidth = (scaledW + padL + padR) + 'px';
   }
 
   // Pas schaal aan bij laden en bij resize
